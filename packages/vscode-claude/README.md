@@ -40,6 +40,28 @@ months later, so the build step inlines [`@smartrtl/core`](../core) instead.
 Each of those, and the four rules that were tried and rejected first, is written up in
 [docs/decisions.md](../../docs/decisions.md).
 
+## Tests
+
+```
+npm install                     # once - playwright, for the browser
+npx playwright install chromium # once - the browser itself
+npm test
+```
+
+The tests do not check that the code says the right things; they render the payload
+in a page that carries the extension's own two CSS rules, and measure what a reader
+would see. That is how the reversed `250-400ms` was caught, and how the jitter numbers
+in [docs/decisions.md](../../docs/decisions.md) were arrived at.
+
+Every case is a line that came out of a real answer, and several are the exact lines
+that broke an earlier version.
+
+- `rendering.test.js` - direction per block, the safety rule, all four RTL languages,
+  the timeline dot, and the composer's two layers staying in step
+- `streaming.test.js` - samples every animation frame while an answer arrives character
+  by character, and holds the design to its promise: at most one change per block, and
+  never back and forth
+
 ## Limits
 
 This edits a file that belongs to another extension. An update to Claude Code replaces

@@ -57,6 +57,10 @@
     }
   },
   "scripts": {
-    "build": "node build/bundle-payload.js"
+    "build": "node build/bundle-payload.js",
+    "test": "npm run build && node --test test/*.test.js"
+  },
+  "devDependencies": {
+    "playwright": "^1.56.0"
   }
 }
