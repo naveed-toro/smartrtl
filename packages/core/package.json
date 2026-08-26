@@ -1,0 +1,11 @@
+{
+  "name": "@smartrtl/core",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Decides which direction a piece of text belongs to. No DOM, no product.",
+  "main": "src/direction.js",
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "license": "MIT"
+}
