@@ -6,17 +6,55 @@
   "publisher": "smartrtl",
   "private": true,
   "license": "MIT",
-  "engines": { "vscode": "^1.85.0" },
-  "categories": ["Other"],
-  "keywords": ["rtl", "bidi", "arabic", "hebrew", "urdu", "persian", "claude", "claude-code", "i18n"],
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "rtl",
+    "bidi",
+    "arabic",
+    "hebrew",
+    "urdu",
+    "persian",
+    "claude",
+    "claude-code",
+    "i18n"
+  ],
   "main": "./src/extension.js",
-  "activationEvents": ["onStartupFinished"],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "contributes": {
     "commands": [
-      { "command": "smartrtl.apply",  "title": "Fix right-to-left text now", "category": "SmartRTL" },
-      { "command": "smartrtl.remove", "title": "Remove the right-to-left fix", "category": "SmartRTL" },
-      { "command": "smartrtl.status", "title": "Show status", "category": "SmartRTL" }
-    ]
+      {
+        "command": "smartrtl.apply",
+        "title": "Fix right-to-left text now",
+        "category": "SmartRTL"
+      },
+      {
+        "command": "smartrtl.remove",
+        "title": "Remove the right-to-left fix",
+        "category": "SmartRTL"
+      },
+      {
+        "command": "smartrtl.status",
+        "title": "Show status",
+        "category": "SmartRTL"
+      }
+    ],
+    "configuration": {
+      "title": "SmartRTL",
+      "properties": {
+        "smartrtl.autoApply": {
+          "type": "boolean",
+          "default": true,
+          "description": "Put the right-to-left fix back by itself after Claude Code updates. Turn this off to apply it only by command."
+        }
+      }
+    }
   },
   "scripts": {
     "build": "node build/bundle-payload.js"
