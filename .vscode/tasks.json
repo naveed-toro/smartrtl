@@ -1,0 +1,13 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build payload",
+      "type": "shell",
+      "command": "node build/bundle-payload.js",
+      "options": { "cwd": "${workspaceFolder}/packages/vscode-claude" },
+      "problemMatcher": [],
+      "presentation": { "reveal": "silent", "panel": "shared" }
+    }
+  ]
+}
