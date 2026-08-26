@@ -1,0 +1,10 @@
+{
+  "name": "@smartrtl/vscode-claude",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Fixes right-to-left text in the Claude Code panel for VS Code.",
+  "scripts": {
+    "build": "node build/bundle-payload.js"
+  },
+  "license": "MIT"
+}
