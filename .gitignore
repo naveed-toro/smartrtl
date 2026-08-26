@@ -1,0 +1,10 @@
+node_modules/
+dist/
+out/
+*.vsix
+*.log
+.DS_Store
+Thumbs.db
+.vscode-test/
+test-results/
+playwright-report/
