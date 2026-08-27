@@ -1,8 +1,8 @@
 {
   "name": "claude-code-rtl",
   "displayName": "SmartRTL for Claude Code",
-  "description": "Fixes right-to-left text (Urdu, Arabic, Hebrew, Persian) in the Claude Code panel.",
-  "version": "0.0.2",
+  "description": "Fixes right-to-left text (Urdu, Arabic, Hebrew, Persian) in the Claude Code panel. ⚠ Uninstalling does not turn it off — use the ⚙ menu first.",
+  "version": "0.1.4",
   "publisher": "smartrtl",
   "license": "MIT",
   "repository": {
@@ -32,18 +32,19 @@
   ],
   "main": "./src/extension.js",
   "activationEvents": [
-    "onStartupFinished"
+    "onStartupFinished",
+    "onUri"
   ],
   "contributes": {
     "commands": [
       {
-        "command": "smartrtl.apply",
-        "title": "Fix right-to-left text now",
+        "command": "smartrtl.turnOn",
+        "title": "Turn the right-to-left fix on",
         "category": "SmartRTL"
       },
       {
-        "command": "smartrtl.remove",
-        "title": "Remove the right-to-left fix",
+        "command": "smartrtl.turnOff",
+        "title": "Turn the right-to-left fix off",
         "category": "SmartRTL"
       },
       {
@@ -59,12 +60,50 @@
           "type": "boolean",
           "default": true,
           "description": "Put the right-to-left fix back by itself after Claude Code updates. Turn this off to apply it only by command."
+        },
+        "smartrtl.statusBar": {
+          "type": "string",
+          "enum": [
+            "whenClaudeCodeIsFocused",
+            "always",
+            "never"
+          ],
+          "default": "whenClaudeCodeIsFocused",
+          "enumDescriptions": [
+            "Show a small on/off item only while you are looking at a Claude Code tab.",
+            "Always show it.",
+            "Never show it. Disabling or uninstalling this extension does not turn the fix off, so leave yourself another way to find it."
+          ],
+          "description": "Where to show whether the fix is on. This is the only reliable indicator: VS Code's own Enable, Disable and Uninstall buttons do not control it."
         }
       }
+    },
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "smartrtl.turnOn",
+          "when": "!smartrtl.active"
+        },
+        {
+          "command": "smartrtl.turnOff",
+          "when": "smartrtl.active"
+        }
+      ],
+      "extension/context": [
+        {
+          "command": "smartrtl.turnOn",
+          "when": "extension == smartrtl.claude-code-rtl && !smartrtl.active"
+        },
+        {
+          "command": "smartrtl.turnOff",
+          "when": "extension == smartrtl.claude-code-rtl && smartrtl.active"
+        }
+      ]
     }
   },
   "scripts": {
     "vscode:prepublish": "npm run build",
+    "vscode:uninstall": "node ./src/uninstall.js",
     "build": "node build/bundle-payload.js",
     "test": "npm run build && node --test test/*.test.js"
   },
