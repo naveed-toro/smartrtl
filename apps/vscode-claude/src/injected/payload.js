@@ -42,6 +42,12 @@
 ;(function () {
   "use strict";
   try {
+    /* The extension re-stamps this on every activation. If it stops - because it was
+       uninstalled, and VS Code offers no working hook to clean up with - the block
+       stops doing anything by itself. See src/patch-format.js. */
+    var EXPIRES_AT = 0;
+    if (EXPIRES_AT && Date.now() > EXPIRES_AT) return;
+
     var EXP_BOX = '[class*="expandableContainer_"]';
     var WRAP = '[class*="contentWrapper_"]';
     var BODY = '[class*="content_"]';        // the text of one user message
@@ -150,6 +156,59 @@
     var UNPIN_CSS = STICKY + ":has(" + EXP_BOX + " > " + BTN_ROW + "){position:static}";
 
     /* ------------------------------------------------------------------
+       Unpinning alone is half a fix, and the other half only shows up when you
+       are NOT at the top of the conversation.
+
+       A collapsed message is pinned, so you can see it wherever you have
+       scrolled to. Click it open and it stops being pinned - and immediately
+       falls back to where it really lives in the document, which may be
+       thousands of pixels above your eye. The message you just opened vanishes
+       upwards and has to be chased.
+
+       So when a message toggles, the view follows it: its top goes back to the
+       exact pixel it occupied before the click. Nothing appears to move at all -
+       which is the point, because as far as the reader is concerned nothing
+       should have.
+
+       Measured after layout has settled rather than predicted, and only when the
+       collapsed state actually changed, so a click that toggles nothing moves
+       nothing.
+    ------------------------------------------------------------------ */
+    function scrollParent(el) {
+      var x = el.parentElement;
+      while (x && x !== document.body && x !== document.documentElement) {
+        var oy = getComputedStyle(x).overflowY;
+        if ((oy === "auto" || oy === "scroll") && x.scrollHeight > x.clientHeight) return x;
+        x = x.parentElement;
+      }
+      return null;
+    }
+
+    function keepUnderTheEye(e) {
+      if (!UNPIN_EXPANDED) return;
+      try {
+        var box = e.target && e.target.closest ? e.target.closest(EXP_BOX) : null;
+        if (!box) return;
+        var header = box.closest(STICKY) || box;
+        var scroller = scrollParent(header);
+        if (!scroller) return;
+
+        var wasCollapsed = !!box.querySelector('[class*="collapsed_"]');
+        var wasAt = header.getBoundingClientRect().top;
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () {
+            if (!!box.querySelector('[class*="collapsed_"]') === wasCollapsed) return;
+            // back to the exact pixel it occupied before the click. Not "the top
+            // of the panel" - that would assume where the pin puts it, and the
+            // container's own padding already makes that a guess.
+            var drift = header.getBoundingClientRect().top - wasAt;
+            if (drift) scroller.scrollTop += drift;
+          });
+        });
+      } catch (err) {}
+    }
+
+    /* ------------------------------------------------------------------
        Hand the surface to the engine.
 
        The composer is two stacked layers: an invisible contenteditable you type
@@ -177,6 +236,8 @@
       },
       onCleanup: undoTimeline
     });
+
+    if (UNPIN_EXPANDED) document.addEventListener("click", keepUnderTheEye, true);
   } catch (e) { /* never break the webview */ }
 })();
 /* ==== smart-rtl-direction patch END ==== */

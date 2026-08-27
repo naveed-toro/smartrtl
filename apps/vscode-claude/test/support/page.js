@@ -61,13 +61,19 @@ function payload() {
  * `fix: false` loads the same page WITHOUT the payload. That is how a test can
  * assert that something is unchanged: measure it both ways and compare, rather
  * than hard-coding a number that a restyle upstream would silently invalidate.
+ *
+ * `expired: true` loads the real payload with its expiry set in the past - what a
+ * block left behind by an uninstalled extension becomes once nobody re-stamps it.
  */
-async function open(html, { width = 900, height = 700, fix = true } = {}) {
+async function open(html, { width = 900, height = 700, fix = true, expired = false } = {}) {
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewportSize: { width, height } });
   await page.setContent(
     `<!doctype html><meta charset="utf-8"><style>${CSS}</style>${html}` +
-    (fix ? `<script>${payload()}</script>` : "")
+    (fix ? `<script>${expired
+        ? payload().replace(/var EXPIRES_AT = \d+;/, "var EXPIRES_AT = 1;")
+        : payload().replace(/var EXPIRES_AT = \d+;/, `var EXPIRES_AT = ${Date.now() + 864e5};`)
+      }</script>` : "")
   );
   await page.waitForTimeout(600);   // past the payload's quiet timer
   return { browser, page, close: () => browser.close() };
@@ -94,8 +100,13 @@ const userMessage = (text, { expanded = true, sticky = true } = {}) => `
 /**
  * A whole turn inside the scroll container the extension uses: a pinned user
  * message, then an answer long enough that there is something to scroll past.
+ *
+ * `live` adds the toggling the extension's own component does - clicking a
+ * collapsed body opens it, clicking "Show less" closes it - so that behaviour
+ * which only appears WHILE a message toggles can be measured. It mimics the
+ * component, it is not the component: what is under test is our reaction to it.
  */
-const turn = (userHtml, answerLines = 80) => `
+const turn = (userHtml, { answerLines = 80, live = false } = {}) => `
 <div class="messagesContainer_x" id="scroller" style="height:600px">
   <div class="turn_x">
     ${userHtml}
@@ -103,7 +114,26 @@ const turn = (userHtml, answerLines = 80) => `
       Array.from({ length: answerLines }, (_, i) => `<p>answer line ${i + 1}</p>`).join("")
     }</div></div>
   </div>
-</div>`;
+</div>${live ? `<script>
+document.addEventListener("click", (e) => {
+  const box = e.target.closest(".expandableContainer_x");
+  if (!box) return;
+  const body = box.querySelector(".content_x");
+  const collapsed = body.classList.contains("collapsed_x");
+  if (collapsed && !e.target.closest(".contentWrapper_x")) return;
+  if (!collapsed && !e.target.closest(".collapseButton_x")) return;
+  body.classList.toggle("collapsed_x");
+  body.style.maxHeight = collapsed ? "" : "60px";
+  box.querySelectorAll(".buttonContainer_x").forEach((n) => n.remove());
+  if (collapsed) {
+    box.insertAdjacentHTML("beforeend",
+      '<div class="buttonContainer_x"><button class="collapseButton_x">Show less</button></div>');
+  } else {
+    box.querySelector(".contentWrapper_x").insertAdjacentHTML("beforeend",
+      '<div class="buttonContainer_x"><button class="expandButton_x">Show more</button></div>');
+  }
+});
+</script>` : ""}`;
 
 /** One assistant message, as the extension nests it. */
 const message = (inner) => `<div class="message timelineMessage_x"><div class="root">${inner}</div></div>`;

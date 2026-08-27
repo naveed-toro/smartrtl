@@ -140,3 +140,83 @@ test("nothing is capped - the message opens to its full length", async () => {
     assert.equal(await h(on.page), await h(off.page), "the expanded body must not be capped");
   } finally { await off.close(); await on.close(); }
 });
+
+/* ------------------------------------------------------------------------
+   Toggling from somewhere other than the top.
+
+   Unpinning alone is half a fix. A collapsed message is pinned, so you can see
+   it wherever you have scrolled to - open it and it falls back to where it
+   really lives, which may be thousands of pixels above your eye. These measure
+   the message's top against the panel's top across a real toggle.
+------------------------------------------------------------------------- */
+
+const STICKY_SEL = ".message_x.stickyHeader_x";
+
+test("opening a message from halfway down does not throw it off the screen", async () => {
+  const { page, close } = await open(turn(userMessage(LONG, { expanded: false }), { live: true }), { height: 700 });
+  try {
+    await scrollBy(page, 800);
+    const before = await topOf(page, STICKY_SEL);
+
+    await page.click(".content_x");
+    await page.waitForTimeout(200);
+
+    const after = await topOf(page, STICKY_SEL);
+    assert.ok(Math.abs(after - before) <= 2,
+      `the message must stay on the pixel it was on (${before} -> ${after})`);
+  } finally { await close(); }
+});
+
+test("and once open it really does scroll, rather than being pinned again", async () => {
+  const { page, close } = await open(turn(userMessage(LONG, { expanded: false }), { live: true }), { height: 700 });
+  try {
+    await scrollBy(page, 800);
+    await page.click(".content_x");
+    await page.waitForTimeout(200);
+
+    const at = await page.$eval("#scroller", (el) => el.scrollTop);
+    await scrollBy(page, at + 400);
+    assert.ok(await topOf(page, STICKY_SEL) < -300, "it should scroll away like ordinary content");
+  } finally { await close(); }
+});
+
+test("closing it again leaves it on the same pixel too", async () => {
+  const { page, close } = await open(turn(userMessage(LONG, { expanded: false }), { live: true }), { height: 700 });
+  try {
+    await scrollBy(page, 800);
+    await page.click(".content_x");
+    await page.waitForTimeout(200);
+
+    const before = await topOf(page, STICKY_SEL);
+    await page.click(".collapseButton_x");
+    await page.waitForTimeout(200);
+
+    const after = await topOf(page, STICKY_SEL);
+    assert.ok(Math.abs(after - before) <= 2, `closing must not move it either (${before} -> ${after})`);
+  } finally { await close(); }
+});
+
+/* ------------------------------------------------------------------------
+   What a block left behind becomes.
+
+   VS Code has no working way to let an extension clean up after itself when it
+   is uninstalled. So the block does not depend on anyone coming back for it:
+   once nobody re-stamps its expiry, it stops doing anything at all.
+------------------------------------------------------------------------- */
+
+test("an expired block does nothing whatsoever", async () => {
+  const { page, close } = await open(userMessage(MIXED), { expired: true });
+  try {
+    assert.equal(await page.$$eval("[data-bidi]", (e) => e.length), 0, "nothing should be marked");
+    assert.equal(await page.$$eval("#smart-rtl-direction", (e) => e.length), 0,
+      "not even a stylesheet should be installed");
+    assert.equal(await dirOf(page, ".content_x"), "ltr", "the page must be exactly as it was");
+  } finally { await close(); }
+});
+
+test("and an in-date block still does its job, so the guard is not just always off", async () => {
+  const { page, close } = await open(userMessage(MIXED));
+  try {
+    assert.equal(await dirOf(page, ".content_x"), "rtl");
+  } finally { await close(); }
+});
