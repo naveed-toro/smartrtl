@@ -2,12 +2,16 @@
  * Builds the script that gets appended to the Claude Code webview bundle.
  *
  * The payload cannot `import` anything - it is concatenated onto someone else's
- * file and runs as a plain script. So the shared rule is inlined here rather than
- * duplicated by hand, which is the whole point of having @smartrtl/core.
+ * file and runs as a plain script. So the shared pieces are inlined here rather
+ * than duplicated by hand, which is the whole point of having them as packages:
  *
- * No bundler involved. Core is a UMD file: give it a local `module` and it hands
- * back its exports, and both halves stay inside one closure so nothing of ours
- * ever reaches the page's globals.
+ *   @smartrtl/core  the rule      - which direction does this text belong to?
+ *   @smartrtl/dom   the engine    - when to ask, and what to do with the answer
+ *   src/injected    the adapter   - the parts that are only true of Claude Code
+ *
+ * No bundler involved. Both packages are UMD files: give each one a fresh local
+ * `module` and it hands back its exports. Everything stays inside one closure, so
+ * nothing of ours ever reaches the page's globals.
  *
  *   node build/bundle-payload.js
  */
@@ -16,10 +20,12 @@ const path = require("node:path");
 
 const root = path.resolve(__dirname, "..");
 const corePath = path.resolve(root, "../core/src/direction.js");
+const domPath = path.resolve(root, "../dom/src/engine.js");
 const payloadPath = path.join(root, "src/injected/payload.js");
 const outPath = path.join(root, "dist/payload.js");
 
 const core = fs.readFileSync(corePath, "utf8");
+const dom = fs.readFileSync(domPath, "utf8");
 const payload = fs.readFileSync(payloadPath, "utf8");
 
 const BEGIN = "/* ==== smart-rtl-direction patch BEGIN ==== */";
@@ -27,8 +33,15 @@ const END = "/* ==== smart-rtl-direction patch END ==== */";
 if (!payload.includes(BEGIN) || !payload.includes(END)) {
   throw new Error("payload is missing its BEGIN/END markers - the patcher needs them to find and remove itself");
 }
-if (!payload.includes("SmartRTL.contains")) {
-  throw new Error("payload does not use the shared rule - did the rewiring get lost?");
+
+// The adapter must go through the engine, and the engine through the rule. If a
+// rewiring ever gets lost, the build should fail here rather than ship a copy of
+// the logic that has quietly drifted from the other surfaces.
+if (!payload.includes("SmartRTLDom.start(SmartRTL")) {
+  throw new Error("payload does not hand the shared rule to the shared engine - did the rewiring get lost?");
+}
+if (!dom.includes("rule.containsRtlWord")) {
+  throw new Error("the engine does not use the shared rule - did the rewiring get lost?");
 }
 
 const out = [
@@ -39,6 +52,9 @@ const out = [
   "  var module = { exports: {} };",   // shadows anything outer; core writes here
   core.trim(),
   "  var SmartRTL = module.exports;",
+  "  module = { exports: {} };",       // a fresh one, so the engine cannot overwrite the rule
+  dom.trim(),
+  "  var SmartRTLDom = module.exports;",
   payload.replace(BEGIN, "").replace(END, "").trim(),
   "})();",
   END,
@@ -49,4 +65,4 @@ fs.mkdirSync(path.dirname(outPath), { recursive: true });
 fs.writeFileSync(outPath, out, "utf8");
 
 new Function(out); // parse check - a broken payload must never reach the extension
-console.log("built dist/payload.js  (" + out.length + " bytes, core inlined)");
+console.log("built dist/payload.js  (" + out.length + " bytes, core + dom inlined)");

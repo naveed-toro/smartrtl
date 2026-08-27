@@ -1,0 +1,8 @@
+{
+  "name": "@smartrtl/dom",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Watches a page and applies the direction rule, once per message. No product, no class names.",
+  "main": "src/engine.js",
+  "license": "MIT"
+}

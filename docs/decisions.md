@@ -278,3 +278,43 @@ still ran the old code from memory.
 
 The honest limit: this is the best available arrangement, not a cure. The real fix belongs
 upstream, in the renderer.
+
+---
+
+## 12. Three packages, not one file
+
+The Claude Code payload started as a single file, and by the time it worked it held two
+unrelated things: an engine, and a description of one product.
+
+The engine is the part that is true of any surface rendering markdown into a page - watch
+for changes, decide once per message, apply the decision with an attribute and a rule,
+never decide from a half-written block. The product part is class names (`timelineMessage_`,
+`expandableContainer_`, `messageInputContainer_`), a decorative dot, and a collapse button.
+
+A browser extension needs **all** of the first and **none** of the second. Left as one file,
+the next surface would have begun with a copy of it, and from that day an edge case would
+have had to be fixed twice - which is exactly the failure the shared rule was extracted to
+avoid in the first place.
+
+So:
+
+| package | answers |
+|---|---|
+| `@smartrtl/core` | which direction does this text belong to? |
+| `@smartrtl/dom` | when to ask, and what to do with the answer |
+| adapter | what this particular product's page looks like |
+
+The engine takes the rule as an argument rather than reaching for a global, and takes the
+product as configuration: `boxSelector`, `composer`, `extraCss`, and two hooks - `onDecision`
+for what an adapter wants to do when a message is decided, `onCleanup` for undoing it.
+Nothing product-shaped is left inside.
+
+**How the split was verified.** The eight rendering and streaming tests were not touched -
+not one assertion, not one fixture. They render the built payload against the extension's own
+CSS and measure what a reader sees, so if the extraction had changed behaviour anywhere they
+were already written to catch it. They pass unchanged, along with core's nine. That is the
+whole proof, and it is why they were written before this refactor rather than after.
+
+One deliberate change came with the move: `__bidiFixOff()` now disconnects the observer.
+Before, it removed the stylesheet and the attributes but left the engine running, so a block
+arriving afterwards was marked again by something the user had just switched off.
