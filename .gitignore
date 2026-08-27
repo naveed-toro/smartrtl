@@ -8,3 +8,10 @@ Thumbs.db
 .vscode-test/
 test-results/
 playwright-report/
+
+# The `vscode` stub that lets the patcher be tested outside the editor. It lives in a
+# node_modules folder because that is how `require("vscode")` finds it - but it is source,
+# not a dependency, and without it the patcher has no test at all. That gap once shipped a
+# build that could not even load.
+!apps/vscode-claude/test/stub/node_modules/
+!apps/vscode-claude/test/stub/node_modules/**
