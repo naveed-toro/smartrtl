@@ -4,8 +4,15 @@
   "description": "Fixes right-to-left text (Urdu, Arabic, Hebrew, Persian) in the Claude Code panel.",
   "version": "0.0.1",
   "publisher": "smartrtl",
-  "private": true,
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/naveed-toro/smartrtl.git"
+  },
+  "homepage": "https://github.com/naveed-toro/smartrtl#readme",
+  "bugs": {
+    "url": "https://github.com/naveed-toro/smartrtl/issues"
+  },
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -57,6 +64,7 @@
     }
   },
   "scripts": {
+    "vscode:prepublish": "npm run build",
     "build": "node build/bundle-payload.js",
     "test": "npm run build && node --test test/*.test.js"
   },

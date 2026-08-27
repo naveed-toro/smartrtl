@@ -10,7 +10,7 @@ webview bundle, and this package's job is to put it there and keep it there.
 
 ```
 src/injected/payload.js   what runs inside the webview
-build/bundle-payload.js   inlines @smartrtl/core into it -> dist/payload.js
+build/bundle-payload.js   inlines core + dom into it -> dist/payload.js
 ```
 
 `dist/` is generated and not committed. Build it with:
@@ -19,12 +19,15 @@ build/bundle-payload.js   inlines @smartrtl/core into it -> dist/payload.js
 npm run build
 ```
 
-## Why the rule is not in this file
+## Why the rule and the engine are not in this file
 
 The payload cannot `import` anything - it is concatenated onto someone else's bundle
 and runs as a plain script. The obvious shortcut is to paste the regexes in and move
 on. That is exactly how three products end up disagreeing about the same question six
-months later, so the build step inlines [`@smartrtl/core`](../core) instead.
+months later, so the build step inlines [`@smartrtl/core`](../../packages/core) - the
+rule - and [`@smartrtl/dom`](../../packages/dom) - the engine that decides when to ask
+it - instead. What is left in this file is only what is true of Claude Code and of
+nothing else.
 
 ## What the payload actually does
 

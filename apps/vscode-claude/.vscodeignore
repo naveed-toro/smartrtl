@@ -1,4 +1,7 @@
 build/**
 src/injected/**
+test/**
 .vscodeignore
+.gitignore
 **/*.map
+**/.DS_Store
