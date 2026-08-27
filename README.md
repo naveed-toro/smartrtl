@@ -30,12 +30,16 @@ Then yes, this is the same bug.
 
 | where | what it is | status |
 |---|---|---|
-| Claude Code in VS Code | companion extension | in progress |
-| AI chat sites in the browser | Chrome extension | started, paused |
-| Claude desktop app | not investigated yet | planned |
+| Claude Code in VS Code | companion extension | works; tested live; not published |
+| AI chat sites in the browser | Chrome extension | next |
+| a markdown editor | VS Code, desktop, web | shape not decided |
+| Claude desktop app | not investigated yet | unknown |
 
-The three share one thing only: the rule that decides which direction a piece of text
-belongs to. Everything else - how the fix is delivered - is different for each.
+They share two things: the rule that decides which direction a piece of text belongs to,
+and the engine that decides when to ask it. Everything else - how the fix reaches the
+screen - is different for each, and lives in an adapter of a few dozen lines. The order
+they get built in, and what an adapter has to provide, are in
+[docs/roadmap.md](docs/roadmap.md).
 
 ## The rule
 

@@ -405,3 +405,134 @@ Two changes, at two different levels, on purpose:
 
 The lesson worth keeping: three days of screenshots would not have found this, and ten
 minutes of reading the bundle did. When a guest fix does not fire, read the host.
+
+
+---
+
+## 14. Leaving as cleanly as arriving
+
+Installing applies the patch. Uninstalling used to leave it there, along with a 5MB pristine
+backup in somebody else's folder. A guest that cannot be asked to leave is not a good guest,
+and it is the one promise a design like this has to keep.
+
+### The attempt that broke the extension
+
+The obvious move is `deactivate()` - the last moment the editor certainly gives us, and one
+that uninstalling, disabling and closing the window all pass through. It was built, it
+packaged, all seventeen tests passed, and **it made the extension stop working entirely.**
+
+```
+install -> activate -> apply -> "Reload to see it"
+        -> user clicks Reload
+        -> DEACTIVATE runs -> patch removed
+        -> window reloads, webview reads a clean bundle -> no fix
+        -> activate -> apply -> "Reload to see it"   ... forever
+```
+
+The prompt returned after every reload and the fix never appeared. Both symptoms were
+reported within minutes of installing, and no unit test could have caught either: this is
+not behaviour inside a page, it is the editor's lifecycle.
+
+The mistake, named exactly: **`deactivate()` does not mean "we are leaving". It means "this
+extension host is stopping"** - which happens on every reload, every window close and every
+update, and only incidentally on an uninstall. Tying a persistent on-disk change to it
+guarantees the change is absent precisely when it is needed, because a webview reads the
+bundle as it loads and we were re-applying afterwards.
+
+### The hook that actually means it
+
+VS Code does have one, and it is documented: an npm script named `vscode:uninstall`, run
+"when the extension is completely uninstalled from VS Code, which is when VS Code is
+restarted after the extension is uninstalled". It fires on an uninstall and on nothing else
+- no reloads, no window closes - so it cannot produce the loop above.
+
+Two things about it shape the implementation:
+
+- **There is no `vscode` module.** It is a plain node script, so Claude Code cannot be asked
+  where it lives. It does not need to be: the script sits in our own folder inside the
+  extensions directory, so `path.dirname(__dirname)` *is* that directory and every copy of
+  Claude Code in it can be found by name. That turns out better than asking - old versions
+  left behind by earlier updates get cleaned up too, and the editor would only have pointed
+  at the current one.
+- **It runs while we are being deleted.** Nothing in it may throw. A cleanup that crashes on
+  the way out is worse than one that quietly does nothing.
+
+It keeps apply()'s rule about not guessing: a patched bundle with no pristine copy beside it
+is left exactly as it is, because rebuilding somebody else's file from memory is worse than
+leaving it patched.
+
+### The hook does not run
+
+It was built, packaged as 0.0.7, installed, used, and uninstalled. Claude Code's bundle was
+still patched afterwards, and the extension's own folder was already gone - so nothing of
+ours had run.
+
+This is not our bug. `vscode:uninstall` has been broken in VS Code since 1.69
+([microsoft/vscode#155561](https://github.com/microsoft/vscode/issues/155561), which is a
+recurrence of #100323). Both are open, in the Backlog, unassigned to a milestone. The
+feature is documented and does not work.
+
+So: **automatic cleanup on uninstall is not achievable through any supported mechanism
+today.** After an uninstall no code of ours runs, ever, and the one hook the editor
+advertises for it does not fire. Every clever alternative dies on the same rock - a webview
+cannot read the filesystem, another extension's CSS cannot cross into a webview iframe, and
+`deactivate()` means "the host is stopping", not "we are leaving".
+
+The hook stays in place, because it costs nothing and will start working the day VS Code
+fixes it. It is simply not something to promise.
+
+### What can be promised instead
+
+- `SmartRTL: Remove the right-to-left fix` - instant, complete, on demand
+- the block is one truncation away from gone, by hand, with the one-liner in the app README
+- Claude Code installs each update into a fresh folder, so an orphan clears itself at its
+  next update - which for a tool that ships as often as Claude Code is days, not months
+
+That is the honest position, and the README says exactly this rather than implying more.
+
+### The next experiment, in order
+
+1. **Prove whether the hook runs at all.** A build whose uninstall script writes a line to a
+   file before doing anything else. If the line appears, the hook fires and our script is at
+   fault - fixable. If it does not, the editor never called us, and no amount of care in
+   that file will change it. Guessing between those two is what has already cost a day.
+2. **If it never runs: make the block expire by itself.** Stamp a date into the block at
+   apply time and have it do nothing past that date; every activation re-stamps it. Then an
+   uninstalled patch lapses on its own, with no dependence on VS Code, on us, or on anyone
+   remembering a command. It converts a permanent change into a temporary one - which is
+   not the same as instant removal, and should not be described as if it were.
+
+---
+
+## 15. Unpinning was half a fix
+
+Section 10 stops being pinned while expanded. Installed and used, it was still wrong - and
+only from somewhere other than the top of the conversation, which is why the first round of
+testing missed it.
+
+A collapsed message is pinned, so you can see it wherever you have scrolled to. Click it
+open and it stops being pinned - and immediately falls back to where it actually lives in
+the document, which may be thousands of pixels above your eye. The message you just asked
+to see vanishes upwards and has to be chased back.
+
+Right behaviour, wrong moment: the unpinning is correct, but the view has to follow.
+
+```js
+const wasAt = header.getBoundingClientRect().top;   // before the click
+// ... two frames later, once layout has settled
+const drift = header.getBoundingClientRect().top - wasAt;
+if (drift) scroller.scrollTop += drift;
+```
+
+The header goes back to **the exact pixel it occupied before the click**, not "the top of
+the panel" - that would assume where the pin puts it, and the container's own 20px padding
+already makes that a guess. Measured after layout rather than predicted, and only when the
+collapsed state actually changed, so a click that toggles nothing moves nothing.
+
+The result is that opening and closing a message look like nothing happened, which is
+exactly right: as far as the reader is concerned, nothing should have. It works the same
+whether you are at the top, halfway down, or at the bottom.
+
+Three tests hold it, all of them toggling for real rather than rendering a fixed state: open
+from 800px down and the message stays on its pixel; scroll afterwards and it really does
+travel, so the unpinning has not been undone; close it and it stays on its pixel again.

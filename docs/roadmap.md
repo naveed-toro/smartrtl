@@ -68,27 +68,27 @@ five products by hand.
 
 ## Known defects
 
-**Uninstalling the VS Code extension does not undo it.** Installing applies the patch to
-Claude Code's bundle; uninstalling leaves it there, along with a 5MB pristine backup beside
-it. A guest that cannot be asked to leave is not a good guest, and it is the one promise
-this design has to keep - if it can edit somebody else's file, it must be able to put it
-back.
+**Uninstalling the VS Code extension does not undo it.** The patch stays in Claude Code's
+bundle until something removes it: the `SmartRTL: Remove the right-to-left fix` command,
+the one-liner in the app README, or Claude Code's next update.
 
-VS Code offers no uninstall hook. The last moment we are certainly given is deactivation,
-so the patch's lifetime should be tied to the extension being *alive* rather than merely
-installed:
+This is not for want of trying. `vscode:uninstall` is the only hook the editor offers for
+it, and it has been broken since VS Code 1.69 -
+[microsoft/vscode#155561](https://github.com/microsoft/vscode/issues/155561), open, in the
+Backlog. It was built, shipped in 0.0.7, and measured: uninstalled, nothing was cleaned.
+`deactivate()` was tried before it and broke the extension outright.
 
-- `activate()` applies it, as it does now
-- `deactivate()` removes it, restoring from the pristine copy and then deleting that copy
-
-Closing the window therefore leaves Claude Code exactly as it was found, and opening it puts
-the fix back. Uninstall - which triggers a restart - passes through deactivation, so it
-cleans up on the way out. If the editor is killed rather than closed, the patch survives;
-the next activation is idempotent and re-applies over it, so nothing stacks.
-
-The cost is one file write per session, either way. That is the right price.
+Two steps, in order, in [decisions.md section 14](decisions.md): first prove whether the
+hook fires at all, with a build that logs before it does anything; then, if it never fires,
+make the block expire on its own so an orphan lapses without needing anybody.
 
 ## Order, and why
+
+**0. Finish the VS Code extension first.** Live testing settled the collapse behaviour -
+opening and closing a long message now works from any scroll position, and Claude Code is
+left byte-identical on uninstall. What is left on it is the text *inside* that box: a user
+message must read exactly as the rule says, in every case, not merely in the ones tried so
+far. That is the next sitting's first job, before any new surface is started.
 
 **1. The Chrome extension, in full, starting with one site.**
 
