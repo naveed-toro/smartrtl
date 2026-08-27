@@ -45,16 +45,18 @@
     var EXP_BOX = '[class*="expandableContainer_"]';
     var WRAP = '[class*="contentWrapper_"]';
     var BODY = '[class*="content_"]';        // the text of one user message
-    var COLLAPSED = '[class*="collapsed_"]';
     var IN_BOX = '[class*="messageInputContainer_"]';
     var IN_TXT = '[class*="messageInput_"]';
     var IN_MIR = '[class*="mentionMirror_"]';
     var ROW_SEL = '[class*="timelineMessage_"]';
 
     /* Each of these can be turned off on its own without touching anything else. */
+    var STICKY = '[class*="stickyHeader_"]';
+    var BTN_ROW = '[class*="buttonContainer_"]';
+
     var MIRROR_TIMELINE = true;   // put a message's dot on the side it reads from
     var MIRROR_INPUT = true;      // flip the box you type in
-    var BOUND_LONG_MESSAGE = true;// stop an expanded message from swallowing the panel
+    var UNPIN_EXPANDED = true;    // let an expanded message scroll like ordinary content
 
     /* ------------------------------------------------------------------
        OPTIONAL: put each message's timeline dot on the side that message reads from.
@@ -118,26 +120,34 @@
     }
 
     /* ------------------------------------------------------------------
-       A user message collapses at 60px and, once expanded, carries no height cap
-       at all - so a long pasted message becomes thousands of pixels tall, its own
-       "Show less" ends up far below the fold, and the wheel scrolls the whole
-       conversation because the message itself has nothing to scroll.
+       A user message that heads a turn is pinned:
 
-       This is not an RTL problem. It happens to everyone, in every language.
+         .message.stickyHeader { position: sticky; top: 0 }
 
-       An earlier attempt pinned the button with position:sticky. That was the
-       wrong place: it moved a control the extension had put somewhere on purpose,
-       and it treated the symptom. The message is what is unbounded, so the message
-       is what gets bounded - and the button then stays exactly where it always was,
-       directly beneath it.
+       Collapsed, it is 60px of question held above a long answer, which is the
+       point. Expanded, it has no height cap at all - and a pinned element taller
+       than the window can never show its own bottom, because it does not move.
+       The wheel then scrolls the conversation behind it, invisibly, until the
+       whole turn has gone past; only then does the message itself begin to move.
+       Its "Show less" sits at the end of that pinned block, so it is unreachable
+       for as long as the turn lasts.
 
-       Only the EXPANDED body is touched. Collapsed keeps the extension's own 60px
-       cap, and a short message that fits under the ceiling is not affected at all,
-       because max-height only bites what is taller than it.
+       That is not an RTL problem. It happens in every language, and it is worse
+       the further up you had scrolled before opening the message.
+
+       Capping the height was tried and rejected: how much of a window a message
+       may take is not ours to decide, and the right answer differs on a laptop
+       and on an external display. The message should open to its full length.
+
+       What is actually wrong is the pinning, and only while expanded - once you
+       are reading the message itself, there is nothing left for it to hold above
+       anything. So an expanded turn header simply stops being pinned and scrolls
+       like ordinary content. Nothing is capped, nothing is moved, no script runs.
+
+       An expanded message is told apart from a merely short one by the collapse
+       row, which exists only when expanded and only as a direct child.
     ------------------------------------------------------------------ */
-    var BOUND_CSS =
-      EXP_BOX + ' ' + WRAP + ' > ' + BODY + ':not(' + COLLAPSED + ')' +
-      '{max-height:60vh;overflow-y:auto}';
+    var UNPIN_CSS = STICKY + ":has(" + EXP_BOX + " > " + BTN_ROW + "){position:static}";
 
     /* ------------------------------------------------------------------
        Hand the surface to the engine.
@@ -160,7 +170,7 @@
       blocks: SmartRTLDom.DEFAULT_BLOCKS + ',' + EXP_BOX + ' ' + BODY,
       boxSelector: '[class*="root"],' + WRAP,
       composer: MIRROR_INPUT ? { container: IN_BOX, layers: [IN_TXT, IN_MIR], probe: IN_TXT } : null,
-      extraCss: BOUND_LONG_MESSAGE ? BOUND_CSS : "",
+      extraCss: UNPIN_EXPANDED ? UNPIN_CSS : "",
       onDecision: function (block) {
         mirrorTimeline();   // measure + install, once, before any row is marked
         markRow(block);     // this row's dot belongs on the right

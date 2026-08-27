@@ -66,6 +66,28 @@ five products by hand.
 | a markdown editor | three surfaces of its own - VS Code, desktop, web | shape not decided |
 | Claude desktop app | not investigated | unknown |
 
+## Known defects
+
+**Uninstalling the VS Code extension does not undo it.** Installing applies the patch to
+Claude Code's bundle; uninstalling leaves it there, along with a 5MB pristine backup beside
+it. A guest that cannot be asked to leave is not a good guest, and it is the one promise
+this design has to keep - if it can edit somebody else's file, it must be able to put it
+back.
+
+VS Code offers no uninstall hook. The last moment we are certainly given is deactivation,
+so the patch's lifetime should be tied to the extension being *alive* rather than merely
+installed:
+
+- `activate()` applies it, as it does now
+- `deactivate()` removes it, restoring from the pristine copy and then deleting that copy
+
+Closing the window therefore leaves Claude Code exactly as it was found, and opening it puts
+the fix back. Uninstall - which triggers a restart - passes through deactivation, so it
+cleans up on the way out. If the editor is killed rather than closed, the patch survives;
+the next activation is idempotent and re-applies over it, so nothing stacks.
+
+The cost is one file write per session, either way. That is the right price.
+
 ## Order, and why
 
 **1. The Chrome extension, in full, starting with one site.**

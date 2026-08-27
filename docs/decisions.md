@@ -255,32 +255,58 @@ somewhere else entirely - often at the bottom of the conversation.
 **Rejected fix:** cap the expanded height and scroll inside the block. It works, but it breaks
 text selection across messages and introduces nested scrolling.
 
-**First fix, and it was wrong:** make the collapse row `position: sticky` so it rides at the
-bottom of the viewport, and pin the message's own top on collapse so you land back on it.
+**Two wrong fixes before the right one.** This section is kept in full because the two
+detours are more instructive than the answer.
 
-The first live run killed it. Sticky moves a control the extension had placed deliberately -
-`justify-content: flex-end` on its own flex row - and the whole project's claim is that it
-does not disturb what was already fine. Worse, it treated the symptom. The button is not
-what is broken; the message is. Nothing is unbounded except the expanded body, so that is
-what gets a bound:
+*First:* make the collapse row `position: sticky` so it rides at the bottom of the window,
+and pin the message's own top on collapse. The first live run killed it. Sticky moves a
+control the extension had placed on purpose - `justify-content: flex-end` on its own flex
+row - and it treated the symptom rather than the cause.
+
+*Second:* cap the expanded body and give it its own scrollbar (`max-height: 60vh;
+overflow-y: auto`). It tested green, and it was still wrong. How much of a window a
+message may occupy is not ours to decide, and the right answer is not the same on a laptop
+as on an external display. A message should open to its full length. Anything else is us
+imposing a number we have no standing to choose.
+
+**What was actually wrong, measured in the real panel.** A user message that heads a turn
+is pinned:
 
 ```css
-expandableContainer contentWrapper > content:not(.collapsed) { max-height:60vh; overflow-y:auto }
+.message.stickyHeader { position: sticky; top: 0; z-index: 2 }
 ```
 
-The button then stays exactly where it always was, directly beneath a body that can no
-longer run off the screen, and the collapse-anchoring code is not needed at all - the block
-never grows by thousands of pixels, so collapsing cannot throw you anywhere.
+Collapsed, that is 60px of question held above a long answer, which is exactly the point of
+it. Expanded, the same element has no height cap - and **a pinned element taller than the
+window can never show its own bottom, because it does not move.** The wheel scrolls the
+conversation behind it, invisibly, until the whole turn has gone past; only then does the
+message itself begin to travel. Its "Show less" lives at the end of that pinned block, so
+for the length of the turn it cannot be reached at all.
 
-Only the expanded body is touched. Collapsed keeps the extension's own 60px cap, and a
-message shorter than the ceiling is untouched, because `max-height` only bites what is
-taller than it. Nested scrolling was rejected above on the grounds that it breaks selection
-across messages; measured, it does not - dragging a selection past the edge auto-scrolls, as
-it does in any scrollable block.
+Opening a long message after scrolling up therefore looks like the panel has frozen. It has
+not: it is scrolling, and every pixel of it is hidden behind the message you just opened.
+Reported as an RTL problem, it is nothing of the kind - it happens in every language, and
+the further up you had scrolled, the worse it is.
 
-Two tests hold this now, and both measure against the same page with the fix switched off
-rather than against a number: the collapse button and the expand button must land on the
-same pixel either way.
+**The fix is one line, and it removes a behaviour rather than adding one:**
+
+```css
+stickyHeader:has(expandableContainer > buttonContainer) { position: static }
+```
+
+An expanded turn header stops being pinned and scrolls like ordinary content. Nothing is
+capped, nothing is moved, no script runs, and the collapse row - which exists only when
+expanded, and only as a direct child - is what tells an expanded message apart from a merely
+short one. Collapsed messages and short messages keep their pinning untouched, because there
+the pinning is doing its job.
+
+Once you are reading the message itself, there is nothing left for it to hold above
+anything. That is the whole argument.
+
+**How it is held.** Five tests, and the two that matter measure against the same page with
+the fix switched off: unpatched, the pinned message does not move and its button never
+arrives; patched, it scrolls away and the button can be reached. A fifth asserts the
+expanded height is identical either way, so the capping detour cannot come back by accident.
 
 ---
 

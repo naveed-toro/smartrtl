@@ -74,17 +74,23 @@
       var composer = cfg.composer || null;
 
       /* ---------------------------------------------------------------
-         One stylesheet, written once. The second rule is the safety rule:
-         a block explicitly marked ltr stays ltr even inside an rtl message.
+         One stylesheet, written once.
+
+         :is() is load-bearing here, not decoration. An adapter may name a block
+         with a complex selector - "the content div inside an expandable
+         container" - and inside :is() that selector is matched against the block
+         itself, independently of where the decided box sits. Concatenating the
+         two instead would demand that the container be found BELOW the box, and
+         it is usually above it: the rule then matches nothing, silently.
       --------------------------------------------------------------- */
       var css =
         '[data-bidi="rtl"] :is(' + BLOCKS + '){direction:rtl!important;unicode-bidi:isolate!important}' +
+        // the safety rule: a block with no RTL in it keeps what it had
         '[data-bidi="rtl"] :is(' + BLOCKS + ')[data-bidi="ltr"]{direction:ltr!important;unicode-bidi:isolate!important}' +
-        // A page may hand a run of text to the browser's own guess with dir="auto" - which is
-        // the same first-strong-character rule this whole project exists to replace. Inside a
-        // block we have already decided, that guess must not get a second vote, so such a run
-        // is told to inherit the decision instead. It is left isolated, so a genuinely
-        // separate run is still bounded rather than merged into its neighbours.
+        // A page may hand a run of text to the browser's own guess with dir="auto" -
+        // the same first-strong-character rule this whole project exists to replace.
+        // Inside a block we have already decided, that guess must not get a second
+        // vote, so such a run is told to inherit the decision instead.
         '[data-bidi="rtl"] :is(' + BLOCKS + ') [dir="auto"]{direction:inherit!important;unicode-bidi:isolate!important}';
 
       if (composer && composer.layers && composer.layers.length) {

@@ -16,7 +16,7 @@
  */
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { open, userMessage } = require("./support/page.js");
+const { open, userMessage, turn } = require("./support/page.js");
 
 const MIXED = "npm install کے بعد پروجیکٹ چلائیں اور نتیجہ دیکھیں";
 const LONG = Array.from({ length: 60 }, (_, i) => `یہ لمبے پیغام کی سطر نمبر ${i + 1} ہے۔`).join("\n");
@@ -66,36 +66,77 @@ test("the expand button on a collapsed message is not moved either", async () =>
   } finally { await off.close(); await on.close(); }
 });
 
-test("an expanded long message is bounded, and scrolls inside itself", async () => {
-  const { page, close } = await open(userMessage(LONG), { height: 600 });
-  try {
-    const r = await page.$eval(".content_x", (el) => ({
-      client: el.clientHeight, scroll: el.scrollHeight, overflow: getComputedStyle(el).overflowY
-    }));
-    assert.equal(r.overflow, "auto", "the message should carry its own scrollbar");
-    assert.ok(r.scroll > r.client, "and there should be something to scroll");
-    assert.ok(r.client <= 600, `it must not be taller than the panel (was ${r.client})`);
+/* ------------------------------------------------------------------------
+   The pinning.
 
-    // the point of all of it: its own control stays on screen
-    const btn = await boxOf(page, ".collapseButton_x");
-    assert.ok(btn.y < 600, `"Show less" should stay in view (was at y=${btn.y})`);
+   A turn header is position:sticky, top:0. Collapsed that is 60px of question
+   held above a long answer, which is the point. Expanded it has no height cap,
+   and a pinned element taller than the window can never show its own bottom -
+   so "Show less" is unreachable and the wheel scrolls the conversation behind
+   it instead. Every one of these measures the fix against the same page with
+   the fix switched off, so none of them can pass by accident.
+------------------------------------------------------------------------- */
+
+const scrollBy = (page, y) => page.$eval("#scroller", (el, y) => { el.scrollTop = y; }, y);
+const topOf = (page, sel) => page.$eval(sel, (el) =>
+  Math.round(el.getBoundingClientRect().top - document.getElementById("scroller").getBoundingClientRect().top));
+
+test("unpatched, a pinned expanded message never moves and its button never arrives", async () => {
+  const { page, close } = await open(turn(userMessage(LONG)), { height: 700, fix: false });
+  try {
+    await scrollBy(page, 400);
+    assert.ok(await topOf(page, ".message_x.stickyHeader_x") >= -1,
+      "the pinned message should still be stuck to the top");
+    assert.ok(await topOf(page, ".collapseButton_x") > 600,
+      '"Show less" should still be below the fold');
   } finally { await close(); }
 });
 
-test("a short expanded message is not capped at all", async () => {
-  const { page, close } = await open(userMessage(MIXED), { height: 600 });
+test("an expanded message stops being pinned, so you can scroll to its end", async () => {
+  const { page, close } = await open(turn(userMessage(LONG)), { height: 700 });
   try {
-    const r = await page.$eval(".content_x", (el) => ({ client: el.clientHeight, scroll: el.scrollHeight }));
-    assert.equal(r.client, r.scroll, "a message that fits should have nothing to scroll");
+    await scrollBy(page, 400);
+    assert.ok(await topOf(page, ".message_x.stickyHeader_x") < -300,
+      "the message should scroll away like ordinary content, not stay pinned");
+
+    // and its own control can therefore be reached, which is the whole point
+    const target = await page.$eval(".collapseButton_x", (el) => {
+      const sc = document.getElementById("scroller");
+      return el.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop - 200;
+    });
+    await scrollBy(page, target);
+    const seen = await topOf(page, ".collapseButton_x");
+    assert.ok(seen >= 0 && seen < 600, `"Show less" should be in view (was at ${seen})`);
   } finally { await close(); }
 });
 
-test("an unbounded message is what the fix is measured against", async () => {
-  // Without the fix the same message is thousands of pixels tall and its button is
-  // far below the fold. If this ever stops being true, the fix is no longer needed.
-  const { page, close } = await open(userMessage(LONG), { height: 600, fix: false });
+test("a collapsed message is still pinned - that part was never broken", async () => {
+  const { page, close } = await open(turn(userMessage(LONG, { expanded: false })), { height: 700 });
   try {
-    const btn = await boxOf(page, ".collapseButton_x");
-    assert.ok(btn.y > 600, `unpatched, "Show less" should be below the fold (was y=${btn.y})`);
+    await scrollBy(page, 400);
+    assert.ok(await topOf(page, ".message_x.stickyHeader_x") >= -1,
+      "collapsed, the question must keep hanging above its answer");
   } finally { await close(); }
+});
+
+test("a short message is still pinned, expanded or not", async () => {
+  // It has no collapse row, so it is not an expanded message and must not be unpinned.
+  const { page, close } = await open(turn(userMessage(MIXED, { expanded: true })), { height: 700 });
+  try {
+    await page.$eval(".expandableContainer_x [class*=buttonContainer]", (el) => el.remove());
+    await scrollBy(page, 400);
+    assert.ok(await topOf(page, ".message_x.stickyHeader_x") >= -1,
+      "a short question must keep hanging above its answer");
+  } finally { await close(); }
+});
+
+test("nothing is capped - the message opens to its full length", async () => {
+  // How much of a window a message may take is not ours to decide; it differs on
+  // a laptop and on an external display. Height must match the unpatched page.
+  const off = await open(turn(userMessage(LONG)), { height: 700, fix: false });
+  const on = await open(turn(userMessage(LONG)), { height: 700 });
+  try {
+    const h = (p) => p.$eval(".content_x", (el) => Math.round(el.getBoundingClientRect().height));
+    assert.equal(await h(on.page), await h(off.page), "the expanded body must not be capped");
+  } finally { await off.close(); await on.close(); }
 });

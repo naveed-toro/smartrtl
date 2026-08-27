@@ -25,8 +25,16 @@ body{margin:0;padding:16px;background:#faf9f7;font-family:system-ui,sans-serif;f
 
 .root pre{direction:ltr}
 
-/* ---- copied from the extension's webview/index.css: the expandable wrapper
-        every USER message is rendered inside (it collapses at 60px) ---- */
+/* ---- copied from the extension's webview/index.css: the scroll container, the
+        turn, and the pinned header every USER message is rendered as ---- */
+.messagesContainer_x{overflow-y:auto;overflow-x:hidden;display:flex;position:relative;flex-direction:column;flex:1;gap:0;min-width:0;padding:20px 20px 40px}
+.turn_x{display:flex;flex-direction:column}
+.message_x{display:flex;position:relative;flex-direction:column;align-items:flex-start;gap:0;padding:8px 0}
+.message_x.stickyHeader_x{position:sticky;z-index:2;background:#faf9f7;align-items:stretch;padding-top:14px;padding-bottom:12px;top:0}
+.userMessageContainer_x{display:block;width:100%;position:relative;margin:4px 0}
+.userMessage_x{white-space:pre-wrap;word-break:break-word;border:1px solid #ddd;border-radius:6px;background:#f2f1ee;display:block;overflow-x:hidden;overflow-y:hidden;max-width:none;padding:4px 6px}
+
+/* ---- the expandable wrapper every USER message is rendered inside ---- */
 .expandableContainer_x{display:flex;position:relative;flex-direction:column;gap:4px;max-width:fit-content}
 .content_x{white-space:pre-wrap;word-break:break-word;overflow-x:hidden;overflow-y:hidden;transition:max-height .3s ease-in-out}
 .content_x.collapsed_x{position:relative}
@@ -67,18 +75,35 @@ async function open(html, { width = 900, height = 700, fix = true } = {}) {
 
 /**
  * One USER message, as the extension nests it: the text is a bare span carrying
- * the browser's own dir="auto" guess - not a paragraph, not any block.
+ * the browser's own dir="auto" guess - not a paragraph, not any block - and the
+ * whole row is pinned to the top of its turn with position: sticky.
  */
-const userMessage = (text, { expanded = true } = {}) => `
-<div class="message timelineMessage_x"><div class="expandableContainer_x">
-  <div class="contentWrapper_x">
-    <div class="content_x${expanded ? "" : " collapsed_x"}"${expanded ? "" : ' style="max-height:60px"'}>
-      <span dir="auto">${text}</span>
+const userMessage = (text, { expanded = true, sticky = true } = {}) => `
+<div class="message_x${sticky ? " stickyHeader_x" : ""} timelineMessage_x"><div class="userMessageContainer_x"><div class="userMessage_x">
+  <div class="expandableContainer_x">
+    <div class="contentWrapper_x">
+      <div class="content_x${expanded ? "" : " collapsed_x"}"${expanded ? "" : ' style="max-height:60px"'}>
+        <span dir="auto">${text}</span>
+      </div>
+      ${expanded ? "" : '<div class="buttonContainer_x"><button class="expandButton_x">Show more</button></div>'}
     </div>
-    ${expanded ? "" : '<div class="buttonContainer_x"><button class="expandButton_x">Show more</button></div>'}
+    ${expanded ? '<div class="buttonContainer_x"><button class="collapseButton_x">Show less</button></div>' : ""}
   </div>
-  ${expanded ? '<div class="buttonContainer_x"><button class="collapseButton_x">Show less</button></div>' : ""}
-</div></div>`;
+</div></div></div>`;
+
+/**
+ * A whole turn inside the scroll container the extension uses: a pinned user
+ * message, then an answer long enough that there is something to scroll past.
+ */
+const turn = (userHtml, answerLines = 80) => `
+<div class="messagesContainer_x" id="scroller" style="height:600px">
+  <div class="turn_x">
+    ${userHtml}
+    <div class="message_x"><div class="root">${
+      Array.from({ length: answerLines }, (_, i) => `<p>answer line ${i + 1}</p>`).join("")
+    }</div></div>
+  </div>
+</div>`;
 
 /** One assistant message, as the extension nests it. */
 const message = (inner) => `<div class="message timelineMessage_x"><div class="root">${inner}</div></div>`;
@@ -106,4 +131,4 @@ async function directions(page, selector = "p,li,h1,h2,h3,h4,h5,h6,td,th") {
   }, [selector, READ_DIRECTION]);
 }
 
-module.exports = { open, message, userMessage, directions, CSS };
+module.exports = { open, message, userMessage, turn, directions, CSS };
