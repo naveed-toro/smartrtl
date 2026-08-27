@@ -26,6 +26,16 @@
  *
  *   One safety rule survives: a block with NO RTL character at all is never touched.
  *
+ * Two things about this webview that no other page has, and that were found by reading
+ * its own bundle rather than by guessing:
+ *
+ *   - an ANSWER is markdown, so its text lands in real p / li / h elements. A USER
+ *     MESSAGE is not: it renders through a plainText path as a bare
+ *     <span dir="auto"> inside a content div. Nothing there is a block, so the engine
+ *     could not see user messages at all, whatever they said.
+ *   - a user message is wrapped in an expandable container that collapses at 60px and,
+ *     once expanded, carries no height cap at all.
+ *
  * Never touches code blocks, and never changes any text. Escape hatch:
  * run  __bidiFixOff()  in the webview console to neutralise it live.
  */
@@ -33,6 +43,9 @@
   "use strict";
   try {
     var EXP_BOX = '[class*="expandableContainer_"]';
+    var WRAP = '[class*="contentWrapper_"]';
+    var BODY = '[class*="content_"]';        // the text of one user message
+    var COLLAPSED = '[class*="collapsed_"]';
     var IN_BOX = '[class*="messageInputContainer_"]';
     var IN_TXT = '[class*="messageInput_"]';
     var IN_MIR = '[class*="mentionMirror_"]';
@@ -41,7 +54,7 @@
     /* Each of these can be turned off on its own without touching anything else. */
     var MIRROR_TIMELINE = true;   // put a message's dot on the side it reads from
     var MIRROR_INPUT = true;      // flip the box you type in
-    var FIX_LONG_MESSAGE = true;  // keep "Show less" reachable on a long message
+    var BOUND_LONG_MESSAGE = true;// stop an expanded message from swallowing the panel
 
     /* ------------------------------------------------------------------
        OPTIONAL: put each message's timeline dot on the side that message reads from.
@@ -105,38 +118,26 @@
     }
 
     /* ------------------------------------------------------------------
-       Collapsing a long message used to throw you somewhere else: the block
-       shrinks by thousands of pixels while the scroll offset stays where it was.
-       Pin the message's own top instead, so collapsing brings you back to it.
+       A user message collapses at 60px and, once expanded, carries no height cap
+       at all - so a long pasted message becomes thousands of pixels tall, its own
+       "Show less" ends up far below the fold, and the wheel scrolls the whole
+       conversation because the message itself has nothing to scroll.
 
-       The sticky rule that keeps "Show less" on screen is handed to the engine as
-       extraCss below; this is the other half, the part that needs an event.
+       This is not an RTL problem. It happens to everyone, in every language.
+
+       An earlier attempt pinned the button with position:sticky. That was the
+       wrong place: it moved a control the extension had put somewhere on purpose,
+       and it treated the symptom. The message is what is unbounded, so the message
+       is what gets bounded - and the button then stays exactly where it always was,
+       directly beneath it.
+
+       Only the EXPANDED body is touched. Collapsed keeps the extension's own 60px
+       cap, and a short message that fits under the ceiling is not affected at all,
+       because max-height only bites what is taller than it.
     ------------------------------------------------------------------ */
-    function anchorOnCollapse(e) {
-      if (!FIX_LONG_MESSAGE) return;
-      try {
-        var btn = e.target && e.target.closest ? e.target.closest('[class*="collapseButton_"]') : null;
-        if (!btn) return;
-        var box = btn.closest(EXP_BOX);
-        if (!box) return;
-        var sc = box.parentElement;
-        while (sc && sc !== document.body) {
-          var oy = getComputedStyle(sc).overflowY;
-          if ((oy === "auto" || oy === "scroll") && sc.scrollHeight > sc.clientHeight) break;
-          sc = sc.parentElement;
-        }
-        if (!sc || sc === document.body) return;
-        var scTop = sc.getBoundingClientRect().top;
-        var before = box.getBoundingClientRect().top - scTop;
-        requestAnimationFrame(function () {
-          requestAnimationFrame(function () {
-            var after = box.getBoundingClientRect().top - sc.getBoundingClientRect().top;
-            var target = before < 8 ? 8 : before;   // was it above the fold? bring it just into view
-            sc.scrollTop += (after - target);
-          });
-        });
-      } catch (err) {}
-    }
+    var BOUND_CSS =
+      EXP_BOX + ' ' + WRAP + ' > ' + BODY + ':not(' + COLLAPSED + ')' +
+      '{max-height:60vh;overflow-y:auto}';
 
     /* ------------------------------------------------------------------
        Hand the surface to the engine.
@@ -146,25 +147,26 @@
        flips them from the container they share, so the caret can never end up on
        one side while the glyph sits on the other.
 
-       Only a DIRECT child of the expandable container is the collapse row; the
-       expand row sits deeper, inside the content wrapper.
+       A user message's text is not a block - it is a bare span - so the body div
+       that holds it is named as one. Without this the engine cannot see a user
+       message at all, however much RTL is in it.
+
+       boxSelector names the smallest thing that counts as "one message". An answer
+       has a markdown root; a user message does not, so its content wrapper is named
+       too. Both stop short of the buttons, which are siblings, so a decision can
+       never reach them.
     ------------------------------------------------------------------ */
-    var engine = SmartRTLDom.start(SmartRTL, {
-      boxSelector: '[class*="root"]',
+    SmartRTLDom.start(SmartRTL, {
+      blocks: SmartRTLDom.DEFAULT_BLOCKS + ',' + EXP_BOX + ' ' + BODY,
+      boxSelector: '[class*="root"],' + WRAP,
       composer: MIRROR_INPUT ? { container: IN_BOX, layers: [IN_TXT, IN_MIR], probe: IN_TXT } : null,
-      extraCss: FIX_LONG_MESSAGE
-        ? EXP_BOX + ' > [class*="buttonContainer_"]{position:sticky;bottom:8px;z-index:2}'
-        : "",
+      extraCss: BOUND_LONG_MESSAGE ? BOUND_CSS : "",
       onDecision: function (block) {
         mirrorTimeline();   // measure + install, once, before any row is marked
         markRow(block);     // this row's dot belongs on the right
       },
       onCleanup: undoTimeline
     });
-
-    // start() answers null if a copy is already running, so a second injection
-    // cannot stack a second listener on top of the first.
-    if (engine && FIX_LONG_MESSAGE) document.addEventListener("click", anchorOnCollapse, true);
   } catch (e) { /* never break the webview */ }
 })();
 /* ==== smart-rtl-direction patch END ==== */

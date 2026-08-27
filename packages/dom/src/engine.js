@@ -79,7 +79,13 @@
       --------------------------------------------------------------- */
       var css =
         '[data-bidi="rtl"] :is(' + BLOCKS + '){direction:rtl!important;unicode-bidi:isolate!important}' +
-        '[data-bidi="rtl"] :is(' + BLOCKS + ')[data-bidi="ltr"]{direction:ltr!important;unicode-bidi:isolate!important}';
+        '[data-bidi="rtl"] :is(' + BLOCKS + ')[data-bidi="ltr"]{direction:ltr!important;unicode-bidi:isolate!important}' +
+        // A page may hand a run of text to the browser's own guess with dir="auto" - which is
+        // the same first-strong-character rule this whole project exists to replace. Inside a
+        // block we have already decided, that guess must not get a second vote, so such a run
+        // is told to inherit the decision instead. It is left isolated, so a genuinely
+        // separate run is still bounded rather than merged into its neighbours.
+        '[data-bidi="rtl"] :is(' + BLOCKS + ') [dir="auto"]{direction:inherit!important;unicode-bidi:isolate!important}';
 
       if (composer && composer.layers && composer.layers.length) {
         // The flag goes on the container the layers share, so one rule flips all of

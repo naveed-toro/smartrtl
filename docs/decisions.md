@@ -255,9 +255,32 @@ somewhere else entirely - often at the bottom of the conversation.
 **Rejected fix:** cap the expanded height and scroll inside the block. It works, but it breaks
 text selection across messages and introduces nested scrolling.
 
-**Chosen fix:** make the collapse row `position: sticky` so it rides at the bottom of the
-viewport, and pin the message's own top on collapse so you land back on it. Text stays in
-normal flow, selection is unaffected, no nested scroll.
+**First fix, and it was wrong:** make the collapse row `position: sticky` so it rides at the
+bottom of the viewport, and pin the message's own top on collapse so you land back on it.
+
+The first live run killed it. Sticky moves a control the extension had placed deliberately -
+`justify-content: flex-end` on its own flex row - and the whole project's claim is that it
+does not disturb what was already fine. Worse, it treated the symptom. The button is not
+what is broken; the message is. Nothing is unbounded except the expanded body, so that is
+what gets a bound:
+
+```css
+expandableContainer contentWrapper > content:not(.collapsed) { max-height:60vh; overflow-y:auto }
+```
+
+The button then stays exactly where it always was, directly beneath a body that can no
+longer run off the screen, and the collapse-anchoring code is not needed at all - the block
+never grows by thousands of pixels, so collapsing cannot throw you anywhere.
+
+Only the expanded body is touched. Collapsed keeps the extension's own 60px cap, and a
+message shorter than the ceiling is untouched, because `max-height` only bites what is
+taller than it. Nested scrolling was rejected above on the grounds that it breaks selection
+across messages; measured, it does not - dragging a selection past the edge auto-scrolls, as
+it does in any scrollable block.
+
+Two tests hold this now, and both measure against the same page with the fix switched off
+rather than against a number: the collapse button and the expand button must land on the
+same pixel either way.
 
 ---
 
@@ -318,3 +341,41 @@ whole proof, and it is why they were written before this refactor rather than af
 One deliberate change came with the move: `__bidiFixOff()` now disconnects the observer.
 Before, it removed the stylesheet and the attributes but left the engine running, so a block
 arriving afterwards was marked again by something the user had just switched off.
+
+
+---
+
+## 13. What the first live run found: a user message is not markdown
+
+The extension was packaged, installed, and pointed at a real working session. Answers were
+right. User messages were not touched at all - the ones that looked correct were the ones
+that happened to begin with an RTL character, where the browser's own guess lands right by
+luck.
+
+The screenshots suggested attachments were the trigger. They were not. Reading
+`webview/index.js` gave the real answer in one line:
+
+```js
+function Zw1({ text, context }) { return j("span", { dir: "auto", children: ... }) }
+```
+
+An **answer** goes through the markdown renderer, so its text arrives in real `p`, `li` and
+`h` elements. A **user message** goes through a plainText path and comes out as a bare
+`<span dir="auto">` inside a content div. Nothing in it is a block, so the engine - which
+looks only at blocks - could not see a user message at all, whatever it said. Attachments
+are a sibling div rendered before it, and never mattered.
+
+`dir="auto"` is itself the first-strong-character rule. The bug this project exists to fix
+is applied here by the extension, explicitly, in the one place the fix could not reach.
+
+Two changes, at two different levels, on purpose:
+
+- **in the adapter**, because it is a fact about this product: the content div is named as a
+  block, and as the scope of one message.
+- **in the engine**, because it is not: inside a block whose direction has already been
+  decided, any `[dir="auto"]` descendant is told to `inherit` that decision. The browser's
+  guess does not get a second vote. Any surface that hands a run of text to `dir="auto"` -
+  and chat sites do it constantly - gets this for free.
+
+The lesson worth keeping: three days of screenshots would not have found this, and ten
+minutes of reading the bundle did. When a guest fix does not fire, read the host.

@@ -2,7 +2,7 @@
   "name": "claude-code-rtl",
   "displayName": "SmartRTL for Claude Code",
   "description": "Fixes right-to-left text (Urdu, Arabic, Hebrew, Persian) in the Claude Code panel.",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "publisher": "smartrtl",
   "license": "MIT",
   "repository": {
