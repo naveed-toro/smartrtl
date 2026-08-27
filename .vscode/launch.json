@@ -5,7 +5,7 @@
       "name": "Run SmartRTL for Claude Code",
       "type": "extensionHost",
       "request": "launch",
-      "args": ["--extensionDevelopmentPath=${workspaceFolder}/packages/vscode-claude"],
+      "args": ["--extensionDevelopmentPath=${workspaceFolder}/apps/vscode-claude"],
       "preLaunchTask": "build payload"
     }
   ]

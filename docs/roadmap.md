@@ -18,7 +18,19 @@ built in, and why. The reasoning behind the rule and the design is in
 adapter           the product  what this particular page looks like
 ```
 
-Two rules keep it that way:
+On disk that is two folders, and the names carry a rule:
+
+```
+packages/   the shared halves. A library, with no product anywhere in it.
+apps/       one folder per surface that ships to somebody.
+```
+
+An `app` may depend on a `package`. A `package` may never depend on an `app` - the day it
+does, something product-shaped has been built into the shared half, and every other surface
+inherits it. The folder names are there so that a violation is visible without reading any
+code.
+
+Two more rules keep it that way:
 
 - **No adapter contains rule logic.** If an adapter needs to know what counts as RTL, it
   asks core. Nothing else may decide.

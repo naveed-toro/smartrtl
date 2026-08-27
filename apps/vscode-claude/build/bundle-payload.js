@@ -19,8 +19,8 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const root = path.resolve(__dirname, "..");
-const corePath = path.resolve(root, "../core/src/direction.js");
-const domPath = path.resolve(root, "../dom/src/engine.js");
+const corePath = path.resolve(root, "../../packages/core/src/direction.js");
+const domPath = path.resolve(root, "../../packages/dom/src/engine.js");
 const payloadPath = path.join(root, "src/injected/payload.js");
 const outPath = path.join(root, "dist/payload.js");
 

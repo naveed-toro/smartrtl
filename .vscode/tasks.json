@@ -5,7 +5,7 @@
       "label": "build payload",
       "type": "shell",
       "command": "node build/bundle-payload.js",
-      "options": { "cwd": "${workspaceFolder}/packages/vscode-claude" },
+      "options": { "cwd": "${workspaceFolder}/apps/vscode-claude" },
       "problemMatcher": [],
       "presentation": { "reveal": "silent", "panel": "shared" }
     }

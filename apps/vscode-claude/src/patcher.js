@@ -37,7 +37,7 @@ function findClaudeCode() {
 function readPayload(extensionPath) {
   const p = path.join(extensionPath, "dist", "payload.js");
   if (!fs.existsSync(p)) {
-    throw new Error("dist/payload.js is missing - run `npm run build` in packages/vscode-claude");
+    throw new Error("dist/payload.js is missing - run `npm run build` in apps/vscode-claude");
   }
   const payload = fs.readFileSync(p, "utf8").trimEnd();
   if (!payload.includes(BEGIN)) throw new Error("dist/payload.js has no BEGIN marker; refusing to use it");
