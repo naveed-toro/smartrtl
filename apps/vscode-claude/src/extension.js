@@ -32,11 +32,37 @@ const patcher = require("./patcher.js");
 const ON_KEY = "smartrtl.on";          // remembered across restarts
 const CONTEXT_KEY = "smartrtl.active"; // drives which command is offered
 const SEEN_KEY = "smartrtl.introShown";
+const OFF_AT_KEY = "smartrtl.offAtVersion";   // which build was running when it was turned off
 
 let log, status;
 let lastSeen = null;                   // { dir, version } of the Claude Code we last patched
 
 const wantedOn = (ctx) => ctx.globalState.get(ON_KEY, true);
+const version = (ctx) => (ctx.extension && ctx.extension.packageJSON && ctx.extension.packageJSON.version) || "?";
+
+/**
+ * Off is remembered, and that remembering survives an uninstall - VS Code keeps an
+ * extension's global state and hands it back when it is installed again. Which means
+ * somebody can follow this extension's own advice (turn the fix off before removing
+ * it), install it again months later, and get an extension that does nothing at all
+ * and says nothing about why. We wrote that trap ourselves.
+ *
+ * Guessing their intent from the version number would be worse. So it asks - once, at
+ * the only moment it matters: a build that is not the one they turned off, arriving to
+ * find the fix off.
+ */
+function askIfStillOff(ctx) {
+  if (wantedOn(ctx)) return;
+  if (ctx.globalState.get(OFF_AT_KEY) === version(ctx)) return;   // same build, already answered
+
+  vscode.window.showInformationMessage(
+    "SmartRTL is installed but the right-to-left fix is turned off.",
+    "Turn it on", "Keep it off"
+  ).then((choice) => {
+    if (choice === "Turn it on") turnOn(ctx);
+    else if (choice === "Keep it off") ctx.globalState.update(OFF_AT_KEY, version(ctx));
+  });
+}
 const autoApply = () => vscode.workspace.getConfiguration("smartrtl").get("autoApply", true);
 
 function offerReload(message) {
@@ -94,6 +120,7 @@ function refresh(ctx) {
 
 function turnOn(ctx) {
   ctx.globalState.update(ON_KEY, true);
+  ctx.globalState.update(OFF_AT_KEY, undefined);
   const result = patcher.apply(ctx.extensionPath);
   refresh(ctx);
   if (result.state === "no-target") {
@@ -107,6 +134,7 @@ function turnOn(ctx) {
 
 function turnOff(ctx) {
   ctx.globalState.update(ON_KEY, false);
+  ctx.globalState.update(OFF_AT_KEY, version(ctx));
   const result = patcher.remove();
   refresh(ctx);
   if (result.state === "no-target") {
@@ -189,6 +217,9 @@ function activate(context) {
 
   // chance one: Claude Code was updated while the editor was closed
   syncQuietly(context, "startup");
+
+  // and never sit there silently doing nothing because of a switch flipped long ago
+  askIfStillOff(context);
 
   // chance two: it happens while the editor is open. onDidChange also fires for any
   // other extension being installed, so only act when the copy of Claude Code we are
