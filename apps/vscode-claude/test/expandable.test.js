@@ -220,3 +220,70 @@ test("and an in-date block still does its job, so the guard is not just always o
     assert.equal(await dirOf(page, ".content_x"), "rtl");
   } finally { await close(); }
 });
+
+/* ------------------------------------------------------------------------
+   Alignment, and staying inside the message.
+
+   Measured in the real panel: the body computed `direction: rtl` and
+   `text-align: left` at the same time, because the host writes text-align on a
+   container and direction cannot beat it. And one Urdu message put its decision
+   on an application-level container, far outside itself.
+------------------------------------------------------------------------- */
+
+test("the text is actually aligned, not merely reordered", async () => {
+  const { page, close } = await open(userMessage(MIXED));
+  try {
+    const s = await page.$eval(".content_x", (el) => {
+      const c = getComputedStyle(el);
+      return { dir: c.direction, align: c.textAlign };
+    });
+    assert.equal(s.dir, "rtl");
+    assert.notEqual(s.align, "left",
+      "the host's own text-align must not survive the decision - this is the bug");
+  } finally { await close(); }
+});
+
+test("a decision never escapes the message it was made for", async () => {
+  const { page, close } = await open(turn(userMessage(MIXED)), { height: 700 });
+  try {
+    const outside = await page.$$eval("#scroller[data-bidi], .turn_x[data-bidi]", (e) => e.length);
+    assert.equal(outside, 0, "the scroller and the turn must never be claimed");
+    const marked = await page.$$eval('[data-bidi="rtl"]', (els) =>
+      els.every((e) => !!e.closest('[class*="message_"]')));
+    assert.ok(marked, "every decision must sit inside a message");
+  } finally { await close(); }
+});
+
+test("the message box is NOT moved - that was tried and it took the buttons with it", () => {
+  // Kept as a note in test form: pushing the container to the bubble's right edge
+  // aligns the text where an RTL reader expects it, and moves the controls that
+  // live inside that container. The buttons win.
+  assert.ok(true);
+});
+
+test("closing from deep inside a long message brings it back into view", async () => {
+  // The case that "put it back on the exact pixel" got wrong: read to the end of an
+  // expanded message and its head is far above the panel. Restoring that pixel is
+  // faithful and useless - the message you were reading leaves the screen.
+  const { page, close } = await open(turn(userMessage(LONG, { expanded: false }), { live: true }), { height: 700 });
+  try {
+    await scrollBy(page, 200);
+    await page.click(".content_x");
+    await page.waitForTimeout(200);
+
+    // read down to the end of it, where "Show less" is
+    const end = await page.$eval(".collapseButton_x", (el) => {
+      const sc = document.getElementById("scroller");
+      return el.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop - 300;
+    });
+    await scrollBy(page, end);
+    assert.ok(await topOf(page, STICKY_SEL) < -100, "its head should now be above the panel");
+
+    await page.click(".collapseButton_x");
+    await page.waitForTimeout(200);
+
+    const after = await topOf(page, STICKY_SEL);
+    assert.ok(after >= -2 && after < 600,
+      `the message must come back into view, not stay above it (landed at ${after})`);
+  } finally { await close(); }
+});

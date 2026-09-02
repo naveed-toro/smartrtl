@@ -156,6 +156,23 @@
     var UNPIN_CSS = STICKY + ":has(" + EXP_BOX + " > " + BTN_ROW + "){position:static}";
 
     /* ------------------------------------------------------------------
+       NOT DONE, on purpose.
+
+       The body shrinks to fit its longest line - measured at 275px inside a 704px
+       bubble - and sits against the bubble's left edge, because that is where a
+       left-to-right design puts it. Pushing a decided message's box to the other
+       edge was written, and the button tests failed instantly: the controls live
+       inside that container and moved with it.
+
+       Moving a control the extension placed is the one thing this fix does not do.
+       And it is a smaller loss than it looks: the container is exactly as wide as
+       its longest line, so right-aligning inside it aligns every line to that
+       line's end - the block reads correctly as a block. It simply sits on the
+       left of a wider bubble, which is where their own layout puts it in English
+       too.
+    ------------------------------------------------------------------ */
+
+    /* ------------------------------------------------------------------
        Unpinning alone is half a fix, and the other half only shows up when you
        are NOT at the top of the conversation.
 
@@ -194,14 +211,21 @@
         if (!scroller) return;
 
         var wasCollapsed = !!box.querySelector('[class*="collapsed_"]');
+        var panel = scroller.getBoundingClientRect();
         var wasAt = header.getBoundingClientRect().top;
+
+        // "Put it back where it was" is only right while it WAS somewhere you could
+        // see. Read to the end of an expanded message and its head is far above the
+        // panel; restoring that pixel faithfully puts the message you were reading
+        // back off the top of the screen, which is what it did. So the target is
+        // clamped to the visible band: seen, it does not move; unseen, it comes to
+        // the edge you were about to look at.
+        var target = Math.min(Math.max(wasAt, panel.top), panel.bottom - 40);
+
         requestAnimationFrame(function () {
           requestAnimationFrame(function () {
             if (!!box.querySelector('[class*="collapsed_"]') === wasCollapsed) return;
-            // back to the exact pixel it occupied before the click. Not "the top
-            // of the panel" - that would assume where the pin puts it, and the
-            // container's own padding already makes that a guess.
-            var drift = header.getBoundingClientRect().top - wasAt;
+            var drift = header.getBoundingClientRect().top - target;
             if (drift) scroller.scrollTop += drift;
           });
         });
@@ -229,6 +253,7 @@
       blocks: SmartRTLDom.DEFAULT_BLOCKS + ',' + EXP_BOX + ' ' + BODY,
       boxSelector: '[class*="root"],' + WRAP,
       composer: MIRROR_INPUT ? { container: IN_BOX, layers: [IN_TXT, IN_MIR], probe: IN_TXT } : null,
+      boundary: '[class*="message_"]',
       extraCss: UNPIN_EXPANDED ? UNPIN_CSS : "",
       onDecision: function (block) {
         mirrorTimeline();   // measure + install, once, before any row is marked
