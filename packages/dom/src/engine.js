@@ -84,9 +84,14 @@
          it is usually above it: the rule then matches nothing, silently.
       --------------------------------------------------------------- */
       var css =
-        '[data-bidi="rtl"] :is(' + BLOCKS + '){direction:rtl!important;unicode-bidi:isolate!important}' +
+        // text-align is not optional here. A host that writes `text-align: left` on a
+        // container - and they do - beats direction entirely: the words come out in the
+        // right order and every line still hugs the left edge. `start` is the honest
+        // value, because it follows whatever direction we just decided rather than
+        // naming a side.
+        '[data-bidi="rtl"] :is(' + BLOCKS + '){direction:rtl!important;text-align:start!important;unicode-bidi:isolate!important}' +
         // the safety rule: a block with no RTL in it keeps what it had
-        '[data-bidi="rtl"] :is(' + BLOCKS + ')[data-bidi="ltr"]{direction:ltr!important;unicode-bidi:isolate!important}' +
+        '[data-bidi="rtl"] :is(' + BLOCKS + ')[data-bidi="ltr"]{direction:ltr!important;text-align:start!important;unicode-bidi:isolate!important}' +
         // A page may hand a run of text to the browser's own guess with dir="auto" -
         // the same first-strong-character rule this whole project exists to replace.
         // Inside a block we have already decided, that guess must not get a second
@@ -126,18 +131,29 @@
         return true;
       }
 
+      /**
+       * A decision must never escape the thing it was made for.
+       *
+       * Without a ceiling, a hint selector as loose as [class*="root"] can match an
+       * application-level container, and one message's direction is then applied to
+       * everything on the page. That was measured, not imagined: a single Urdu message
+       * put its decision on the app root.
+       */
       function boxOf(el) {
+        var ceiling = cfg.boundary ? el.closest(cfg.boundary) : null;
+        var inside = function (n) { return n && (!ceiling || ceiling.contains(n)); };
+
         if (BOX_HINT) {
           var byHint = el.closest(BOX_HINT);
-          if (byHint && usable(byHint)) return byHint;
+          if (inside(byHint) && usable(byHint)) return byHint;
         }
         var x = el.parentElement, hops = 0;
         while (x && hops < 5 && x !== document.body && x !== document.documentElement) {
-          if (x.querySelectorAll(BLOCKS).length >= 2 && usable(x)) return x;
+          if (inside(x) && x.querySelectorAll(BLOCKS).length >= 2 && usable(x)) return x;
           x = x.parentElement; hops++;
         }
         var p = el.parentElement;
-        return usable(p) ? p : null;
+        return inside(p) && usable(p) ? p : null;
       }
 
       function inspect(el) {

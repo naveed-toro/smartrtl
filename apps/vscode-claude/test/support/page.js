@@ -31,7 +31,8 @@ body{margin:0;padding:16px;background:#faf9f7;font-family:system-ui,sans-serif;f
 .turn_x{display:flex;flex-direction:column}
 .message_x{display:flex;position:relative;flex-direction:column;align-items:flex-start;gap:0;padding:8px 0}
 .message_x.stickyHeader_x{position:sticky;z-index:2;background:#faf9f7;align-items:stretch;padding-top:14px;padding-bottom:12px;top:0}
-.userMessageContainer_x{display:block;width:100%;position:relative;margin:4px 0}
+/* text-align:left is theirs, and it is what beat direction for a whole day */
+.userMessageContainer_x{display:block;width:100%;position:relative;margin:4px 0;text-align:left}
 .userMessage_x{white-space:pre-wrap;word-break:break-word;border:1px solid #ddd;border-radius:6px;background:#f2f1ee;display:block;overflow-x:hidden;overflow-y:hidden;max-width:none;padding:4px 6px}
 
 /* ---- the expandable wrapper every USER message is rendered inside ---- */
