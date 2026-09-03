@@ -27,18 +27,52 @@
  * would be a lie too.
  */
 const vscode = require("vscode");
+const fs = require("node:fs");
+const path = require("node:path");
 const patcher = require("./patcher.js");
 
 const ON_KEY = "smartrtl.on";          // remembered across restarts
 const CONTEXT_KEY = "smartrtl.active"; // drives which command is offered
 const SEEN_KEY = "smartrtl.introShown";
 const OFF_AT_KEY = "smartrtl.offAtVersion";   // which build was running when it was turned off
+const RAN_KEY = "smartrtl.hasRun";     // set once we have activated at least once
+const MARKER = ".smartrtl-installed";  // lives in our own folder, so it dies with it
 
 let log, status;
 let lastSeen = null;                   // { dir, version } of the Claude Code we last patched
 
 const wantedOn = (ctx) => ctx.globalState.get(ON_KEY, true);
 const version = (ctx) => (ctx.extension && ctx.extension.packageJSON && ctx.extension.packageJSON.version) || "?";
+
+/**
+ * Is this copy newly installed?
+ *
+ * Nothing in the API answers that, so it is read from the one asymmetry the editor
+ * leaves us: global state OUTLIVES an uninstall and the extension's own folder does
+ * not. So a marker goes in the folder, and the fact that we have run goes in global
+ * state. Afterwards the two can disagree in exactly one way - we have run before, and
+ * yet the folder is bare - and that way is a reinstall.
+ *
+ * Version numbers were the first attempt and ask the wrong question: reinstalling the
+ * SAME build is the case this exists for, and no comparison of versions can see it.
+ *
+ * If the marker cannot be written - a read-only or remote install - this answers false
+ * forever rather than true forever. A prompt that never comes is a disappointment; one
+ * that returns at every startup is a fault.
+ *
+ * @returns {boolean} true only when this copy was installed after a previous one left
+ */
+function freshInstall(ctx) {
+  const ranBefore = ctx.globalState.get(RAN_KEY, false);
+  const mark = path.join(ctx.extensionPath, MARKER);
+
+  let marked = false, wrote = false;
+  try { marked = fs.existsSync(mark); } catch (err) {}
+  if (!marked) { try { fs.writeFileSync(mark, ""); wrote = true; } catch (err) {} }
+
+  ctx.globalState.update(RAN_KEY, true);
+  return ranBefore && !marked && wrote;
+}
 
 /**
  * Off is remembered, and that remembering survives an uninstall - VS Code keeps an
@@ -48,12 +82,14 @@ const version = (ctx) => (ctx.extension && ctx.extension.packageJSON && ctx.exte
  * and says nothing about why. We wrote that trap ourselves.
  *
  * Guessing their intent from the version number would be worse. So it asks - once, at
- * the only moment it matters: a build that is not the one they turned off, arriving to
- * find the fix off.
+ * either of the two moments that mean anything: a build that is not the one they turned
+ * off, or a fresh install, arriving to find the fix off. Going to the trouble of
+ * installing this again is itself most of an answer, and that reinstall is usually of
+ * the very same build - where a version comparison sees nothing at all.
  */
-function askIfStillOff(ctx) {
+function askIfStillOff(ctx, fresh) {
   if (wantedOn(ctx)) return;
-  if (ctx.globalState.get(OFF_AT_KEY) === version(ctx)) return;   // same build, already answered
+  if (!fresh && ctx.globalState.get(OFF_AT_KEY) === version(ctx)) return;   // same build, already answered
 
   vscode.window.showInformationMessage(
     "SmartRTL is installed but the right-to-left fix is turned off.",
@@ -219,7 +255,7 @@ function activate(context) {
   syncQuietly(context, "startup");
 
   // and never sit there silently doing nothing because of a switch flipped long ago
-  askIfStillOff(context);
+  askIfStillOff(context, freshInstall(context));
 
   // chance two: it happens while the editor is open. onDidChange also fires for any
   // other extension being installed, so only act when the copy of Claude Code we are
@@ -243,4 +279,7 @@ function activate(context) {
 
 function deactivate() {}
 
-module.exports = { activate, deactivate };
+/* freshInstall and askIfStillOff are exported for the tests. Between them they
+   decide whether somebody is spoken to at startup, and how often - which is not a
+   thing to settle by reading the code and agreeing with yourself. */
+module.exports = { activate, deactivate, freshInstall, askIfStillOff };
