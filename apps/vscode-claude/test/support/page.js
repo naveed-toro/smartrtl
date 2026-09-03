@@ -68,7 +68,7 @@ function payload() {
  */
 async function open(html, { width = 900, height = 700, fix = true, expired = false } = {}) {
   const browser = await chromium.launch();
-  const page = await browser.newPage({ viewportSize: { width, height } });
+  const page = await browser.newPage({ viewport: { width, height } });
   await page.setContent(
     `<!doctype html><meta charset="utf-8"><style>${CSS}</style>${html}` +
     (fix ? `<script>${expired
@@ -89,9 +89,7 @@ const userMessage = (text, { expanded = true, sticky = true } = {}) => `
 <div class="message_x${sticky ? " stickyHeader_x" : ""} timelineMessage_x"><div class="userMessageContainer_x"><div class="userMessage_x">
   <div class="expandableContainer_x">
     <div class="contentWrapper_x">
-      <div class="content_x${expanded ? "" : " collapsed_x"}"${expanded ? "" : ' style="max-height:60px"'}>
-        <span dir="auto">${text}</span>
-      </div>
+      <div class="content_x${expanded ? "" : " collapsed_x"}"${expanded ? "" : ' style="max-height:60px"'}><span dir="auto">${text}</span></div>
       ${expanded ? "" : '<div class="buttonContainer_x"><button class="expandButton_x">Show more</button></div>'}
     </div>
     ${expanded ? '<div class="buttonContainer_x"><button class="collapseButton_x">Show less</button></div>' : ""}
@@ -162,4 +160,9 @@ async function directions(page, selector = "p,li,h1,h2,h3,h4,h5,h6,td,th") {
   }, [selector, READ_DIRECTION]);
 }
 
-module.exports = { open, message, userMessage, turn, directions, CSS };
+/** A user message whose text carries a mention chip, as the extension renders one. */
+const userMessageWithChip = (before, chip, after) => userMessage("").replace(
+  '<span dir="auto"></span>',
+  `<span dir="auto">${before}<span class="mentionChip_x" data-chip="1">${chip}</span>${after}</span>`);
+
+module.exports = { open, message, userMessage, userMessageWithChip, turn, directions, CSS };

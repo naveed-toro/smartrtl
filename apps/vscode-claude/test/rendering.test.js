@@ -107,11 +107,21 @@ test("the composer's two layers can never drift apart", async () => {
     await page.keyboard.type("npm install ");
     await page.keyboard.type("کے بعد پروجیکٹ چلائیں");
     await page.waitForTimeout(200);
-    const r = await page.evaluate(() => {
+    const r = await page.evaluate(async () => {
       const i = document.querySelector(".messageInput_x"), m = document.querySelector(".mentionMirror_x");
+      // this page has no host drawing the mirror, so stand in for one, and let the
+      // fix react to that before anything is measured
       m.textContent = i.textContent;
+      await new Promise((res) => requestAnimationFrame(() => res()));
+      // Where the last character of a layer is drawn. Found by walking to the last
+      // text node rather than assuming the layer's first child IS the text - since
+      // each line became its own element, it is not, and a test that knows the shape
+      // of the DOM stops testing what it was written to test.
       const last = (el) => {
-        const t = el.firstChild, n = t.nodeValue.length, range = document.createRange();
+        const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+        let node, t = null;
+        while ((node = w.nextNode())) if (node.nodeValue.length) t = node;
+        const n = t.nodeValue.length, range = document.createRange();
         range.setStart(t, n - 1); range.setEnd(t, n);
         const b = range.getBoundingClientRect();
         return { x: Math.round(b.left), y: Math.round(b.top) };

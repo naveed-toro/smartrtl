@@ -137,7 +137,9 @@ test("nothing is capped - the message opens to its full length", async () => {
   const on = await open(turn(userMessage(LONG)), { height: 700 });
   try {
     const h = (p) => p.$eval(".content_x", (el) => Math.round(el.getBoundingClientRect().height));
-    assert.equal(await h(on.page), await h(off.page), "the expanded body must not be capped");
+    // not "identical to the pixel" - splitting a message into per-line elements can
+    // change its height by a hair. What must hold is that nothing caps it.
+    assert.ok(await h(on.page) >= await h(off.page), "the expanded body must not be capped");
   } finally { await off.close(); await on.close(); }
 });
 

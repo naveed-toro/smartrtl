@@ -156,6 +156,27 @@
     var UNPIN_CSS = STICKY + ":has(" + EXP_BOX + " > " + BTN_ROW + "){position:static}";
 
     /* ------------------------------------------------------------------
+       NOT DONE, and this one was nearly done twice.
+
+       Right-to-left text starts at the RIGHT edge of the panel, so anything that
+       moves that edge while an answer streams moves text somebody has already read.
+       Measured against Claude Code's own stylesheet, the edge appeared to twitch by
+       about ten pixels, three times, during one ordinary answer - and two fixes were
+       written for it: stretching the markdown root so it stops shrinking to fit, and
+       reserving the scrollbar gutter so the scrollbar stops changing anybody's width.
+
+       Neither shipped, because neither was needed. The twitch was in the test page:
+       a panel that is a fixed box in the real editor had been modelled as an ordinary
+       document, so it grew its own scrollbars and changed width underneath the
+       measurement. Constrained the way the panel is constrained, the answer's edge
+       does not move at all - zero frames, with the fix and without it.
+
+       The record is here rather than in a commit message because a plausible fix for
+       a fault that does not exist is the most expensive kind: it survives review, it
+       ships, and every later oddity gets debugged with it in the way.
+    ------------------------------------------------------------------ */
+
+    /* ------------------------------------------------------------------
        NOT DONE, on purpose.
 
        The body shrinks to fit its longest line - measured at 275px inside a 704px
@@ -252,8 +273,18 @@
     SmartRTLDom.start(SmartRTL, {
       blocks: SmartRTLDom.DEFAULT_BLOCKS + ',' + EXP_BOX + ' ' + BODY,
       boxSelector: '[class*="root"],' + WRAP,
-      composer: MIRROR_INPUT ? { container: IN_BOX, layers: [IN_TXT, IN_MIR], probe: IN_TXT } : null,
+      composer: MIRROR_INPUT ? {
+        container: IN_BOX, layers: [IN_TXT, IN_MIR], probe: IN_TXT,
+        // Each line of what somebody is typing decides for itself, the way each line
+        // of the message decides once it has been sent. Without this, pasting a
+        // command and then writing Urdu under it drags the command along with it.
+        perLine: true
+      } : null,
       boundary: '[class*="message_"]',
+      // A user message is one element with newlines in it, so one decision would
+      // govern every line of it. Split it: somebody writing Urdu and English a line
+      // at a time is the whole reason this exists.
+      perLine: EXP_BOX + ' ' + BODY,
       extraCss: UNPIN_EXPANDED ? UNPIN_CSS : "",
       onDecision: function (block) {
         mirrorTimeline();   // measure + install, once, before any row is marked
