@@ -35,6 +35,10 @@ reached.
 
 The conditions matter. The bug is invisible in a fresh session and obvious in a real one.
 
+**If you would rather just see it:** [see-it-yourself.md](see-it-yourself.md) is the same
+three conditions as one prompt to paste in. It uses no tools, reads and writes nothing,
+and takes about a minute.
+
 1. Start a session and send a **long** message - forty lines is plenty. Anything past the
    60px collapse threshold that is also taller than the panel will do.
 2. Get a **long answer** under it. Asking for the numbers 1 to 150, one per line, is enough

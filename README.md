@@ -86,6 +86,7 @@ rule, and every wrong turn is written down rather than quietly dropped.
 | [docs/roadmap.md](docs/roadmap.md) | what a new surface has to provide, the four rules an adapter obeys, and what order the rest gets built in |
 | [docs/claude-code-bug.md](docs/claude-code-bug.md) | the Claude Code bug on its own terms, with no RTL attached |
 | [docs/issue-to-file.md](docs/issue-to-file.md) | the same, cut down to something that can be pasted into a public tracker |
+| [docs/see-it-yourself.md](docs/see-it-yourself.md) | one prompt to paste into Claude Code that puts the bug in front of your own eyes in about a minute |
 | [docs/launch-note.md](docs/launch-note.md) | what to say when this is published, including what not to claim |
 
 ## The documents

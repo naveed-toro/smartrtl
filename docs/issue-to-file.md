@@ -53,6 +53,8 @@ This is not a language or RTL issue — it behaves identically in English.
 ### Steps to reproduce
 
 The conditions matter — this is invisible in a fresh session and obvious in a real one.
+There is a copy-paste prompt at the end of this issue that sets all three up in about a
+minute, if that is quicker than building them by hand.
 
 1. Send a **long** message — forty lines is plenty. Anything past the collapse threshold
    that is also taller than the panel will do.
@@ -139,6 +141,71 @@ turn the message heads: its top came back to the pixel and the reader still land
 out, because the message's own collapsed height was not quite what it had been. Everything
 under a message moves rigidly when that message grows or shrinks, so restoring one element
 below it restores the whole of what the reader was looking at.
+
+### A prompt that sets it up, if that is quicker
+
+Uses no tools, reads and writes nothing, runs no commands. Send it, then send `ok` twice
+so there is conversation below the turn, then scroll back up to it and click "Show more".
+
+```
+This is a reproduction case for a user-interface bug in the Claude Code panel.
+
+Please answer with plain text only. Do not use any tools, do not read or write
+any files, do not run any commands, and do not search anything. There is nothing
+here that needs them.
+
+This message has to be TALL, because the bug only appears with a long message.
+Lines 01-40 below are filler. They mean nothing. Please ignore them completely.
+
+  01 filler line, ignore
+  02 filler line, ignore
+  03 filler line, ignore
+  04 filler line, ignore
+  05 filler line, ignore
+  06 filler line, ignore
+  07 filler line, ignore
+  08 filler line, ignore
+  09 filler line, ignore
+  10 filler line, ignore
+  11 filler line, ignore
+  12 filler line, ignore
+  13 filler line, ignore
+  14 filler line, ignore
+  15 filler line, ignore
+  16 filler line, ignore
+  17 filler line, ignore
+  18 filler line, ignore
+  19 filler line, ignore
+  20 filler line, ignore
+  21 filler line, ignore
+  22 filler line, ignore
+  23 filler line, ignore
+  24 filler line, ignore
+  25 filler line, ignore
+  26 filler line, ignore
+  27 filler line, ignore
+  28 filler line, ignore
+  29 filler line, ignore
+  30 filler line, ignore
+  31 filler line, ignore
+  32 filler line, ignore
+  33 filler line, ignore
+  34 filler line, ignore
+  35 filler line, ignore
+  36 filler line, ignore
+  37 filler line, ignore
+  38 filler line, ignore
+  39 filler line, ignore
+  40 filler line, ignore
+
+THE ONLY REQUEST: print the numbers 1 to 150, one per line, and nothing else.
+No introduction, no summary, no commentary. Just the 150 lines.
+```
+
+Measured on your own stylesheet: that message is 52 lines and 832px tall expanded, against
+a 420px panel, and the collapse threshold for a user message is `maxHeight: 60` — so there
+is a "Show more" to click and the pinned row is twice the height of what it is pinned
+inside.
 
 ---
 
