@@ -1686,6 +1686,47 @@ the element under the pointer is **replaced** — which is what their renderer d
 re-parses what has arrived so far. The new element is not hovered until the pointer moves
 again, so the fade restarts, over and over.
 
+### It is not the button. It is what is being re-parsed.
+
+Found by using it, not by reading anything: the copy button on a **code block in an
+answer** blinks, and the copy button on a **Bash tool block** does not — during the same
+stream, on the same screen.
+
+That looked at first like two different buttons behaving differently. It is not. Both are
+the same hover-revealed control:
+
+| button | belongs to | hidden until hover? |
+|---|---|---|
+| `copyButton_-a7MRw` | the markdown renderer — a code fence in an answer | yes, `codeBlockWrapper:hover` |
+| `copyButton_F2hEIg` | the Bash tool — its command row | yes, `inputRow:hover` |
+| `copyButton_Eg8KCQ` | the sign-in panel | no, always visible |
+
+So the difference cannot be the button, and the measurement above already says what it is:
+**replaced → 27 blinks, not replaced → 0.** The markdown of an answer is re-parsed on every
+chunk, so anything inside it is rebuilt; a tool block's command is settled the moment the
+call is made and only its output grows underneath.
+
+That is worth more to whoever fixes it than the blink itself, because it says where to
+look. The fault is not in a button. It is that **re-parsing the whole partial answer
+replaces elements a person may be pointing at** — and the copy button is simply the one
+place where a replaced element is visibly different from the one it replaced.
+
+### And the copy button is not the worst of it
+
+If elements are being replaced under the reader, then a reader who is SELECTING TEXT
+while an answer streams should lose the selection the same way. That was a guess, so it
+was measured before it was written down anywhere:
+
+| what happens to the block | the selection |
+|---|---|
+| replaced, as the re-parse does | **lost entirely** |
+| text only appended below it, control | kept |
+
+So: **highlight a sentence in an answer that is still arriving, and the highlight goes.**
+That is worth more than the blink, costs everybody the same regardless of language, and
+has the same single cause. The copy button is simply the one part of it that is visible
+without trying to do anything.
+
 ### How bad, exactly
 
 The question that decides whether it is worth touching: is it still clickable?

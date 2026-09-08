@@ -151,11 +151,27 @@ flicker for as long as the answer is arriving.
 pure CSS — and the renderer replaces the block as it re-parses, which loses the hover
 state. The new element is not hovered until the pointer moves, so the fade restarts.
 
+**The useful part is where it does NOT happen.** The copy button on a Bash tool block is
+the same kind of hover-revealed control (`.inputRow:hover .copyButton`) and it does not
+blink during the same stream — because a tool block's command is settled when the call is
+made, while an answer's markdown is re-parsed on every chunk. So this is not a fault in a
+button; it is that re-parsing the whole partial answer replaces elements the reader may
+be pointing at.
+
+**And there is a bigger consequence than the blink.** If elements are replaced under the
+reader, a text selection should not survive either - so I measured it: selecting a phrase
+in a paragraph and then replacing that paragraph the way the re-parse does **loses the
+selection entirely**, while a control that only appends text below keeps it.
+
+So highlighting a sentence in an answer that is still arriving loses the highlight. Same
+single cause, costs everybody the same regardless of language, and unlike the blink it is
+not cosmetic. The copy button is just the part of it you can see without trying to do
+anything.
+
 Measured, in case it matters: it stays clickable throughout — 11 of 12 clicks landed, and
 a control with nothing replaced landed exactly the same 11, so the miss is in my harness.
-Opacity never settles above 0.58 while it happens, against 1.00 when it does not. So it
-is cosmetic, and mentioned only because it is easy to fix while you are in there and
-impossible to notice unless somebody says so.
+Opacity never settles above 0.58 while it happens, against 1.00 when it does not. So the
+blink itself is cosmetic; it is mentioned because of what it points at.
 
 ### A prompt that sets it up, if that is quicker
 
