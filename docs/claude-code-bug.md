@@ -3,8 +3,16 @@
 This is not an RTL bug. It has nothing to do with language, and an English-only user hits
 it exactly as hard. It is written up separately so it can be reported on its own.
 
-**Affects:** the Claude Code extension for VS Code (seen on `anthropic.claude-code`
-2.1.247, VS Code 1.135).
+**Found by:** Naveed · first observed **2026-08-27**, written up on its own terms
+**2026-09-02**.
+
+**Affects:** the Claude Code extension for VS Code. Reproduced on `anthropic.claude-code`
+**2.1.247, 2.1.259 and 2.1.263**, VS Code 1.135, Windows 11 - from a clean install every
+time, with the conditions in "Reproducing it" below.
+
+**Use it freely.** This write-up may be copied, quoted, filed as an issue, or acted on by
+anyone, with or without permission. If it leads to a fix, a line of credit is the only
+thing asked for - the finding is the work here. The fix itself is three lines of CSS.
 
 ---
 
@@ -100,21 +108,44 @@ reliable signal.
 under the viewport height. This works, but it means choosing how much of a window a message
 may occupy, and the right answer differs on a laptop and an external display.
 
-**3. Either way, keep the reader's place across the toggle.** A collapsed message is pinned,
-so it is visible wherever you have scrolled to; the moment it stops being pinned it falls
-back to where it really lives in the document, which may be thousands of pixels above the
-eye. Restoring the element's own top across the toggle fixes that - clamped to the visible
-area, or reading to the end of a long message and closing it puts the message back off the
-top of the screen.
+**3. Either way, keep the reader's place across the toggle** - and it is two different
+promises, not one.
+
+*Opening.* A collapsed message is pinned, so it is visible wherever you have scrolled to;
+the moment it stops being pinned it falls back to where it really lives in the document,
+which may be thousands of pixels above the eye. Restoring the message's own top fixes
+that - clamped to the visible area, or reading to the end of a long one and closing it
+puts it back off the top of the screen.
+
+*Closing.* Here the pinning bites a second time, and this half is easy to miss. The
+moment a message collapses it is sticky again, so its top IS the panel's top whatever the
+scroll position: any drift measured against it is zero, nothing is scrolled, and the view
+is left wherever reading the message happened to leave it. Somebody who was partway down
+a long answer, opened the question above it to check something and closed it again gets
+the answer back **from its beginning**.
+
+The anchor for that has to be an element BELOW the message, and this was measured rather
+than reasoned: anchoring to the turn the message heads brought its top back to the pixel
+and still left the reader 20px out, because the message's own collapsed height was not
+quite what it had been. Everything under a message moves rigidly when that message grows
+or shrinks, so putting one element under it back where it was puts the whole of what the
+reader was reading back where it was - whatever the message above it did in between.
 
 ---
 
 ## What we did about it meanwhile
 
-[SmartRTL for Claude Code](../apps/vscode-claude) applies fix 1 and fix 3 from outside, by
-appending a marked block to the webview bundle. That is a workaround for our own use, not a
-solution - the real fix belongs in the renderer, where it costs one CSS rule and nobody has
-to patch anybody's files.
+[SmartRTL for Claude Code](../apps/vscode-claude) applies fix 1 and both halves of fix 3
+from outside, by appending a marked block to the webview bundle. That is a workaround for
+our own use, not a solution - the real fix belongs in the renderer, where it costs one CSS
+rule and nobody has to patch anybody's files.
+
+It is also built to get out of the way. The part of it that exists for this bug asks the
+live element whether a turn header is still `position: sticky` before it does anything, so
+the day this is fixed upstream that part switches itself off rather than arguing with the
+fix. `__bidiStatus()` in the webview console reports which parts are on and which have
+stood down.
 
 The reasoning behind each of the above, including two fixes that were tried and rejected
-first, is in [decisions.md](decisions.md) sections 10 and 15.
+first - capping the height, and forcing the collapse row sticky, which moved a button the
+extension had placed - is in [decisions.md](decisions.md) sections 10, 15 and 29.

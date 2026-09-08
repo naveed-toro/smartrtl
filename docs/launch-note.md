@@ -125,6 +125,46 @@ extension notices and stands down on its own — see below.
 
 ---
 
+## Establishing that it was found here
+
+Worth being deliberate about, because of the shape of this particular fix: the RTL half
+may be carried alone for a long time, but **the long-message bug is the kind a product
+team fixes once it is put in front of them.** When that happens the fix will be theirs -
+correctly, it belongs in their renderer - and the finding should still be attributable.
+
+Finding is the expensive half now. Writing three lines of CSS is not; noticing that a
+pinned element taller than the window can never show its own bottom, working out why it
+only appears in long sessions, and reproducing it on demand - that took a person using
+the thing every day.
+
+In order of what it is actually worth:
+
+1. **File it publicly, before it is fixed.** A dated, public issue in their own tracker
+   is the whole mechanism. Priority is a timestamp somebody else's system holds, not one
+   in a private repository. [claude-code-bug.md](claude-code-bug.md) is already written
+   to be filed as-is: what happens, what you would expect, the exact conditions, and why
+   the obvious fixes are wrong.
+
+2. **Publish the repository.** A second dated public artifact, and the one that shows the
+   work behind the report - the two wrong fixes, the measurements, the versions it was
+   confirmed on.
+
+3. **Ship the extension.** A Marketplace listing is a third public date, and the only one
+   that reaches the people the bug is costing today.
+
+4. **Keep the write-up first-person and dated.** Done: the report now carries who found
+   it, when it was first observed, when it was written up, and which builds it was
+   reproduced on. A report with no name on it gets fixed and forgotten; one with a name
+   and a date is citable.
+
+What not to expect, so it is not a disappointment: there is no bounty for a user-interface
+bug at any company I know of - bounties are for security. What a good public report
+normally earns is the issue thread with your name on it, a mention in the changelog if
+the team is generous, and the fact that it can be pointed at afterwards. That is worth
+having, and it only exists if step 1 happens first.
+
+---
+
 ## The part that is worth trusting, and why
 
 This edits a file belonging to another extension, because VS Code gives no other way into
