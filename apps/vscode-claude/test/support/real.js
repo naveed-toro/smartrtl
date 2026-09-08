@@ -67,6 +67,9 @@ function classNames(css) {
   return {
     root,
     message: one("message_"),
+    messageInputContainer: one("messageInputContainer_"),
+    messageInput: one("messageInput_"),
+    mentionMirror: one("mentionMirror_"),
     timelineMessage: one("timelineMessage_"),
     stickyHeader: one("stickyHeader_"),
     messagesContainer: one("messagesContainer_"),
@@ -177,7 +180,35 @@ async function matchedRules(page, selector) {
   } finally { await cdp.detach(); }
 }
 
-module.exports = { installed, cls, open, answer, conversation, working, matchedRules };
+/**
+ * The box you type into, named and nested the way the extension nests it.
+ *
+ * Read out of its own bundle rather than guessed at:
+ *
+ *   <div class=messageInputContainer>
+ *     <div contenteditable="plaintext-only" class=messageInput role=textbox>   <- caret
+ *     <div class=mentionMirror aria-hidden="true">{text}</div>                 <- glyphs
+ *
+ * The first of those is color:#0000 in their own stylesheet - you type into it and
+ * see nothing of it. The mirror underneath is the only layer anybody reads, and its
+ * contents are React's. The script here stands in for React only as far as putting
+ * the text there; what it must NOT do is model React's ownership, which is what
+ * test/host-owned-dom.test.js is for.
+ */
+const composer = () => `
+<div class="${cls.messageInputContainer}">
+  <div class="${cls.messageInput}" contenteditable="plaintext-only" role="textbox"
+       aria-label="Message input" aria-multiline="true" data-placeholder="Ask anything"></div>
+  <div class="${cls.mentionMirror}" aria-hidden="true"></div>
+</div>
+<script>
+  document.querySelector(".${cls.messageInput}").addEventListener("input", function () {
+    document.querySelector(".${cls.mentionMirror}").textContent =
+      document.querySelector(".${cls.messageInput}").textContent;
+  });
+</script>`;
+
+module.exports = { installed, cls, open, answer, conversation, composer, working, matchedRules };
 
 /**
  * One user message, nested and named the way the extension nests and names it, with

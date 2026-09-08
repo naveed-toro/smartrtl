@@ -10,7 +10,7 @@
  */
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { open, message, userMessage, directions } = require("./support/page.js");
+const { open, message, userMessage, directions, lineReads } = require("./support/page.js");
 
 test("messages in one conversation are decided separately, and never leak", async () => {
   // The failure this guards against was measured once and is in decisions.md: one
@@ -118,17 +118,19 @@ test("typing a reply while an answer is still arriving", async () => {
     });
 
     await page.click(".messageInput_x");
-    await page.keyboard.type("npm install ");
-    const afterLatin = await page.$eval(".messageInput_x", (el) => getComputedStyle(el).direction);
+    await page.keyboard.type("npm install");
+    const afterLatin = await lineReads(page, ".messageInput_x");
+    await page.keyboard.press("Shift+Enter");
     await page.keyboard.type("کے بعد چلائیں");
     await page.waitForTimeout(300);
-    const afterUrdu = await page.$eval(".messageInput_x", (el) => getComputedStyle(el).direction);
+    const afterUrdu = await lineReads(page, ".messageInput_x");
 
     await page.evaluate(() => clearInterval(window.__streaming));
     await page.waitForTimeout(400);
 
-    assert.equal(afterLatin, "ltr", "the box follows what is in it, not what the answer is doing");
-    assert.equal(afterUrdu, "rtl");
+    assert.deepEqual(afterLatin, ["ltr"], "the box follows what is in it, not what the answer is doing");
+    assert.deepEqual(afterUrdu, ["rtl", "rtl"],
+      "and the Urdu turns the box - all of it, which is the limit written down in composer.test.js");
 
     const answer = await directions(page, ".root p");
     assert.ok(answer.length > 3, "the answer really did keep arriving");

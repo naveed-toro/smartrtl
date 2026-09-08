@@ -9,6 +9,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { chromium } = require("playwright");
+const { LINE_BOXES, lineBoxes, lineReads } = require("./lines.js");
 
 const PAYLOAD = path.resolve(__dirname, "../../dist/payload.js");
 
@@ -165,4 +166,7 @@ const userMessageWithChip = (before, chip, after) => userMessage("").replace(
   '<span dir="auto"></span>',
   `<span dir="auto">${before}<span class="mentionChip_x" data-chip="1">${chip}</span>${after}</span>`);
 
-module.exports = { open, message, userMessage, userMessageWithChip, turn, directions, CSS };
+module.exports = {
+  open, message, userMessage, userMessageWithChip, turn, directions, CSS,
+  lineBoxes, lineReads, LINE_BOXES
+};

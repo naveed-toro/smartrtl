@@ -6,7 +6,7 @@
  */
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { open, message, directions } = require("./support/page.js");
+const { open, message, directions, lineReads } = require("./support/page.js");
 
 test("an Urdu answer: the five headings that used to render left-to-right", async () => {
   const { page, close } = await open(message(`
@@ -95,8 +95,14 @@ test("the timeline dot follows its own message, and content columns stay aligned
 });
 
 test("the composer's two layers can never drift apart", async () => {
-  // You type into an invisible layer and read a mirror behind it. If direction were
-  // set on one and not the other, the caret would sit on the opposite side to the text.
+  // You type into an invisible layer and read a mirror behind it. If a line were laid
+  // out differently in one than in the other, the caret would sit on the opposite side
+  // of the panel to the letter it is about to insert.
+  //
+  // One attribute on the container they share flips both, from one rule, so the
+  // question is settled by construction rather than by keeping two sets of elements
+  // in step - which is what two earlier versions tried: one took the panel down with
+  // it, the other put every keystroke on the screen a keystroke late.
   const { page, close } = await open(`
     <div class="messageInputContainer_x">
       <div class="mentionMirror_x"></div>
@@ -104,7 +110,8 @@ test("the composer's two layers can never drift apart", async () => {
     </div>`);
   try {
     await page.click(".messageInput_x");
-    await page.keyboard.type("npm install ");
+    await page.keyboard.type("npm install");
+    await page.keyboard.press("Shift+Enter");
     await page.keyboard.type("کے بعد پروجیکٹ چلائیں");
     await page.waitForTimeout(200);
     const r = await page.evaluate(async () => {
@@ -126,30 +133,37 @@ test("the composer's two layers can never drift apart", async () => {
         const b = range.getBoundingClientRect();
         return { x: Math.round(b.left), y: Math.round(b.top) };
       };
-      return { dirs: [getComputedStyle(i).direction, getComputedStyle(m).direction], a: last(i), b: last(m) };
+      return { a: last(i), b: last(m) };
     });
-    assert.equal(r.dirs[0], "rtl", "the box should turn once Urdu is typed");
-    assert.equal(r.dirs[1], r.dirs[0], "both layers must always agree");
     assert.equal(r.a.x, r.b.x, "caret and glyph must sit at the same place");
     assert.equal(r.a.y, r.b.y);
+    assert.deepEqual(await lineReads(page, ".messageInput_x"), ["rtl", "rtl"],
+      "one direction for the box, so the command goes with the Urdu under it");
+    assert.deepEqual(await lineReads(page, ".mentionMirror_x"),
+                     await lineReads(page, ".messageInput_x"),
+      "and the layer you read says the same as the one holding the caret");
   } finally { await close(); }
 });
 
 test("the composer follows what is in it right now, and goes back", async () => {
+  // A box that shows a draft has to show what is in it AT THIS KEYSTROKE - unlike an
+  // answer, where a decision is taken once and kept, because there a wrong guess
+  // stays on the screen until a reload and here it costs one backspace.
   const { page, close } = await open(`
     <div class="messageInputContainer_x">
       <div class="mentionMirror_x"></div>
       <div class="messageInput_x" contenteditable="plaintext-only"></div>
     </div>`);
   try {
-    const dir = () => page.$eval(".messageInput_x", (el) => getComputedStyle(el).direction);
+    const line = async () => (await lineReads(page, ".messageInput_x"))[0];
     await page.click(".messageInput_x");
-    await page.keyboard.type("npm");
-    assert.equal(await dir(), "ltr");
     await page.keyboard.type("ا");                       // one letter is enough
-    assert.equal(await dir(), "rtl", "one RTL letter should turn the box");
-    await page.keyboard.press("Backspace");
+    assert.equal(await line(), "rtl", "one RTL letter should turn the line");
+    await page.keyboard.type("سلام");
+    assert.equal(await line(), "rtl");
+    for (let i = 0; i < 5; i++) await page.keyboard.press("Backspace");
+    await page.keyboard.type("npm");
     await page.waitForTimeout(100);
-    assert.equal(await dir(), "ltr", "deleting it should turn the box back");
+    assert.equal(await line(), "ltr", "deleting it should turn the line back");
   } finally { await close(); }
 });

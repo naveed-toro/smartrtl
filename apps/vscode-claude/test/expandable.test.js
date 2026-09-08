@@ -289,3 +289,74 @@ test("closing from deep inside a long message brings it back into view", async (
       `the message must come back into view, not stay above it (landed at ${after})`);
   } finally { await close(); }
 });
+
+test("closing it gives the reader back the line they were on", async () => {
+  // The half that was still missing, and the one a reader notices most: they were
+  // partway down a long answer, opened the question above it to check something, and
+  // closed it again - and the answer came back from its beginning.
+  //
+  // The cause was the pinning. A collapsed message is sticky, so the moment it closes
+  // its top IS the panel's top whatever the scroll position; the drift measured
+  // against it is zero, nothing is scrolled, and the view stays wherever reading the
+  // message left it. Opening and closing has to be a round trip.
+  const { page, close } = await open(turn(userMessage(LONG, { expanded: false }), { live: true }), { height: 700 });
+  try {
+    await scrollBy(page, 900);
+    const readingLine = await page.$$eval(".root p", (els) => {
+      const top = document.getElementById("scroller").getBoundingClientRect().top;
+      const first = els.find((el) => el.getBoundingClientRect().top >= top);
+      return first ? { text: first.textContent, at: Math.round(first.getBoundingClientRect().top - top) } : null;
+    });
+    assert.ok(readingLine, "the reader is looking at a line of the answer");
+
+    await page.click(".content_x");                 // open the question above
+    await page.waitForTimeout(250);
+    await page.click(".collapseButton_x");          // and close it again
+    await page.waitForTimeout(250);
+
+    const back = await page.$$eval(".root p", (els, wanted) => {
+      const top = document.getElementById("scroller").getBoundingClientRect().top;
+      const same = els.find((el) => el.textContent === wanted);
+      return same ? Math.round(same.getBoundingClientRect().top - top) : null;
+    }, readingLine.text);
+
+    assert.ok(back !== null, "the line they were reading is gone");
+    assert.ok(Math.abs(back - readingLine.at) <= 2,
+      `the line they were reading moved ${back - readingLine.at}px (was at ${readingLine.at}, came back at ${back})`);
+  } finally { await close(); }
+});
+
+test("and it is a round trip even when they read to the end of the message first", async () => {
+  // The same promise from the other end: open it, read all the way down inside it,
+  // close it - and still land on the line of the answer they had been reading. The
+  // older behaviour brought the message's own head back into view, which was right
+  // as far as it went and left the reader somewhere they had never been.
+  const { page, close } = await open(turn(userMessage(LONG, { expanded: false }), { live: true }), { height: 700 });
+  try {
+    await scrollBy(page, 900);
+    const readingLine = await page.$$eval(".root p", (els) => {
+      const top = document.getElementById("scroller").getBoundingClientRect().top;
+      const first = els.find((el) => el.getBoundingClientRect().top >= top);
+      return { text: first.textContent, at: Math.round(first.getBoundingClientRect().top - top) };
+    });
+
+    await page.click(".content_x");
+    await page.waitForTimeout(250);
+    const end = await page.$eval(".collapseButton_x", (el) => {
+      const sc = document.getElementById("scroller");
+      return el.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop - 300;
+    });
+    await scrollBy(page, end);
+    await page.click(".collapseButton_x");
+    await page.waitForTimeout(250);
+
+    const back = await page.$$eval(".root p", (els, wanted) => {
+      const top = document.getElementById("scroller").getBoundingClientRect().top;
+      const same = els.find((el) => el.textContent === wanted);
+      return same ? Math.round(same.getBoundingClientRect().top - top) : null;
+    }, readingLine.text);
+
+    assert.ok(back !== null && Math.abs(back - readingLine.at) <= 2,
+      `they were put down ${back === null ? "nowhere near it" : (back - readingLine.at) + "px"} from where they were reading`);
+  } finally { await close(); }
+});

@@ -115,26 +115,70 @@
              '.smart-rtl-line[data-bidi-line="rtl"]{direction:rtl;text-align:start;unicode-bidi:isolate}' +
              ".smart-rtl-line:not([data-bidi-line]){direction:ltr;text-align:start;unicode-bidi:isolate}";
 
-      // Lines inside the box being typed into. Inline isolates, not blocks: a block
-      // would need the newline characters taken out of the DOM to avoid breaking
-      // twice, and those characters are the text that gets sent.
-      if (composer && composer.perLine) {
-        css += ".smart-rtl-input-line{unicode-bidi:isolate}" +
-               '.smart-rtl-input-line[data-bidi-line="rtl"]{direction:rtl}' +
-               ".smart-rtl-input-line:not([data-bidi-line]){direction:ltr}";
-      }
 
+      /* The box you type into.
+         ------------------------------------------------------------------
+         ONE direction for the whole box, from one attribute and one rule. Nothing
+         of ours goes into it, nothing is observed, nothing runs while somebody
+         types. That is not a first attempt: it is what is left after three goes at
+         doing better, and the two things that ended them are worth carrying here.
+
+         What is actually there, read out of Claude Code's own bundle:
+
+           messageInput   contentEditable="plaintext-only", color:#0000 - you type
+                          into it and see none of it. Caret only.
+           mentionMirror  absolutely positioned over it. React's, children and all.
+                          Every glyph anybody reads comes from here.
+
+         A line is a \n inside one text node, so per-line direction needs an element
+         per line, and the only place to put one is inside that mirror.
+
+           0.3.0 put them there. React's own nodes were thrown away making them, the
+           mirror stopped updating - the box typed BLANK SPACES - and its next
+           removeChild threw inside React's commit phase and took the panel down.
+
+           0.3.3 kept React's mirror untouched and drew a clone of it instead. Safe,
+           and still wrong: measured, every keystroke reached the screen one
+           keystroke late. Type a letter, see nothing; type the next, see the first.
+           The clone is painted from the host's mirror in a capture-phase input
+           handler, which runs BEFORE the host has redrawn it, and the observer meant
+           to correct that had nothing to attach to - the composer does not exist yet
+           when this code runs.
+
+         A box that types a letter behind is worse than a box that reads the wrong
+         way round, and no amount of care makes an editor somebody else owns behave
+         like an editor. So this is deliberate, and it is the end of that line of
+         attempts, not a step on the way: the composer takes ONE direction, live,
+         from any RTL letter in it. A draft that mixes languages goes right to left
+         as a whole. That is the platform's limit, accepted rather than fought.
+
+         Where the rule still applies in full is the message once it is SENT, where
+         the lines are real elements in a page nobody is typing into.
+
+         text-align is not decoration: measured, a host that writes text-align:left
+         above the box beats direction outright - the words come out in the right
+         order and every line still hugs the left edge. */
       if (composer && composer.layers && composer.layers.length) {
-        // The flag goes on the container the layers share, so one rule flips all of
-        // them. A caret on one side while the glyph sits on the other becomes
-        // structurally impossible rather than merely unlikely.
         var sel = [];
         for (var s = 0; s < composer.layers.length; s++) {
           sel.push(composer.container + '[data-bidi-input="rtl"] ' + composer.layers[s]);
         }
-        css += sel.join(",") + "{direction:rtl}";
+        css += sel.join(",") + "{direction:rtl;text-align:start}";
       }
+
       if (cfg.extraCss) css += cfg.extraCss;
+
+      // A selector that the browser will not accept throws on every single batch, for
+      // ever, and silently. Asked once here instead: what cannot be used is not used,
+      // and the parts that do not depend on it carry on.
+      function usableSelector(sel) {
+        if (!sel) return false;
+        try { document.querySelector(sel); return true; } catch (e) { return false; }
+      }
+      var blocksOk = usableSelector(BLOCKS);
+      if (BOX_HINT && !usableSelector(BOX_HINT)) BOX_HINT = null;
+      if (cfg.perLine && !usableSelector(cfg.perLine)) cfg.perLine = null;
+      if (composer && !usableSelector(composer.container)) composer = null;
 
       var style = document.createElement("style");
       style.id = "smart-rtl-direction";
@@ -144,6 +188,8 @@
       /* ---------------------------------------------------------------
          Deciding
       --------------------------------------------------------------- */
+      var failures = 0;                    // contained faults, reported by status()
+      var stopped = false;                 // stop() has been called; finish nothing more
       var settledBlocks = new WeakSet();   // blocks whose own decision is final
       var pending = new Set();             // blocks skipped because they were still being written
       var quiet = false, quietTimer = null;
@@ -338,7 +384,14 @@
         // test/jitter.test.js holds both halves of that.
 
         // a block that holds a whole message decides line by line instead
-        if (cfg.perLine && el.matches(cfg.perLine) && decidePerLine(el)) {
+        // Splitting is the one thing here that restructures anything, so it is also
+        // the one thing allowed to fail on its own: if it throws, the block still gets
+        // the ordinary whole-block decision below rather than no decision at all.
+        var split = false;
+        if (cfg.perLine) {
+          try { split = el.matches(cfg.perLine) && decidePerLine(el); } catch (e) { failures++; }
+        }
+        if (split) {
           // Decided line by line, but it is still an RTL message, and the adapter is
           // told so. It has to be: this is what moves the row's timeline dot to the
           // side the row reads from, and what reserves the gutter every row in the
@@ -380,6 +433,11 @@
 
       function drain() {
         scheduled = false;
+        // A pass is queued as a microtask, so one can already be in flight when stop()
+        // is called - and it would then write a decision into a page that has just
+        // been handed back, with nothing left to take it out again. Found by the test
+        // that stands the fix down the moment a message arrives.
+        if (stopped) { queue = []; return; }
         var batch = queue; queue = [];
 
         var blocks = [];
@@ -394,7 +452,13 @@
 
         // Quiet means the TEXT has stopped, not the page. See armQuiet.
         if (blocks.length) armQuiet();
-        for (var k = 0; k < blocks.length; k++) inspect(blocks[k]);
+        // One block at a time, each on its own. A block that throws - a shape nobody
+        // anticipated, a host element that has just been detached - used to take the
+        // whole batch with it, and then the next batch, and then quietly the whole
+        // feature. Blocks are independent of each other and the code should say so.
+        for (var k = 0; k < blocks.length; k++) {
+          try { inspect(blocks[k]); } catch (e) { failures++; }
+        }
       }
 
       /**
@@ -423,10 +487,13 @@
         quiet = false;
         if (quietTimer) clearTimeout(quietTimer);
         quietTimer = setTimeout(function () {
+          if (stopped) return;
           quiet = true;
           var left = Array.from(pending);
           pending.clear();
-          for (var i = 0; i < left.length; i++) inspect(left[i]);
+          for (var i = 0; i < left.length; i++) {
+            try { inspect(left[i]); } catch (e) { failures++; }
+          }
         }, QUIET_MS);
       }
 
@@ -447,16 +514,22 @@
           if (r.addedNodes) for (var j = 0; j < r.addedNodes.length; j++) push(r.addedNodes[j]);
         }
       });
-      observer.observe(document.documentElement, { childList: true, subtree: true, characterData: true });
+      if (blocksOk) {
+        observer.observe(document.documentElement, { childList: true, subtree: true, characterData: true });
+      }
 
       /* ---------------------------------------------------------------
-         The box you type in.
+         Which direction the box is in, right now.
 
-         Same rule as everywhere else, but LIVE rather than sticky: delete the RTL
-         text and it goes back to left, because an input must show what is actually
-         in it. And eager rather than careful - ONE letter is enough here, because a
-         wrong guess costs a single keystroke to undo, while a wrong guess in an
-         answer stays until reload.
+         LIVE rather than sticky: delete the RTL text and it goes back to left,
+         because an input must show what is actually in it. And eager rather than
+         careful - ONE letter is enough, because a wrong guess here costs a single
+         keystroke to undo, while a wrong guess in an answer stays until reload.
+
+         One attribute on an element the host rendered, and nothing else. React does
+         not enumerate attributes it never set, so this cannot collide with it. That
+         is the line the removed per-line machinery crossed twice: an attribute is
+         ours to set; somebody else's child node is not ours to move, or to mirror.
       --------------------------------------------------------------- */
       function syncComposer(node) {
         if (!composer) return;
@@ -470,251 +543,13 @@
           else box.removeAttribute("data-bidi-input");
         } catch (e) {}
       }
-      /* ---------------------------------------------------------------
-         One decision per LINE of what is being typed.
-
-         The box above decides once for everything in it, which is right for a box
-         holding one thought and wrong for a box holding several: paste a command,
-         press shift+enter, write Urdu underneath, and the command is dragged along
-         with the Urdu. In a browser chat box this costs nothing, because those
-         editors already keep one element per line and a line's direction is an
-         attribute on an element that exists. Here a line is a `\n` inside one text
-         node - which is exactly why the text that gets sent comes out right - so the
-         elements have to be made.
-
-         Making them has to leave four things untouched, and each one was measured
-         rather than assumed:
-
-           the text        the newline characters stay in the DOM between the lines,
-                           so textContent - which is what gets sent - is identical
-           the caret       taken as a character offset before, put back after
-           anything else   element children are MOVED, never recreated, so a mention
-                           chip keeps whatever the host attached to it
-           undo            rewriting the box's insides destroys the browser's undo
-                           stack, so this keeps its own: for a plain text box the whole
-                           state is (text, caret), which is why that is possible at all
-
-         Off by default. `composer.perLine` turns it on.
-      --------------------------------------------------------------- */
-      var LINE_CLASS = "smart-rtl-input-line";
-      var composing = false, wrapping = false, layerWatch = null;
-
-      /**
-       * Swallow the mutations we just made.
-       *
-       * A MutationObserver callback is a microtask, so a flag set around our own
-       * writing is already false again by the time the callback runs: we would see
-       * our own work, do it again, and queue another callback. That is not a slow
-       * loop, it is a hang - the page stops responding entirely, which is how this
-       * was found. takeRecords() empties the queue of everything up to now, so what
-       * we did is never handed back to us.
-       */
-      function forgetOurOwn() {
-        if (layerWatch) { try { layerWatch.takeRecords(); } catch (e) {} }
-      }
-      var undoStack = [{ text: "", caret: 0, at: 0, base: 0 }], undoAt = 0, restoring = false;
-      var UNDO_COALESCE_MS = 600, UNDO_STEP_MAX = 12;
-
-      function caretIn(el) {
-        try {
-          var sel = getSelection();
-          if (!sel || !sel.rangeCount) return null;
-          var live = sel.getRangeAt(0);
-          if (!el.contains(live.endContainer)) return null;
-          var r = document.createRange();
-          r.selectNodeContents(el);
-          r.setEnd(live.endContainer, live.endOffset);
-          return r.toString().length;
-        } catch (e) { return null; }
-      }
-
-      function caretTo(el, offset) {
-        try {
-          var w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT), seen = 0, n, last = null;
-          while ((n = w.nextNode())) {
-            last = n;
-            if (seen + n.nodeValue.length >= offset) {
-              var r = document.createRange();
-              r.setStart(n, Math.max(0, offset - seen));
-              r.collapse(true);
-              var s = getSelection(); s.removeAllRanges(); s.addRange(r);
-              return;
-            }
-            seen += n.nodeValue.length;
-          }
-          if (last) {
-            var r2 = document.createRange();
-            r2.setStart(last, last.nodeValue.length); r2.collapse(true);
-            var s2 = getSelection(); s2.removeAllRanges(); s2.addRange(r2);
-          }
-        } catch (e) {}
-      }
-
-      /**
-       * One isolate per line, built from the nodes already there.
-       *
-       * Everything of ours is undone first and the lines worked out from scratch.
-       * Taking a previous line element's children out WITHOUT re-splitting them was
-       * the first version's bug: the browser puts a new line break inside one of our
-       * spans, that span then holds three lines while the other layer correctly has
-       * three elements, the two disagree - and the caret and the glyph part company.
-       */
-      function wrapLines(el, keepCaret) {
-        var at = keepCaret ? caretIn(el) : null;
-
-        var flat = [];
-        (function collect(node) {
-          var kids = Array.prototype.slice.call(node.childNodes);
-          for (var i = 0; i < kids.length; i++) {
-            var n = kids[i];
-            if (n.nodeType === 1 && n.className === LINE_CLASS) collect(n);
-            else flat.push(n);
-          }
-        })(el);
-
-        var lines = [[]];
-        for (var i = 0; i < flat.length; i++) {
-          var n = flat[i];
-          if (n.nodeType === 1 && n.tagName === "BR") { lines.push([]); continue; }
-          if (n.nodeType === 3) {
-            var parts = String(n.nodeValue).split("\n");
-            for (var j = 0; j < parts.length; j++) {
-              if (j > 0) lines.push([]);
-              if (parts[j] !== "") lines[lines.length - 1].push(document.createTextNode(parts[j]));
-            }
-          } else {
-            lines[lines.length - 1].push(n);
-          }
-        }
-
-        var frag = document.createDocumentFragment();
-        for (var m = 0; m < lines.length; m++) {
-          if (m) frag.appendChild(document.createTextNode("\n"));
-          var row = document.createElement("span");
-          row.className = LINE_CLASS;
-          for (var q = 0; q < lines[m].length; q++) row.appendChild(lines[m][q]);
-          if (rule.containsRtlLetter(row.textContent || "")) row.setAttribute("data-bidi-line", "rtl");
-          frag.appendChild(row);
-        }
-
-        while (el.firstChild) el.removeChild(el.firstChild);
-        el.appendChild(frag);
-        if (at !== null) caretTo(el, at);
-      }
-
-      /** What the box looks like now - its text and the direction of each line. */
-      function lineShape(el) {
-        var rows = el.querySelectorAll("." + LINE_CLASS), out = [];
-        for (var i = 0; i < rows.length; i++) out.push(rows[i].getAttribute("data-bidi-line") || "l");
-        return out.join("") + "|" + el.textContent;
-      }
-
-      function rememberForUndo(el) {
-        if (restoring) return;
-        var text = el.textContent, caret = caretIn(el) || 0, now = Date.now();
-        var top = undoStack[undoAt];
-        if (top && top.text === text) { top.caret = caret; return; }
-        undoStack.length = undoAt + 1;                 // anything undone is dropped
-        // A run of typing is one step, broken where a person expects a break: at a
-        // space, at a line, and never letting one step swallow more than a phrase.
-        var grew = top && text.length > top.text.length && text.slice(0, top.text.length) === top.text;
-        var typed = grew ? text.slice(top.text.length) : "";
-        var stepLen = top ? text.length - top.base : text.length;
-        if (grew && (now - top.at) < UNDO_COALESCE_MS && !/\s/.test(typed) && stepLen < UNDO_STEP_MAX) {
-          top.text = text; top.caret = caret; top.at = now;
-          return;
-        }
-        undoStack.push({ text: text, caret: caret, at: now, base: top ? top.text.length : 0 });
-        undoAt = undoStack.length - 1;
-      }
-
-      function undoTo(el, step) {
-        restoring = true;
-        try {
-          el.textContent = step.text;
-          wrapLines(el, false);
-          caretTo(el, step.caret);
-          syncComposer(el);
-          mirrorLines(el);
-          forgetOurOwn();
-        } catch (e) {}
-        restoring = false;
-      }
-
-      /** Every other layer shows the same text, so it gets the same lines. */
-      function mirrorLines(input) {
-        if (!composer || !composer.layers) return;
-        var box = input.closest(composer.container);
-        if (!box) return;
-        for (var i = 0; i < composer.layers.length; i++) {
-          var layer = box.querySelector(composer.layers[i]);
-          if (!layer || layer === input) continue;
-          if (lineShape(layer) !== lineShape(input)) wrapLines(layer, false);
-        }
-      }
-
-      function syncLines(node) {
-        if (!composer || !composer.perLine || composing || wrapping) return;
-        var probe = composer.probe || (composer.layers && composer.layers[0]);
-        var input = node && node.closest ? node.closest(probe) : null;
-        if (!input) {
-          // the host rewrote a layer that is not the one being typed into
-          var box = node && node.closest ? node.closest(composer.container) : null;
-          if (!box) return;
-          input = box.querySelector(probe);
-          if (!input) return;
-          wrapping = true;
-          try { mirrorLines(input); } catch (e) {}
-          forgetOurOwn();
-          wrapping = false;
-          return;
-        }
-        wrapping = true;
-        try {
-          rememberForUndo(input);
-          if (lineShape(input) !== lastShape) { wrapLines(input, true); lastShape = lineShape(input); }
-          mirrorLines(input);
-        } catch (e) {}
-        forgetOurOwn();
-        wrapping = false;
-      }
-      var lastShape = null;
 
       if (composer) {
+        // Both are delegated from the document, so a composer that has not been
+        // rendered yet - and it has not, when this runs - is not a problem the way it
+        // is for anything that has to attach to the element itself.
         document.addEventListener("input", function (e) { syncComposer(e.target); }, true);
         document.addEventListener("focusin", function (e) { syncComposer(e.target); }, true);
-      }
-      if (composer && composer.perLine) {
-        // The host rebuilds the layer it draws the text on from its own state, on
-        // every keystroke, and that wipes the lines off it. Putting them back from a
-        // MutationObserver means it happens in the same task the host wrote in,
-        // before the browser paints - the same arrangement an answer streaming in
-        // already relies on, and measured the same way: not one frame of the host's
-        // plain text ever reached the screen.
-        var boxes = document.querySelectorAll(composer.container);
-        layerWatch = new MutationObserver(function (records) {
-          if (composing || wrapping) return;
-          for (var i = 0; i < records.length; i++) syncLines(records[i].target);
-        });
-        for (var b = 0; b < boxes.length; b++) {
-          layerWatch.observe(boxes[b], { childList: true, characterData: true, subtree: true });
-        }
-
-        document.addEventListener("input", function (e) { syncLines(e.target); }, true);
-        document.addEventListener("compositionstart", function () { composing = true; }, true);
-        document.addEventListener("compositionend", function (e) { composing = false; syncLines(e.target); }, true);
-        document.addEventListener("keydown", function (e) {
-          if (!(e.ctrlKey || e.metaKey)) return;
-          var z = e.key === "z" || e.key === "Z", y = e.key === "y" || e.key === "Y";
-          if (!z && !y) return;
-          var probe = composer.probe || (composer.layers && composer.layers[0]);
-          var input = e.target && e.target.closest ? e.target.closest(probe) : null;
-          if (!input) return;
-          e.preventDefault();
-          if (y || e.shiftKey) { if (undoAt < undoStack.length - 1) undoTo(input, undoStack[++undoAt]); }
-          else if (undoAt > 0) { undoTo(input, undoStack[--undoAt]); }
-          lastShape = lineShape(input);
-        }, true);
       }
 
       /* ---------------------------------------------------------------
@@ -763,6 +598,7 @@
       }
 
       function stop() {
+        stopped = true;
         try { observer.disconnect(); } catch (e) {}
         try { undoPerLine(); } catch (e) {}
         if (quietTimer) clearTimeout(quietTimer);
@@ -776,9 +612,19 @@
       }
       window.__bidiFixOff = stop;
 
-      push(document.body || document.documentElement);
+      if (blocksOk) push(document.body || document.documentElement);
 
-      return { stop: stop, refresh: push };
+      function status() {
+        return {
+          blocks: blocksOk ? "watching" : "off: the block selector was refused",
+          boxHint: BOX_HINT ? "on" : "off",
+          perLine: cfg.perLine ? "on" : "off",
+          composer: composer ? "on" : "off",
+          contained: failures            // faults that were caught and did not spread
+        };
+      }
+
+      return { stop: stop, refresh: push, status: status };
     } catch (e) {
       return null;   // never break the page we are a guest on
     }
