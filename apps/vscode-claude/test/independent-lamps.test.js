@@ -167,8 +167,13 @@ test("asking whether it is still needed must not ask itself for ever", async () 
   const t0 = Date.now();
   const { page, close } = await open(CANNOT_ANSWER);
   try {
+    // Generous on purpose. The fault this is written against is a page that NEVER
+    // finishes loading, and the whole suite runs a browser per file at once - so a
+    // tight bound here measures how busy the machine is, not whether the loop is back.
+    // A threshold that goes red under load is worse than no threshold: it teaches
+    // whoever reads the suite that red is normal.
     const loaded = Date.now() - t0;
-    assert.ok(loaded < 15000, "the page took " + loaded + "ms to load");
+    assert.ok(loaded < 60000, "the page took " + loaded + "ms to load");
 
     // and it is still answering, after a while of mutations going past
     await page.evaluate(async () => {

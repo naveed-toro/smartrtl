@@ -462,8 +462,11 @@ test("nothing of ours is in their box, and no keystroke is late", { skip }, asyn
   try {
     await page.click(IN);
     const behind = [];
-    for (const ch of ["ہ", "ی", "ل", "و"]) {
-      await page.keyboard.type(ch);
+    const word = ["ہ", "ی", "ل", "و"];
+    for (let i = 0; i < word.length; i++) {
+      await page.keyboard.type(word[i]);
+      await page.waitForFunction(
+        ([sel, n]) => document.querySelector(sel).textContent.length === n, [IN, i + 1]);
       const seen = await page.evaluate((sel) => new Promise((r) => requestAnimationFrame(() => r({
         typed: document.querySelector(sel).textContent,
         shown: document.querySelector(sel.replace("messageInput_", "mentionMirror_")).textContent

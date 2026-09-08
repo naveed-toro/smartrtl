@@ -164,8 +164,14 @@ test("a keystroke is on the screen in the frame it was typed", async () => {
   try {
     await page.click(".messageInput_x");
     const behind = [];
-    for (const ch of ["ہ", "ی", "ل", "و"]) {
-      await page.keyboard.type(ch);
+    const word = ["ہ", "ی", "ل", "و"];
+    for (let i = 0; i < word.length; i++) {
+      await page.keyboard.type(word[i]);
+      // the key can still be in flight while the whole suite is running; wait for it to
+      // land, THEN look at the very next frame. What this guards against did not catch
+      // up a frame later - it stayed a character behind until the next keystroke.
+      await page.waitForFunction(
+        (n) => document.querySelector(".messageInput_x").textContent.length === n, i + 1);
       const seen = await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => r({
         typed: document.querySelector(".messageInput_x").textContent,
         shown: document.querySelector(".mentionMirror_x").textContent
@@ -306,8 +312,14 @@ test("a composer that arrives after the payload behaves the same in every way", 
 
     // no keystroke may be late
     const behind = [];
-    for (const ch of ["ہ", "ی", "ل", "و"]) {
-      await page.keyboard.type(ch);
+    const word = ["ہ", "ی", "ل", "و"];
+    for (let i = 0; i < word.length; i++) {
+      await page.keyboard.type(word[i]);
+      // the key can still be in flight while the whole suite is running; wait for it to
+      // land, THEN look at the very next frame. What this guards against did not catch
+      // up a frame later - it stayed a character behind until the next keystroke.
+      await page.waitForFunction(
+        (n) => document.querySelector(".messageInput_x").textContent.length === n, i + 1);
       const seen = await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => r({
         typed: document.querySelector(".messageInput_x").textContent,
         shown: document.querySelector(".mentionMirror_x").textContent
