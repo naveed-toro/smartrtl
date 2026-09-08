@@ -142,6 +142,21 @@ out, because the message's own collapsed height was not quite what it had been. 
 under a message moves rigidly when that message grows or shrinks, so restoring one element
 below it restores the whole of what the reader was looking at.
 
+### Also noticed, much smaller, and not worth its own issue
+
+Hovering the copy button on a code block while an answer is still streaming makes it
+flicker for as long as the answer is arriving.
+
+`.copyButton` is `opacity: 0` with `.codeBlockWrapper:hover` bringing it to 1, so it is
+pure CSS — and the renderer replaces the block as it re-parses, which loses the hover
+state. The new element is not hovered until the pointer moves, so the fade restarts.
+
+Measured, in case it matters: it stays clickable throughout — 11 of 12 clicks landed, and
+a control with nothing replaced landed exactly the same 11, so the miss is in my harness.
+Opacity never settles above 0.58 while it happens, against 1.00 when it does not. So it
+is cosmetic, and mentioned only because it is easy to fix while you are in there and
+impossible to notice unless somebody says so.
+
 ### A prompt that sets it up, if that is quicker
 
 Uses no tools, reads and writes nothing, runs no commands. Send it, then send `ok` twice

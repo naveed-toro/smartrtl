@@ -81,7 +81,7 @@ rule, and every wrong turn is written down rather than quietly dropped.
 
 | | |
 |---|---|
-| [docs/decisions.md](docs/decisions.md) | twenty-nine sections: every rule and fix that was tried, measured and rejected, including the two that crashed and the one that was too slow |
+| [docs/decisions.md](docs/decisions.md) | thirty sections: every rule and fix that was tried, measured and rejected, including the two that crashed and the one that was too slow |
 | [docs/versions.md](docs/versions.md) | what was actually inside each of the twenty-five builds, read out of the `.vsix` rather than remembered |
 | [docs/roadmap.md](docs/roadmap.md) | what a new surface has to provide, the four rules an adapter obeys, and what order the rest gets built in |
 | [docs/claude-code-bug.md](docs/claude-code-bug.md) | the Claude Code bug on its own terms, with no RTL attached |
@@ -96,7 +96,7 @@ rule, and every wrong turn is written down rather than quietly dropped.
 
 | | |
 |---|---|
-| [docs/decisions.md](docs/decisions.md) | twenty-nine sections: every rule and fix that was tried, measured and rejected, including the two that crashed and the one that was too slow |
+| [docs/decisions.md](docs/decisions.md) | thirty sections: every rule and fix that was tried, measured and rejected, including the two that crashed and the one that was too slow |
 | [docs/versions.md](docs/versions.md) | what was actually inside each of the twenty-five builds, read out of the `.vsix` rather than remembered |
 | [docs/roadmap.md](docs/roadmap.md) | what a new surface has to provide, the four rules an adapter obeys, and what order the rest gets built in |
 | [docs/claude-code-bug.md](docs/claude-code-bug.md) | the Claude Code bug on its own terms, with no RTL attached |
@@ -110,7 +110,7 @@ rule, and every wrong turn is written down rather than quietly dropped.
 
 | | |
 |---|---|
-| [docs/decisions.md](docs/decisions.md) | twenty-nine sections: every rule and fix that was tried, measured and rejected, including the two that crashed and the one that was too slow |
+| [docs/decisions.md](docs/decisions.md) | thirty sections: every rule and fix that was tried, measured and rejected, including the two that crashed and the one that was too slow |
 | [docs/versions.md](docs/versions.md) | what was actually inside each of the twenty-five builds, read out of the `.vsix` rather than remembered |
 | [docs/roadmap.md](docs/roadmap.md) | what a new surface has to provide, the four rules an adapter obeys, and what order the rest gets built in |
 | [docs/claude-code-bug.md](docs/claude-code-bug.md) | the Claude Code bug on its own terms, with no RTL attached |

@@ -59,27 +59,34 @@ test("every test file a document names actually exists", () => {
 });
 
 test("the counts the documents quote are the counts that are true", () => {
-  const decisions = read("docs/decisions.md");
-  const numbered = (decisions.match(/^## \d+\./gm) || []).length;
-  assert.equal(numbered, 29, "decisions.md has " + numbered + " numbered sections");
-  for (const doc of ["README.md", "apps/vscode-claude/README.md", "docs/launch-note.md"]) {
-    const body = read(doc);
-    if (/decisions\.md/.test(body) && /(\w+)[- ]?(nine|five|seven) sections/.test(body)) {
-      assert.match(body, /twenty-nine sections/,
-        doc + " quotes a different number of sections");
-    }
-  }
-
-  // versions.md counts the builds in its own title, in words. Read the number back out
-  // rather than hard-coding it, or this test has to be edited on every release - and a
-  // test that has to be edited to stay green stops being a test.
   const WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight",
     "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen",
     "seventeen", "eighteen", "nineteen", "twenty"];
   const inWords = (n) => n <= 20 ? WORDS[n]
     : ["twenty", "thirty", "forty", "fifty"][Math.floor(n / 10) - 2] +
       (n % 10 ? "-" + WORDS[n % 10] : "");
+  const counts = new Set();
+  for (let n = 1; n <= 59; n++) counts.add(inWords(n));
 
+  // How many sections decisions.md has is not written down here either - it is counted,
+  // and every document that quotes a number has to quote that one. A test that must be
+  // edited to stay green is not a test.
+  const decisions = read("docs/decisions.md");
+  const numbered = (decisions.match(/^## \d+\./gm) || []).length;
+  assert.ok(numbered > 0, "decisions.md has no numbered sections at all");
+  for (const doc of DOCS) {
+    const body = read(doc);
+    // only a COUNT written in words - "in sections 25 to 28" is prose, not a claim
+    for (const m of body.matchAll(/\b([A-Za-z]+(?:-[a-z]+)?) sections\b/g)) {
+      const said = m[1].toLowerCase();
+      if (!counts.has(said)) continue;
+      assert.equal(said, inWords(numbered),
+        doc + ' says "' + m[1] + ' sections" and there are ' + numbered);
+    }
+  }
+
+  // versions.md counts the builds in its own title, in words. Read the number back out
+  // rather than hard-coding it.
   const builds = fs.readdirSync(path.join(ROOT, "apps/vscode-claude"))
     .filter((f) => f.endsWith(".vsix")).length;
   if (builds) {

@@ -185,7 +185,7 @@ worth stating:
 - **it never runs while you type.** Not "it is fast": it does not run
 
 The reasoning, and every formula and fix that was tried and rejected first, is in
-[decisions.md](decisions.md) — twenty-nine sections, including the wrong turns, the two
+[decisions.md](decisions.md) — thirty sections, including the wrong turns, the two
 crashes, and the measurements that came out the other way from what was expected.
 
 ---

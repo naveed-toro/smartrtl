@@ -10,7 +10,7 @@ search for, in several languages.
 
 ## What is in here
 
-Twenty-nine sections, in the order they were written, which is the order the faults were
+Thirty sections, in the order they were written, which is the order the faults were
 found. The ones worth reading first are marked.
 
  1. [The root cause](#1-the-root-cause)
@@ -42,6 +42,7 @@ found. The ones worth reading first are marked.
 27. [Stopping: the composer takes one direction, and that is the answer](#27-stopping-the-composer-takes-one-direction-and-that-is-the-answer) ←
 28. [The question left over: would it ever have felt fast?](#28-the-question-left-over-would-it-ever-have-felt-fast) ←
 29. [A string of lamps, not a circuit in series](#29-a-string-of-lamps-not-a-circuit-in-series) ←
+30. [The copy button that blinks — found, measured, and deliberately left alone](#30-the-copy-button-that-blinks--found-measured-and-deliberately-left-alone)
 
 ← 6 and 7 are the rule and the design it forced. 13 is what the first live run found.
 25 and 27 are the composer crash and the decision to stop; 28 is what that would have
@@ -1647,3 +1648,95 @@ tests, and the real-bundle boot is part of how a build is checked.
 > Every dependency must fail to **nothing happens**, never to **something breaks**.
 > An attribute is ours to set. Somebody else's child node is not ours to move.
 > And if they fix it themselves, we are the ones who go quiet.
+
+---
+
+## 30. The copy button that blinks — found, measured, and deliberately left alone
+
+Hovering the copy button on a code block while an answer streams makes it flicker, fast,
+the whole time the answer is arriving.
+
+It is theirs, not ours, and that was settled before anything else was said about it —
+"it started after I installed your thing" is the only evidence anybody ever has, so it
+had to be answered with a measurement rather than a denial. Same page, same mouse
+position, same stream, with the fix and without it:
+
+| | blinks |
+|---|---|
+| no patch, the renderer replacing the block as it re-parses | 27 |
+| **with the fix**, same | **27** |
+| with the fix, nothing replaced | 0 |
+| no patch, nothing replaced | 0 |
+
+Identical both ways, and the stronger form of the same answer is asserted permanently in
+`real-webview.test.js`: **no rule of ours matches that button or its wrapper at all**,
+checked by putting every rule in our stylesheet to the live element.
+
+### What it actually is
+
+Their own two rules, and nothing in JavaScript decides it:
+
+```css
+.copyButton_CEmTFw                                { opacity: 0; transition: opacity .15s }
+.codeBlockWrapper_-a7MRw:hover .copyButton_-a7MRw { opacity: 1 }
+```
+
+Pure CSS `:hover`. It can only blink if the hover state is lost, and hover is lost when
+the element under the pointer is **replaced** — which is what their renderer does as it
+re-parses what has arrived so far. The new element is not hovered until the pointer moves
+again, so the fade restarts, over and over.
+
+### How bad, exactly
+
+The question that decides whether it is worth touching: is it still clickable?
+
+| | clicks that landed | opacity when clicked |
+|---|---|---|
+| control — same clicks, nothing replaced | 11 of 12 | 1.00 every time |
+| the real case — blinking | 11 of 12 | 0.11 – 0.58, never settling |
+
+**Identical**, which is the answer: the lost click is in the harness, not in the panel.
+Every click reaches the host. The button is fully functional and never finishes fading
+in. It is a flicker, and it stops the moment the answer does.
+
+### Why it is not fixed
+
+Because the only lever is their design decision, not their fault.
+
+The blink comes from the element being replaced, so no CSS can restore a hover state that
+the browser has correctly decided does not apply. The one thing CSS *can* do is stop
+depending on hover — make the button always visible — and that is not fixing a bug, it is
+overruling a choice they made about their own interface. This project has refused that
+before and been right to: 0.0.1 forced the collapse row sticky and moved a button the
+extension had placed, and it was withdrawn immediately.
+
+The JavaScript route is worse. Re-applying a class to the new element on every re-render
+means running our code in the hottest path there is — while an answer streams — to cure a
+flicker. That is the exact trade sections 25 to 28 were spent learning to refuse.
+
+### The rule this sets, next to section 10
+
+Two bugs of theirs, found the same way, treated oppositely — and the difference is not
+how interesting they are, it is what they cost:
+
+| | the expanded message | the blinking button |
+|---|---|---|
+| can you do the thing? | **no** — cannot close it, cannot read the answer, must reload the panel | **yes** — every click lands |
+| how do you escape it? | scroll past the whole turn, or reload and lose your place | wait; it ends with the answer |
+| could we wait for them? | no. It makes long sessions unusable, and there was no telling when | yes. Nothing is prevented meanwhile |
+| so | **found it, and carried the fix ourselves** | **found it, measured it, wrote it down, handed it over** |
+
+Both halves of that are deliberate. Carrying somebody else's fix is a cost you take on for
+as long as you carry it, and it is only worth taking when the alternative is people not
+being able to work.
+
+### And the reason it is written down at all
+
+Writing the code is the cheap half now. What took the time here was **noticing** — that a
+pinned element taller than the window can never show its own bottom, that it only appears
+in long sessions, that the wheel is not doing nothing — and then choosing, out of several
+fixes that all looked correct, the one that was actually right. Capping the height looked
+correct. Forcing the collapse row sticky looked correct. Both shipped and both were wrong.
+
+So the finding gets recorded with the same care as the fix, including the findings we
+decided not to act on. This is one of those.
