@@ -141,9 +141,9 @@ In order of what it is actually worth:
 
 1. **File it publicly, before it is fixed.** A dated, public issue in their own tracker
    is the whole mechanism. Priority is a timestamp somebody else's system holds, not one
-   in a private repository. [claude-code-bug.md](claude-code-bug.md) is already written
-   to be filed as-is: what happens, what you would expect, the exact conditions, and why
-   the obvious fixes are wrong.
+   in a private repository. [issue-to-file.md](issue-to-file.md) is the title and body,
+   ready to paste, with nothing in it that needs this repository to make sense - and a
+   line to fill in afterwards, so the write-up and the public record point at each other.
 
 2. **Publish the repository.** A second dated public artifact, and the one that shows the
    work behind the report - the two wrong fixes, the measurements, the versions it was

@@ -14,6 +14,10 @@ time, with the conditions in "Reproducing it" below.
 anyone, with or without permission. If it leads to a fix, a line of credit is the only
 thing asked for - the finding is the work here. The fix itself is three lines of CSS.
 
+**Filed as:** *(not yet - put the issue URL here the moment it is)*. The version cut down
+for a public tracker, with no links back into this repository, is
+[issue-to-file.md](issue-to-file.md).
+
 ---
 
 ## In one paragraph
