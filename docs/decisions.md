@@ -1101,3 +1101,506 @@ of it is unreachable for as long as the turn lasts. Three things now hold on the
 sheet rather than a copy of it - opening a long message from 700px down leaves it within
 2px of where it was, it becomes `position: static` so scrolling really does carry it
 past, and closing it again leaves it within 2px.
+
+---
+
+## 25. The composer, line by line, was a crash — and the harness could not have seen it
+
+Section 23 shipped as 0.3.0 with six green tests. Installed, it did this:
+
+- the box you type into accepted every keystroke and **showed nothing** — the characters
+  went in like blank spaces
+- the panel came down with it
+
+That is one fault with two faces, and neither of them is about direction.
+
+### What is actually there
+
+Read out of Claude Code's own bundle rather than guessed at:
+
+```js
+T("div", { className: i6.messageInputContainer, children: [
+  D("div", { ref: b1, contentEditable: "plaintext-only", onInput: j9, className: i6.messageInput, … }),
+  D("div", { ref: z5, className: i6.mentionMirror, "aria-hidden": "true",
+             children: [n5, e1 ? D("span", { className: i6.argumentHint, … }) : null] }),
+  …
+]})
+```
+
+and, in their stylesheet:
+
+```css
+.messageInput_cKsPxg  { color:#0000; caret-color:var(--app-input-foreground); z-index:1 }
+.mentionMirror_cKsPxg { position:absolute; inset:0; pointer-events:none;
+                        color:var(--app-input-foreground) }
+```
+
+Two facts follow, and 0.3.0 was built without either of them:
+
+1. **The box you type into is invisible.** Not faint — `color:#0000`, caret only. Every
+   glyph a person sees while typing comes from the mirror.
+2. **The mirror's children belong to React.** `n5` is the whole draft as a string, or an
+   array of strings and `<span>`s once an @mention or a misspelled word splits it. React
+   holds a fiber per node and later calls `mirror.removeChild(node)` and
+   `mirror.insertBefore(node, before)` **with those nodes**.
+
+### The two failures, in order
+
+`wrapLines` split each line into a span of its own. Splitting a text node meant
+`document.createTextNode(part)` — a **new** node — so React's node was dropped on the
+floor. Not moved: discarded.
+
+- From that moment React's `commitTextUpdate` wrote every later keystroke into a node
+  that was no longer in the page. The mirror never changed again. **A box that types
+  blank spaces.** It happens on the very first wrap, because the mirror starts with one
+  empty text node and that is enough.
+- The next time React had to *remove* a child — text becoming an array when a mention
+  appears, the argument hint going away, the box being cleared after send — it called
+  `removeChild` on a node that was no longer its child. `NotFoundError`, thrown inside
+  React's commit phase, with no error boundary above it. **The tree unmounts.**
+
+The whole box was `[class*="root"]`-free, `try`-wrapped, and defensive throughout, and
+none of that helps: the fault was not an exception in our code. It was our code doing
+exactly what it meant to do, to somebody else's nodes.
+
+### Why six green tests said nothing
+
+`test/support/page.js` modelled the composer like this:
+
+```js
+input.addEventListener("input", () => { mirror.textContent = input.textContent; });
+```
+
+That mirror keeps no reference to anything it creates, and never removes or reorders a
+node. **The single contract the real page enforces did not exist in the model.** The
+tests were not weak about the thing they measured; they measured a page on which the bug
+is not expressible.
+
+`test/host-owned-dom.test.js` models the contract instead — nodes the host keeps, and
+removes through the parent — and states the rule rather than the symptom: *nothing the
+host put in the mirror is moved, replaced or thrown away.* Against 0.3.0 it fails
+immediately, and its third test reproduces the user's report exactly: two lines typed,
+mirror empty.
+
+### What replaced it
+
+CSS, driven by one attribute on the container the two layers share. **Nothing of ours
+goes into anybody's DOM.**
+
+```css
+[data-bidi-input="rtl"]   layer { direction: rtl;              text-align: start }
+[data-bidi-input="mixed"] layer { unicode-bidi: plaintext;     text-align: start }
+```
+
+Three states, and the middle one is the point:
+
+| the draft | state | what happens |
+|---|---|---|
+| no RTL letter anywhere | *(none)* | untouched |
+| every line that says anything says it in RTL | `rtl` | the whole box turns — **this project's rule**, so a line that opens with `Hello` and turns Urdu reads right to left |
+| RTL lines *and* English lines together | `mixed` | `unicode-bidi: plaintext` — every newline-separated line becomes its own bidi paragraph and the **browser** decides each one |
+
+Both layers are named by the same rules in the same stylesheet, so the caret and the
+glyph cannot part company — not by discipline, by construction.
+
+The first version of this fix used `plaintext` unconditionally, and that was shipped
+and typed into. It was wrong in a way only using it shows: **most drafts are one
+language**, and for those, handing every line to the browser gives up the project's
+rule for nothing at all — there is no second language to be confused with. `Hello`
+followed by `ہیلو` came back left-to-right, which is exactly the fault this project
+exists to fix. `plaintext` earns its keep only when a draft really does hold both.
+
+Everything section 23 had to build and defend goes with it: the undo stack, the caret
+save and restore, the layer-mirroring observer, `takeRecords()` against the hang. Undo,
+IME, dictation, autocorrect and spellcheck go back to being the browser's problem.
+
+### What it costs, measured
+
+| the line, while it is being typed | 0.3.0 (elements) | plaintext always | now |
+|---|---|---|---|
+| `Hello ہیلو`, on its own | rtl | **ltr** | rtl |
+| `npm install کے بعد چلائیں`, among other Urdu lines | rtl | **ltr** | rtl |
+| `npm install کے بعد چلائیں`, above `Run the build` | rtl | ltr | **ltr** |
+| `Run the build and check it.`, among Urdu lines | ltr | ltr | ltr |
+| `12345` | rtl (followed the box) | ltr | rtl in an Urdu draft |
+
+One row is a loss, and only in a draft that is genuinely two languages at once: the
+project's rule versus the browser's, any RTL word against the first strong character.
+That line reads right-to-left the moment it is **sent**, where the lines really are
+elements of ours. It is written down as a passing test in `composer.test.js`, not as a
+wish, so the day somebody claims otherwise it says so.
+
+Buying that last row back means owning the pixels the caret sits on: wrapping the lines
+of the box you type into (React owns no children there — its JSX passes none) and, in
+place of React's mirror, drawing our own from a **clone** of it. A clone is safe where
+0.3.0 was not, because the mirror is `aria-hidden` and `pointer-events:none` — there are
+no handlers on it to lose. It also brings back everything 0.3.0 had to carry for
+wrapping a live editor: its own undo stack, caret save and restore, an IME guard. Not
+done, and not because it cannot be.
+
+### What the fourth row cost, and why it came back
+
+`12345` on its own line in an Urdu draft: under `plaintext` it is left-to-right, because
+the bidi algorithm's rule for a paragraph with no strong character is left-to-right and
+`direction` is never consulted (measured; see below). Under `rtl` the box turns as a
+whole and the digits go with it, which is what a person writing Urdu expects. So a line
+holding neither kind of letter — digits, a bare path, an empty line — is counted as
+voting for **nothing**, rather than as English. Otherwise a draft would fall out of
+`rtl` and rearrange itself the moment somebody typed a file path under their Urdu.
+
+### A wrong assumption, caught by measurement
+
+The box-level flag was expected to work *alongside* `plaintext`, catching the lines with
+no strong character in them. Measured in Chromium, `direction` on an element that is
+`unicode-bidi: plaintext` **changes nothing at all** — not a digits-only line, not the
+caret waiting on an empty one. The bidi algorithm's own rule is that a paragraph with no
+strong character is left-to-right, and the property is never consulted.
+
+So the two cannot be combined, which is why the states are exclusive: a box is either
+turned as a whole or handed to the browser line by line, never both.
+
+### The rule this leaves behind
+
+> An attribute is ours to set. Somebody else's child node is not ours to move.
+
+Setting `data-bidi` on a host's element is safe: React does not enumerate attributes it
+never set. Re-parenting, replacing or dropping one of its children is not, however
+carefully it is done, because the host is entitled to remove that node from the parent
+*it* put it in. The sent-message split still moves nodes — it has shipped since 0.2.0
+and works, because a sent message is never updated again — and it is the one place left
+in this project standing on that distinction.
+
+---
+
+## 26. The lines really do have to be elements — just not in React's half
+
+Section 25 replaced the crashing per-line elements with a stylesheet, in three states,
+and it shipped. Typed into, next to a browser chat box, it failed on the thing the
+comparison made obvious:
+
+1. write `Hello ہیلو` — in the browser it reads right to left. Here it did too, in the
+   `rtl` state.
+2. press shift+enter and write `Hello 2` — in the browser the new line is left to right
+   **and the line above does not move**.
+3. here, the draft became `mixed`, the whole box went to `unicode-bidi: plaintext`, and
+   the line already on the screen **swung back to the left**.
+
+That is not a rough edge. A line that a person has finished writing and can see is
+finished. Re-deciding it because of something typed afterwards is the same fault as the
+original bug wearing different clothes.
+
+And it is not fixable in CSS. `plaintext` is per-line, but it is per-line **by the first
+strong character**, applied to every line every time. There is no way to say "this line
+was decided by a different rule, and it is not up for discussion".
+
+So the lines are elements after all. What changed is *whose* DOM they are made in, and
+that distinction was read out of Claude Code's own bundle rather than assumed:
+
+| | who owns the children | what we may do |
+|---|---|---|
+| `messageInput` | **nobody.** `D("div",{ref:b1,contentEditable:"plaintext-only",…})` — no `children` prop at all. React renders nothing into it; its contents are the browser's. | wrap them |
+| `mentionMirror` | **React.** `T("div",{ref:z5,…,children:[n5, hint]})` | read only — `cloneNode`, nothing else, ever |
+
+### The arrangement
+
+- the box you type into is wrapped, one element per line
+- **React's mirror is hidden** — by a rule that only matches once ours is up, so a
+  failure anywhere leaves the host's own layer on the screen rather than a blank one
+- **our mirror** — a clone of theirs, wearing their own class so every pixel of its
+  styling is theirs rather than a copy that can go stale — is what you read
+
+Cloning is the whole safety argument. Nothing of React's is moved, removed or replaced,
+so its fibers keep pointing at exactly the nodes it put there and it can update or
+unmount them whenever it likes. And the clone loses nothing: the mirror is
+`aria-hidden` and `pointer-events:none`, so there is not one handler on it to lose.
+Chips, misspellings and the argument hint all come across.
+
+`test/host-owned-dom.test.js` — written against the crash, and the reason it is stated
+as a rule rather than a symptom — passes unchanged.
+
+### The shape of a line, measured four ways
+
+Each candidate on its own page, because the first run of this had all four stylesheets
+in one document and every candidate silently inherited `display: block` from another:
+
+| | direction | **aligned** | height | textContent | copies back |
+|---|---|---|---|---|---|
+| inline isolate — *what 0.3.0 shipped* | right | ✗ **hugs the left** | same | exact | exact |
+| `display:block`, newlines between | right | ✓ | **+50%** | exact | doubled newlines |
+| **`display:inline-block; width:100%`** | right | ✓ | same | exact | exact |
+
+So 0.3.0 never aligned a composer line at all. It ordered the characters and left the
+line against the left edge — and its tests could not tell, because they read our own
+`data-bidi-line` attribute instead of asking the page where the text was. Every test in
+`composer.test.js` now measures pixels.
+
+`width: 100%` is what earns the alignment: it gives each line a line box of its own, so
+`text-align: start` resolves against **that line's** direction. `unicode-bidi: isolate`
+stops a line reordering its neighbours. And the `\n` characters stay in the DOM between
+the lines, because `textContent` is what gets sent.
+
+### Undo, which is cheaper than it was
+
+Rewriting a box's insides destroys the browser's undo stack. 0.3.0 rebuilt on every
+keystroke and so had to carry a complete replacement.
+
+This one asks first: `intact()` checks that the children are still exactly our line
+elements separated by single newlines. Ordinary typing — **including typing the first
+Urdu letter, the keystroke that turns a line** — changes nothing structural, so all that
+happens is one attribute, and the browser's own undo goes on working underneath.
+Rebuilding is left for adding, splitting or joining a line, and for a paste.
+
+The stack is still carried, and ctrl+z is still taken over for the whole box, because
+half-owning an undo stack is worse than owning it: a draft that loses its last Urdu
+letter has our elements taken out from under it, and by then the browser's idea of what
+to put back is several keystrokes stale.
+
+### The rule, now that it is ours to write
+
+Per line, live:
+
+| the line | reads |
+|---|---|
+| holds an RTL letter | rtl — **whatever it opens with** |
+| holds a strongly left-to-right letter and no RTL | ltr |
+| holds neither — digits, a bare path, an empty line | follows the draft it sits in |
+
+The third row is the one CSS could not do at all. A line of digits under three lines of
+Urdu belongs with them; the bidi algorithm's own answer is left-to-right, and it would
+sit on the wrong side.
+
+### Order of operations, which is a safety property
+
+The host's mirror is found **first**. If it is not there — a rename upstream, a layout
+nobody has seen — nothing happens at all. Wrapping the box you type into while the layer
+you READ is still the host's would put the caret on one side of the panel and the glyph
+on the other, which is worse than doing nothing.
+
+---
+
+## 27. Stopping: the composer takes one direction, and that is the answer
+
+Section 26 shipped as 0.3.3. Typed into, it did this:
+
+> press a key — nothing appears. Press the next — the first one appears.
+
+Every keystroke reached the screen one keystroke late. Nothing was lost and nothing
+crashed; it was simply not a box anybody could write in.
+
+### Where the keystroke went
+
+Reproduced in ten lines, and the reproduction is the whole finding:
+
+| the composer is… | typed | on screen |
+|---|---|---|
+| already in the page when the payload runs *(what every test did)* | `ہ` `ہی` `ہیل` | `ہ` `ہی` `ہیل` |
+| built after the payload runs *(what the real webview does)* | `ہ` `ہی` `ہیل` | *(nothing)* `ہ` `ہی` |
+
+Our mirror was painted from the host's mirror in a **capture-phase `input` handler**,
+which runs before the host has redrawn its own — so it always painted the previous
+text. The MutationObserver that existed precisely to correct that, in the same task,
+before the frame, never ran: it is attached with
+
+```js
+var boxes = document.querySelectorAll(composer.container);   // at start()
+```
+
+and at `start()` the composer **does not exist**. The payload is appended to the end of
+Claude Code's own bundle; React has not rendered the input yet. `boxes.length` is 0, the
+observer is attached to nothing, and the only thing left driving the clone is the one
+handler that is guaranteed to be early.
+
+Fixable in a line — delegate, or attach lazily. It was not fixed, and that is the
+decision this section records.
+
+### Why it was not fixed
+
+Three attempts at per-line direction in a live editor, three faults, and each one was
+found by a person typing rather than by a test:
+
+| | what it did | how it failed |
+|---|---|---|
+| 0.3.0 | elements per line, inside React's mirror | React's nodes thrown away → **the box typed blank spaces**, then `removeChild` threw in React's commit phase and **took the panel down** |
+| 0.3.2 | no elements; `unicode-bidi: plaintext` when a draft mixed languages | a line already on the screen was **re-decided** by the next line typed under it |
+| 0.3.3 | elements per line in the box, a **clone** of React's mirror to read | **every keystroke one keystroke late** |
+
+Each fix was correct about the fault before it. The pattern is not a run of bad luck:
+an editor is a live thing somebody else owns, and every one of these needed our code to
+run *between* a key being pressed and the frame being painted. That is a place with no
+margin, and being right there three times in a row is not a plan.
+
+**Typing is what a composer is for.** A box that reads the wrong way round is a
+complaint; a box that types a letter behind is unusable. So the composer takes ONE
+direction, live, from any RTL letter in it — one attribute, one CSS rule, nothing of
+ours inside either layer, and no code of ours running while anybody types.
+
+Undo, IME, dictation, autocorrect and spellcheck go back to being the browser's job.
+
+### What is given up, stated plainly
+
+A draft that mixes Urdu and English goes right to left as a whole. An English line
+inside an Urdu draft is carried along with it. That is the platform's limit — a line is
+a `\n` inside one text node, and the only place to put an element per line is inside a
+mirror React owns — and it is now **accepted rather than fought**. There is a passing
+test that says so, so changing it has to change the test and give a reason.
+
+The rule still applies in full where it costs nothing and cannot be felt: the message
+once it is **sent**, where the lines are real elements in a page nobody is typing into.
+That is `perline.test.js`, and it has worked since 0.2.0.
+
+### The gap in the harness, for the third time
+
+Every one of these three faults was invisible to a green suite, and each time for the
+same reason: **the harness modelled as already-there a page that is built at runtime.**
+
+- 0.3.0 — the mirror was modelled by `mirror.textContent = input.textContent`, which
+  keeps no reference to anything it creates. React's one contract did not exist in the
+  model. → `test/host-owned-dom.test.js`
+- 0.3.3 — the composer was in the page before the payload ran, so an observer that is
+  dead on the real page was alive in the test. → `"a composer that arrives after the
+  payload behaves the same in every way"`
+
+Both of those tests are now in the suite, and both fail against the build they were
+written for. The second one is the more general lesson, and it is worth stating as a
+rule: **a harness that builds the page before the code under test runs cannot see
+anything about a page that is built afterwards.**
+
+---
+
+## 28. The question left over: would it ever have felt fast?
+
+Stopping left one thing unanswered. The three per-line builds each failed on
+correctness, and each failure was fixable — so *if* the code had been right, would a
+composer that watches every keystroke have been as quick to type in as one that does
+nothing? It is worth an answer, because "we could have fixed it" and "we should have"
+are not the same claim.
+
+Measured rather than argued, and the first attempt at measuring it was worthless:
+driving Playwright's keyboard and reading `requestAnimationFrame` gave numbers in
+which the **unpatched** page was slower than the patched one. That is jitter, not a
+result. So the box is driven from inside the page, microtasks are flushed between
+characters so the MutationObserver work is counted, and style and layout are forced
+each time. What is left is the work itself.
+
+**Milliseconds of work per character typed:**
+
+| lines already in the box | none | 0.3.4 *(shipped)* | 0.3.3 *(per-line)* | |
+|---|---|---|---|---|
+| 0 | 0.21 | 0.27 | 0.58 | ×2.8 |
+| 5 | 0.36 | 0.41 | 1.24 | ×3.4 |
+| 20 | 0.60 | 0.73 | 3.06 | ×5.1 |
+| 40 | 1.15 | 1.32 | 6.20 | ×5.4 |
+| 80 | 2.84 | 2.61 | **18.05** | ×6.4 |
+
+What shipped is free: 0.3.4 sits inside the noise of doing nothing at all, at every
+size, because one attribute is all it writes.
+
+The per-line build is not. At eighty lines it spends **18ms per character — more than
+a whole frame at 60fps**, on every keystroke, before the browser has drawn anything.
+That is not a number you can type behind.
+
+### Whose cost is it — the idea's, or the code's?
+
+The code's. `paintMirror` rebuilt the entire visible layer on every keystroke: clone
+every child of the host's mirror, re-split the whole draft, rewrap every line. That is
+O(the whole draft) per character, and the table is that O showing itself. The idea does
+not require it — only the line that changed needs anything doing to it, and 0.3.3
+already did exactly that for the box you type into, through `intact()`. The visible
+layer never got the same treatment.
+
+So the honest answer to the question is: **yes, it was almost certainly possible.** Not
+as written — as written it was measurably too slow, and the instinct that it might be
+was right where an argument from "it is only a regex per line" was wrong. But there is
+no barrier of principle between the version that was built and one that is both correct
+and free.
+
+### And it is still the right place to stop
+
+What that version costs is not CPU. It is ownership: a text layer of ours living inside
+somebody else's editor, in the hottest path there is, carrying its own undo, IME,
+dictation and spellcheck, re-deriving whatever the host adds to its mirror next, and
+re-verified against a bundle that changes every week. All of that buys exactly one
+case — a draft that mixes two languages *while it is being typed*, which reads
+correctly the moment it is sent either way.
+
+Three attempts, three faults, none caught by a green suite. The measurement above does
+not say the fourth attempt would have failed. It says what the fourth attempt would
+have had to be worth, and it is not worth that.
+
+---
+
+## 29. A string of lamps, not a circuit in series
+
+This fix lives inside somebody else's product. One day it will meet a version of that
+product nobody has seen, and the question that matters then is not whether everything
+still works. It is **how much goes dark**, and whether anything of ours starts arguing
+with a fix of theirs.
+
+Two promises, and both are now measured rather than asserted in a comment.
+
+### 1. One lamp at a time
+
+The audit found three places wired in series, where one fault took out everything
+behind it:
+
+| where | what happened before | now |
+|---|---|---|
+| `drain()` — decides a batch of blocks in one loop | the **first** block to throw ended the pass, so every block behind it went undecided; then the next batch; then the feature, silently | each block is decided inside its own `try`, and the count of contained faults is reported |
+| the quiet timer's catch-up pass | the same | the same fix |
+| `decidePerLine` — the one thing that restructures anything | a throw took the block's ordinary decision with it | it fails on its own; the block still gets the whole-block decision |
+| an unusable selector | threw on **every batch, for ever**, silently | asked once at start-up; what cannot be used is not used, and the parts that do not depend on it carry on |
+
+Everything above that lives in the adapter is now a **lamp**: asked before it is
+switched on whether it is needed and whether it is possible, wrapped so a throw cannot
+reach another lamp, and reported. `__bidiStatus()` in the webview console says which
+parts are on, which stood down, and why — because a fix that silently stops working
+looks exactly like a fix that is working.
+
+### 2. Stand down, do not fight
+
+If Claude Code fixes something itself, the part of this that existed for it must go
+quiet. Two fixes for one fault fight each other, and the fight is invisible to whoever
+shipped either of them.
+
+**"Needed" is measured, never read.** A rule can be renamed, moved, overridden or
+shipped in a second file, and a text search over their stylesheet would lie in
+whichever direction is most expensive. So the page is asked to lay out the exact
+sentence the fault is about, in a copy of their own container, off screen:
+
+| paragraph | what it is for |
+|---|---|
+| `اسلام علیکم کیسے ہیں` — the **control** | in any build that decides a line's direction at all, this reads right to left. If it does not, the container found is not the one the fault lives in, the measurement means nothing, and it is thrown away rather than believed |
+| `npm install کے بعد…` — the **subject** | left to right = the fault is still here. Right to left = somebody fixed it, and everything of ours comes back out through the same escape hatch a person would use |
+
+The probe carries no decision of ours, so our own stylesheet cannot answer our own
+question. And it is taken out again whatever happens.
+
+Two more stand-downs on the same principle: the unpinning rule asks the live element
+whether a turn header is still `position: sticky`, and the timeline dot refuses to
+install unless it can read three plain pixel numbers.
+
+### What this cost to get right, and what found it
+
+Two real faults, both introduced by the resilience work itself:
+
+**`stop()` did not cancel work already in flight.** A pass is queued as a microtask, so
+one can be mid-air when the fix stands down — and it would then write a decision into a
+page that had just been handed back, with nothing left to remove it. Found by the test
+that stands the fix down the moment a message arrives.
+
+**The question asked itself for ever.** Asking means putting a probe in the page and
+taking it out again, and the thing deciding *when* to ask is watching the page. On a
+page where the question cannot be answered yet, each ask caused the next one. Not a
+slow loop — a **hang**, and the panel never finished loading.
+
+That one was not found by any test. It was found by booting the real 5MB bundle, and
+the copied page could not have found it: the copy always has a container the probe can
+measure in, so the first ask always gets an answer and stops. Same shape as every other
+gap this harness has had — **the model was easier than the thing**. Both faults now have
+tests, and the real-bundle boot is part of how a build is checked.
+
+### The rule the whole project now runs on
+
+> Every dependency must fail to **nothing happens**, never to **something breaks**.
+> An attribute is ours to set. Somebody else's child node is not ours to move.
+> And if they fix it themselves, we are the ones who go quiet.
