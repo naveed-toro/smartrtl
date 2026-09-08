@@ -65,16 +65,64 @@ test("blank lines survive, and keep their height", async () => {
   } finally { await close(); }
 });
 
-test("a mention chip is moved, not copied, so it is still the same element", async () => {
-  // Rebuilding the text would turn @file into plain words and quietly take away
-  // the click that opens it.
+test("the host's own chip is not moved - and clicking the copy still opens the file", async () => {
+  // The promise this replaced was "the chip is MOVED, not rebuilt, so it keeps whatever
+  // the host attached to it". That was true and it was the wrong promise: moving it is
+  // exactly what the host cannot survive. Nothing of theirs is touched now, and what a
+  // reader sees is a copy - so the copy has to hand its click back to the original.
   const { page, close } = await open(
     userMessageWithChip("دیکھیں ", "@src/engine.js", " والی فائل\nsecond line"));
   try {
-    const chip = await page.$$eval(".mentionChip_x", (els) => els.length);
-    assert.equal(chip, 1, "the chip is still there, exactly once");
-    const insideLine = await page.$eval(".mentionChip_x", (el) => !!el.closest(".smart-rtl-line"));
-    assert.ok(insideLine, "and it now lives inside its own line");
+    const state = await page.evaluate(() => {
+      const host = document.querySelector('[dir="auto"]:not(.smart-rtl-copy)');
+      const original = host.querySelector(".mentionChip_x");
+      window.__opened = 0;
+      original.addEventListener("click", () => { window.__opened++; });   // what the host attached
+      const copy = document.querySelector(".smart-rtl-copy .mentionChip_x");
+      return {
+        theirsUntouched: original.parentNode === host,
+        theirsHidden: getComputedStyle(host).display === "none",
+        copyExists: !!copy,
+        copyIsNotTheirs: copy !== original,
+        copyInALine: !!(copy && copy.closest(".smart-rtl-line"))
+      };
+    });
+    assert.ok(state.theirsUntouched, "the host's chip was moved out of the host's own span");
+    assert.ok(state.theirsHidden, "the host's span is still on the screen beside our copy");
+    assert.ok(state.copyExists && state.copyIsNotTheirs, "no copy of the chip was made");
+    assert.ok(state.copyInALine, "the copy is not inside a line of its own");
+
+    await page.click(".smart-rtl-copy .mentionChip_x");
+    assert.equal(await page.evaluate(() => window.__opened), 1,
+      "clicking the copy did not reach the element the host attached its handler to");
+  } finally { await close(); }
+});
+
+test("the host can update or remove a message afterwards, and nothing throws", async () => {
+  // The whole reason the split stopped moving anything. React holds a pointer to every
+  // node it created and removes them through the parent it put them in; if that parent
+  // is no longer the one holding them, removeChild throws inside its commit phase and
+  // the panel unmounts. Demonstrated before this change, and asserted against here.
+  const { page, close } = await open(
+    userMessageWithChip("دیکھیں ", "@src/engine.js", " والی فائل\nsecond line"));
+  try {
+    const result = await page.evaluate(() => {
+      const host = document.querySelector('[dir="auto"]:not(.smart-rtl-copy)');
+      const kids = [...host.childNodes];               // what React would be holding
+      const stillItsOwn = kids.every((n) => n.parentNode === host);
+      let threw = null;
+      try {
+        // exactly what react-dom does when a message's content changes: remove the
+        // children it knows about, then put new ones in
+        for (const n of kids) host.removeChild(n);
+        host.appendChild(document.createTextNode("edited\nand re-rendered"));
+      } catch (e) { threw = String(e).split("\n")[0]; }
+      return { stillItsOwn, threw };
+    });
+    assert.ok(result.stillItsOwn,
+      "a node the host created is no longer one of its own children");
+    assert.equal(result.threw, null,
+      "the host could not update its own message: " + result.threw);
   } finally { await close(); }
 });
 
@@ -194,5 +242,79 @@ test("the direction of each line is the formula's, not the browser's", async () 
       return s.toString();
     });
     assert.equal(copied, LINES.join("\n"), "and not one character of it was changed");
+  } finally { await close(); }
+});
+
+/* ---------------------------------------------------------------------------- *
+ * Editing a message that has already been sent.
+ *
+ * Claude Code has no such button today. The browser does - Gemini puts a pencil
+ * beside every message you have sent - and the browser is the next surface this
+ * engine has to carry, so these are written against the thing that exists rather
+ * than the thing that is convenient.
+ *
+ * Two separate promises, and the second is the one that is easy to forget:
+ *
+ *   1. it must not CRASH   - the host has to be able to rewrite its own message
+ *   2. it must still WORK  - and what a reader sees has to be the new text,
+ *                            decided again, not the old text kept politely alive
+ * ---------------------------------------------------------------------------- */
+
+/** What the host does when somebody edits a message: its own span, rewritten. */
+const rewrite = (page, text) => page.evaluate((next) => {
+  const host = document.querySelector('[dir="auto"]:not(.smart-rtl-copy)');
+  const kids = [...host.childNodes];
+  for (const n of kids) host.removeChild(n);          // React removes what it owns
+  host.appendChild(document.createTextNode(next));    // and puts the new content in
+}, text);
+
+const shown = (page) => page.evaluate(() =>
+  [...document.querySelectorAll(".smart-rtl-copy .smart-rtl-line")].map((el) => ({
+    text: el.textContent,
+    dir: getComputedStyle(el).direction
+  })));
+
+test("the host can rewrite a sent message, and what you read becomes the new text", async () => {
+  const { page, close } = await open(userMessage("پہلی سطر\nدوسری سطر\nthird line"));
+  try {
+    assert.deepEqual((await shown(page)).map((l) => l.text),
+      ["پہلی سطر", "دوسری سطر", "third line"], "the copy did not start out right");
+
+    await rewrite(page, "npm install کے بعد چلائیں\nRun the build\nشکریہ");
+    await page.waitForTimeout(300);
+
+    const after = await shown(page);
+    assert.deepEqual(after.map((l) => l.text),
+      ["npm install کے بعد چلائیں", "Run the build", "شکریہ"],
+      "the edited message is not what is on the screen");
+    assert.deepEqual(after.map((l) => l.dir), ["rtl", "ltr", "rtl"],
+      "the new lines were not decided again by the formula");
+  } finally { await close(); }
+});
+
+test("editing it down to a single line takes our lines away entirely", async () => {
+  const { page, close } = await open(userMessage("پہلی سطر\ndوسری سطر"));
+  try {
+    assert.ok((await shown(page)).length > 1);
+    await rewrite(page, "اب صرف ایک سطر");
+    await page.waitForTimeout(300);
+    assert.equal(await page.$$eval(".smart-rtl-copy", (n) => n.length), 0,
+      "a message that is no longer several lines still carries a copy");
+    assert.notEqual(await page.$eval('[dir="auto"]', (el) => getComputedStyle(el).display), "none",
+      "the host's own span was left hidden with nothing standing in for it");
+  } finally { await close(); }
+});
+
+test("the host removing a message throws nothing, and takes ours with it", async () => {
+  const { page, close } = await open(userMessage("پہلی سطر\nدوسری سطر"));
+  try {
+    const result = await page.evaluate(() => {
+      const row = document.querySelector('[class*="message_"]');
+      let threw = null;
+      try { row.parentNode.removeChild(row); } catch (e) { threw = String(e); }
+      return { threw, copiesLeft: document.querySelectorAll(".smart-rtl-copy").length };
+    });
+    assert.equal(result.threw, null);
+    assert.equal(result.copiesLeft, 0, "our copy outlived the message it belonged to");
   } finally { await close(); }
 });

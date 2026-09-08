@@ -119,6 +119,12 @@
         // vote, so such a run is told to inherit the decision instead.
         '[data-bidi="rtl"] :is(' + BLOCKS + ') [dir="auto"]{direction:inherit!important;unicode-bidi:isolate!important}';
 
+      // The copy of a sent message, and the host's own span it stands in for. Only
+      // while the copy is actually there - anything that stops us building it leaves
+      // the host's own text on the screen, never a hidden one and no replacement.
+      var COPY_CLASS = "smart-rtl-copy";
+      css += '[data-bidi-lines="1"] [dir="auto"]:not(.' + COPY_CLASS + '){display:none}';
+
       // Lines we made ourselves, in a block that holds a whole message at once.
       // NOTE: display:block is set on the element as well, inline, and that is not
       // duplication - see decidePerLine.
@@ -290,23 +296,80 @@
        *
        * @returns {boolean} true if this block was handled here
        */
-      function decidePerLine(block) {
-        if (block.getAttribute("data-bidi-lines") === "1") return true;
+      /**
+       * A sent message, decided line by line - WITHOUT moving anything of the host's.
+       *
+       * A typed message is one element with newlines in it, so one decision would
+       * govern every line of it: paste a command, press shift+enter, write Urdu
+       * underneath, and the command is dragged round with the Urdu. The lines have to
+       * become elements before they can each be decided.
+       *
+       * Until now they were made out of the host's own nodes, taken out of the span
+       * React rendered them into and put back inside spans of ours. That worked, and
+       * shipped from 0.2.0, and it was the last place in this project standing on a
+       * promise it could not keep: React holds a pointer to every node it created and
+       * removes them through the parent it put them in. Ours is not that parent any
+       * more. The day React updates a sent message - the day Claude Code grows "edit
+       * your message", say - it calls removeChild on a node that is no longer there,
+       * throws inside its own commit phase, and the panel unmounts. Demonstrated, not
+       * feared: the same NotFoundError that took the panel down in 0.3.0.
+       *
+       * So: nothing is moved, removed or replaced. A COPY is built beside the host's
+       * span and the host's span is hidden by a CSS rule. React's own tree is exactly
+       * as React left it, and it can update or unmount it whenever it likes.
+       *
+       * The copy is a sibling of the span rather than a child of it, so it inherits
+       * the font and colour from the same place the original does, and so that adding
+       * it is the weakest thing that can be done to somebody else's DOM: an append,
+       * never an insert between two of their nodes.
+       *
+       * @mention chips are elements the host attached handlers to, and a clone has
+       * none. Each clone therefore forwards its own activation to the original, which
+       * is hidden but still in the page and still React's - so clicking a mention in a
+       * message still opens the file.
+       */
+      /** Has the host rewritten the message since the copy was made? */
+      function staleCopy(block) {
+        var host = null, copy = null, all = block.querySelectorAll('[dir="auto"]');
+        for (var i = 0; i < all.length; i++) {
+          if (all[i].classList.contains(COPY_CLASS)) copy = all[i];
+          else if (!host) host = all[i];
+        }
+        if (!host || !copy) return false;
+        // the copy carries the same characters, minus the newlines the line elements
+        // stand in for - so compare with those taken out of both
+        return (host.textContent || "").replace(/\n/g, "") !== (copy.textContent || "");
+      }
+
+      function decidePerLine(block, again) {
+        if (!again && block.getAttribute("data-bidi-lines") === "1") return true;
 
         // Only ever a message somebody TYPED, and the test for that is exact rather
-        // than structural. Splitting is the one place anything here changes a page's
-        // structure instead of its style, so what it may change has to be named
-        // precisely - "the content div inside an expandable" describes a container the
-        // host is free to reuse for something else, and the day it does, this would
-        // quietly rewrite that component's DOM into spans.
+        // than structural. This is the one place anything here adds to a page instead
+        // of styling it, so what it may add to has to be named precisely - "the content
+        // div inside an expandable" describes a container the host is free to reuse for
+        // something else.
         //
         // dir="auto" is the plainText renderer's own signature, and it appears exactly
         // once in the whole bundle: on the span a typed message's text goes into. No
-        // span, no split - whatever else ends up in an expandable is left alone.
+        // span, no copy - whatever else ends up in an expandable is left alone.
         var host = block.querySelector('[dir="auto"]');
-        if (!host) return false;
-        if ((host.textContent || "").indexOf("\n") === -1) return false;   // one line
+        if (!host || host.classList.contains(COPY_CLASS)) return false;
+        if (again) {
+          // ours, and only ever ours - the host's span is never removed
+          var old = block.querySelectorAll("." + COPY_CLASS);
+          for (var o = 0; o < old.length; o++) {
+            if (old[o].parentNode) old[o].parentNode.removeChild(old[o]);
+          }
+        }
+        if ((host.textContent || "").indexOf("\n") === -1) {
+          // it was several lines and is now one - nothing of ours belongs here
+          block.removeAttribute("data-bidi-lines");
+          return false;
+        }
+        if (!host.parentNode) return false;
 
+        var pairs = [];          // [clone, original] for anything that can be activated
         var lines = [[]], kids = Array.prototype.slice.call(host.childNodes);
         for (var i = 0; i < kids.length; i++) {
           var n = kids[i];
@@ -317,21 +380,21 @@
               if (parts[j] !== "") lines[lines.length - 1].push(document.createTextNode(parts[j]));
             }
           } else {
-            lines[lines.length - 1].push(n);
+            var copy = n.cloneNode(true);
+            if (n.nodeType === 1) pairs.push([copy, n]);
+            lines[lines.length - 1].push(copy);
           }
         }
 
-        var frag = document.createDocumentFragment();
+        var holder = document.createElement("span");
+        holder.className = COPY_CLASS;
+        holder.setAttribute("dir", "auto");
         for (var k = 0; k < lines.length; k++) {
           var row = document.createElement("span");
           row.className = "smart-rtl-line";
-          // The newline characters are gone once the text is split, so from here on
-          // the line breaks are made by these elements being blocks - which means the
-          // breaks must not depend on our stylesheet still being present. Somebody
-          // running the escape hatch, or anything that drops the sheet, would
-          // otherwise collapse a typed message into one unreadable run and take its
-          // line breaks out of the clipboard with it. Measured, before it was set
-          // here: three lines became one and the message lost 40px of height.
+          // The line breaks are made by these elements being blocks, so they must not
+          // depend on our stylesheet still being present - somebody running the escape
+          // hatch would otherwise see the message collapse into one unreadable run.
           row.style.display = "block";
           for (var m = 0; m < lines[k].length; m++) row.appendChild(lines[k][m]);
           if (rule.containsRtlWord(row.textContent || "")) row.setAttribute("data-bidi-line", "rtl");
@@ -340,17 +403,53 @@
           // against a zero-width space, which survives the copy as an invisible
           // character in somebody else's paste.
           if (!lines[k].length) row.appendChild(document.createElement("br"));
-          frag.appendChild(row);
+          holder.appendChild(row);
         }
 
-        while (host.firstChild) host.removeChild(host.firstChild);
-        host.appendChild(frag);
+        // A clone has no handlers. Hand its activation back to the element the host
+        // rendered, which is hidden but still in the page and still theirs.
+        for (var q = 0; q < pairs.length; q++) forwardTo(pairs[q][0], pairs[q][1]);
+
+        // AFTER the host's span, never between two of its nodes. React inserts before
+        // its own next sibling and appends at the end, so a node of ours sitting last
+        // is something it never has to reason about.
+        host.parentNode.appendChild(holder);
         block.setAttribute("data-bidi-lines", "1");
         return true;
       }
 
+      /** Clicking or pressing enter on the copy does what it would have done on theirs. */
+      function forwardTo(copy, original) {
+        try {
+          copy.addEventListener("click", function (e) {
+            e.preventDefault();
+            try { original.click(); } catch (err) {}
+          });
+          copy.addEventListener("keydown", function (e) {
+            if (e.key !== "Enter" && e.key !== " ") return;
+            e.preventDefault();
+            try { original.click(); } catch (err) {}
+          });
+        } catch (e) {}
+      }
+
       function inspect(el) {
-        if (!el || settledBlocks.has(el) || !el.isConnected) return;
+        if (!el || !el.isConnected) return;
+
+        // A message that has been split is normally finished with - a sent message does
+        // not change. "Normally" is not good enough here: a surface where somebody can
+        // EDIT a message they already sent exists today in the browser, and the copy
+        // would go on showing what they wrote before.
+        //
+        // This is the only thing that looks at a settled block again, and it is cheap
+        // where it matters: it runs for blocks that turn up in a batch of mutations,
+        // and while an answer streams the mutations are all inside that answer, so no
+        // sent message is ever in the batch.
+        if (el.getAttribute && el.getAttribute("data-bidi-lines") === "1") {
+          try { if (staleCopy(el)) decidePerLine(el, true); } catch (e) { failures++; }
+          return;
+        }
+        if (settledBlocks.has(el)) return;
 
         if (el.closest('[data-bidi="rtl"]')) {          // message already decided
           // A block carrying no RTL text at all is left EXACTLY as the page had it.
@@ -581,30 +680,21 @@
        * missing every line break. The one path a person has when something goes wrong
        * has to be the one path that cannot make things worse.
        */
+      /**
+       * Take the copy away and let the host's own span be seen again.
+       *
+       * stop() promises the page comes back to what it was, and now that is nearly
+       * nothing to do: the host's DOM was never altered, so putting it back is
+       * removing one element of ours and one attribute.
+       */
       function undoPerLine() {
         var split = document.querySelectorAll('[data-bidi-lines="1"]');
         for (var i = 0; i < split.length; i++) {
-          var block = split[i];
-          block.removeAttribute("data-bidi-lines");
-          var host = block.querySelector('[dir="auto"]');
-          if (!host) continue;
-          var rows = host.querySelectorAll(".smart-rtl-line");
-          if (!rows.length) continue;
-
-          var frag = document.createDocumentFragment();
-          for (var k = 0; k < rows.length; k++) {
-            if (k > 0) frag.appendChild(document.createTextNode("\n"));
-            while (rows[k].firstChild) {
-              var n = rows[k].firstChild;
-              rows[k].removeChild(n);
-              // the <br> holding a blank line open is ours, and goes back with us
-              if (n.nodeType === 1 && n.tagName === "BR") continue;
-              frag.appendChild(n);
-            }
+          split[i].removeAttribute("data-bidi-lines");
+          var copies = split[i].querySelectorAll("." + COPY_CLASS);
+          for (var k = 0; k < copies.length; k++) {
+            if (copies[k].parentNode) copies[k].parentNode.removeChild(copies[k]);
           }
-          while (host.firstChild) host.removeChild(host.firstChild);
-          host.appendChild(frag);
-          host.normalize();          // one text node again, exactly as it arrived
         }
       }
 
