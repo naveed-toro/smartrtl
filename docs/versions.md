@@ -1,4 +1,4 @@
-# The twenty-six builds, and what each one actually contained
+# The twenty-seven builds, and what each one actually contained
 
 Compiled by opening every `.vsix` and reading what is inside it, not from memory. The
 second table was rebuilt the same way after the fact, which is why some of its rows say
@@ -141,29 +141,30 @@ and six tests cover it - the first of which is simply that it loads.
 Read out of the packaged `.vsix` the same way, months later. `·` means the build carried
 it; a blank means it did not.
 
-| | 0.1.0-4 | 0.1.5 | 0.1.6-7 | 0.2.0 | 0.3.0 | 0.3.1 | 0.3.2 | 0.3.3 | 0.3.4 | 0.4.0 | 0.4.1 | 0.4.2 |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| answers read right-to-left | · | · | · | · | · | · | · | · | · | · | · | · |
-| your own messages read right-to-left | · | · | · | · | · | · | · | · | · | · | · | · |
-| a sent message decided line by line | | | | · | · | · | · | · | · | · | · | · |
-| the composer takes one direction | · | · | · | · | · | | | | · | · | · | · |
-| the composer decided **per line** | | | | | · | | | · | | | | |
-| ... by `unicode-bidi: plaintext` | | | | | | · | · | | | | | |
-| ... with a third, "mixed" state | | | | | | | · | | | | | |
-| a clone of React's mirror | | | | | | | | · | | | | |
-| its own undo stack | | | | | · | | | · | | | | |
-| the timeline dot | · | · | · | · | · | · | · | · | · | · | · | · |
-| an expanded message unpinned | · | · | · | · | · | · | · | · | · | · | · | · |
-| the view follows the message | · | · | · | · | · | · | · | · | · | · | · | · |
-| **closing gives back the reader's line** | | | | | | | | | | | · | · |
-| the block expires on its own | · | · | · | · | · | · | · | · | · | · | · | · |
-| **a fault stops where it happens** | | | | | | | | | | · | · | · |
-| **a fuse box, and `__bidiStatus()`** | | | | | | | | | | · | · | · |
-| **stands down if Claude Code fixes it** | | | | | | | | | | · | · | · |
-| **crashed the panel** | | | | | **✗** | | | | | | | |
-| **typed blank spaces** | | | | | **✗** | | | | | | | |
-| **every keystroke one late** | | | | | | | | **✗** | | | | |
-| payload, bytes | 28,975 | 30,998 | 31,371 | 35,485 | 59,047 | 51,513 | 54,185 | 71,979 | 51,754 | 66,147 | 69,798 | 70,554 |
+| | 0.1.0-4 | 0.1.5 | 0.1.6-7 | 0.2.0 | 0.3.0 | 0.3.1 | 0.3.2 | 0.3.3 | 0.3.4 | 0.4.0 | 0.4.1 | 0.4.2 | 0.4.3 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| answers read right-to-left | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| your own messages read right-to-left | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| a sent message decided line by line | | | | · | · | · | · | · | · | · | · | · | · |
+| ... **as a copy, moving nothing of theirs** | | | | | | | | | | | | | · | · |
+| the composer takes one direction | · | · | · | · | · | | | | · | · | · | · | · |
+| the composer decided **per line** | | | | | · | | | · | | | | | |
+| ... by `unicode-bidi: plaintext` | | | | | | · | · | | | | | | |
+| ... with a third, "mixed" state | | | | | | | · | | | | | | |
+| a clone of React's mirror | | | | | | | | · | | | | | |
+| its own undo stack | | | | | · | | | · | | | | | |
+| the timeline dot | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| an expanded message unpinned | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| the view follows the message | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| **closing gives back the reader's line** | | | | | | | | | | | · | · | · | · |
+| the block expires on its own | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| **a fault stops where it happens** | | | | | | | | | | · | · | · | · |
+| **a fuse box, and `__bidiStatus()`** | | | | | | | | | | · | · | · | · |
+| **stands down if Claude Code fixes it** | | | | | | | | | | · | · | · | · |
+| **crashed the panel** | | | | | **✗** | | | | | | | | |
+| **typed blank spaces** | | | | | **✗** | | | | | | | | |
+| **every keystroke one late** | | | | | | | | **✗** | | | | | |
+| payload, bytes | 28,975 | 30,998 | 31,371 | 35,485 | 59,047 | 51,513 | 54,185 | 71,979 | 51,754 | 66,147 | 69,798 | 70,554 | 75,495 |
 
 The byte count is worth reading as a line of its own. It climbs while the composer is
 being fought over — 35K to 59K to 72K — and comes back down to 51K when that was given
@@ -299,6 +300,33 @@ that is easy to let stand and then impossible to reason about later.
 
 - [x] code identical to 0.4.1 with comments removed **(code)**
 - [x] every document now checked by a test rather than by hand **(lab)**
+
+### 0.4.3 — a sent message is copied beside the host's, never taken out of it
+The last place in this project that moved a node somebody else created, and the same
+fault that crashed the panel in 0.3.0 - in a neighbourhood where nobody had been hurt by
+it yet, because a sent message never changes and React therefore never came back for
+those nodes.
+
+It was fixed now rather than someday because the browser is the next surface, and the
+browser already has the button: Gemini puts a pencil beside every message you have sent.
+
+Nothing of the host's is moved, removed or replaced. A copy is built beside their span,
+their span is hidden by a CSS rule, and the copy is what a reader sees. A cloned mention
+chip hands its click back to the original. If the host rewrites the message, the copy is
+rebuilt and the lines are decided again - because not crashing is not the same as
+working.
+
+- [x] React's own nodes are still its own children — was false, false, false **(lab)**
+- [x] the host rewriting its own message throws nothing — was NotFoundError **(lab)**
+- [x] and what a reader sees becomes the new text, decided again **(lab)**
+- [x] height, width, position and scrollHeight identical to the pixel, on their own
+      stylesheet **(lab)**
+- [x] selecting the message and copying gives exactly what was typed **(lab)**
+- [x] clicking a mention in a message still opens the file **(lab)**
+- [x] **known:** the message's text is now in the DOM twice, so anything reading
+      textContent would get it doubled. Nothing reads it - checked every `getText:` in
+      their bundle - and the build this replaces mangled that text anyway **(code)**
+- [ ] a week of ordinary use **(unseen — this is the one to try)**
 
 ---
 
