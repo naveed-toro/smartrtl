@@ -8,6 +8,49 @@ Written in English on purpose: the audience here is anyone maintaining or review
 fix, including upstream. The user-facing README carries the phrasings people actually
 search for, in several languages.
 
+## What is in here
+
+Twenty-nine sections, in the order they were written, which is the order the faults were
+found. The ones worth reading first are marked.
+
+ 1. [The root cause](#1-the-root-cause)
+ 2. [Attempt one - ask the model to emit direction marks. Rejected.](#2-attempt-one---ask-the-model-to-emit-direction-marks-rejected)
+ 3. [Attempt two - decide by character ratio. Rejected.](#3-attempt-two---decide-by-character-ratio-rejected)
+ 4. [Attempt three - decide per message, from surrounding context. Rejected.](#4-attempt-three---decide-per-message-from-surrounding-context-rejected)
+ 5. [The guard that decided on a comma. Rejected.](#5-the-guard-that-decided-on-a-comma-rejected)
+ 6. [The rule that survived](#6-the-rule-that-survived) ←
+ 7. [One decision per message, not per line](#7-one-decision-per-message-not-per-line) ←
+ 8. [The timeline dot](#8-the-timeline-dot)
+ 9. [The composer is two stacked layers](#9-the-composer-is-two-stacked-layers)
+10. [Long messages: the collapse control (not an RTL bug)](#10-long-messages-the-collapse-control-not-an-rtl-bug)
+11. [Why an extension, and not a script](#11-why-an-extension-and-not-a-script)
+12. [Three packages, not one file](#12-three-packages-not-one-file)
+13. [What the first live run found: a user message is not markdown](#13-what-the-first-live-run-found-a-user-message-is-not-markdown) ←
+14. [Leaving as cleanly as arriving](#14-leaving-as-cleanly-as-arriving)
+15. [Unpinning was half a fix](#15-unpinning-was-half-a-fix)
+16. [Reading it while it is being written](#16-reading-it-while-it-is-being-written)
+17. [What a reader can still see, and what they cannot](#17-what-a-reader-can-still-see-and-what-they-cannot)
+18. [Measuring against the real stylesheet, and four faults in the instrument](#18-measuring-against-the-real-stylesheet-and-four-faults-in-the-instrument)
+19. [Direction, and nothing that is not direction](#19-direction-and-nothing-that-is-not-direction)
+20. [The dot, in real time](#20-the-dot-in-real-time)
+21. [What an end user does, and the one path that must never make things worse](#21-what-an-end-user-does-and-the-one-path-that-must-never-make-things-worse)
+22. [The composer decides once, for the whole box](#22-the-composer-decides-once-for-the-whole-box)
+23. [The composer, line by line after all](#23-the-composer-line-by-line-after-all)
+24. [Number two, checked the same way](#24-number-two-checked-the-same-way)
+25. [The composer, line by line, was a crash — and the harness could not have seen it](#25-the-composer-line-by-line-was-a-crash--and-the-harness-could-not-have-seen-it) ←
+26. [The lines really do have to be elements — just not in React's half](#26-the-lines-really-do-have-to-be-elements--just-not-in-reacts-half)
+27. [Stopping: the composer takes one direction, and that is the answer](#27-stopping-the-composer-takes-one-direction-and-that-is-the-answer) ←
+28. [The question left over: would it ever have felt fast?](#28-the-question-left-over-would-it-ever-have-felt-fast) ←
+29. [A string of lamps, not a circuit in series](#29-a-string-of-lamps-not-a-circuit-in-series) ←
+
+← 6 and 7 are the rule and the design it forced. 13 is what the first live run found.
+25 and 27 are the composer crash and the decision to stop; 28 is what that would have
+cost; 29 is how the whole thing is wired so one fault cannot spread.
+
+---
+
+
+
 ---
 
 ## 1. The root cause

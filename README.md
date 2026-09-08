@@ -47,7 +47,7 @@ Then yes, this is the same bug.
 
 | where | what it is | status |
 |---|---|---|
-| Claude Code in VS Code | companion extension | works; tested live; not published yet |
+| Claude Code in VS Code | companion extension | done at 0.4.1; tested live; not published yet |
 | AI chat sites in the browser | Chrome extension | next |
 | a markdown editor | VS Code, desktop, web | shape not decided |
 | Claude desktop app | not investigated yet | unknown |
@@ -73,6 +73,48 @@ does exist - but no local signal separates it reliably, so that case is given up
 purpose, in exchange for every common case being right. The reasoning, and the two
 formulas that were tried and rejected before this one, are written down in
 [docs/decisions.md](docs/decisions.md).
+
+## The documents
+
+The code is the small part. What took the time was finding out which rule is the right
+rule, and every wrong turn is written down rather than quietly dropped.
+
+| | |
+|---|---|
+| [docs/decisions.md](docs/decisions.md) | twenty-nine sections: every rule and fix that was tried, measured and rejected, including the two that crashed and the one that was too slow |
+| [docs/versions.md](docs/versions.md) | what was actually inside each of the twenty-five builds, read out of the `.vsix` rather than remembered |
+| [docs/roadmap.md](docs/roadmap.md) | what a new surface has to provide, the four rules an adapter obeys, and what order the rest gets built in |
+| [docs/claude-code-bug.md](docs/claude-code-bug.md) | the Claude Code bug on its own terms, with no RTL attached |
+| [docs/issue-to-file.md](docs/issue-to-file.md) | the same, cut down to something that can be pasted into a public tracker |
+| [docs/launch-note.md](docs/launch-note.md) | what to say when this is published, including what not to claim |
+
+## The documents
+
+The code is the small part. What took the time was finding out which rule is the right
+rule, and every wrong turn is written down rather than quietly dropped.
+
+| | |
+|---|---|
+| [docs/decisions.md](docs/decisions.md) | twenty-nine sections: every rule and fix that was tried, measured and rejected, including the two that crashed and the one that was too slow |
+| [docs/versions.md](docs/versions.md) | what was actually inside each of the twenty-five builds, read out of the `.vsix` rather than remembered |
+| [docs/roadmap.md](docs/roadmap.md) | what a new surface has to provide, the four rules an adapter obeys, and what order the rest gets built in |
+| [docs/claude-code-bug.md](docs/claude-code-bug.md) | the Claude Code bug on its own terms, with no RTL attached |
+| [docs/issue-to-file.md](docs/issue-to-file.md) | the same, cut down to something that can be pasted into a public tracker |
+| [docs/launch-note.md](docs/launch-note.md) | what to say when this is published, including what not to claim |
+
+## The documents
+
+The code is the small part. What took the time was finding out which rule is the right
+rule, and every wrong turn is written down rather than quietly dropped.
+
+| | |
+|---|---|
+| [docs/decisions.md](docs/decisions.md) | twenty-nine sections: every rule and fix that was tried, measured and rejected, including the two that crashed and the one that was too slow |
+| [docs/versions.md](docs/versions.md) | what was actually inside each of the twenty-five builds, read out of the `.vsix` rather than remembered |
+| [docs/roadmap.md](docs/roadmap.md) | what a new surface has to provide, the four rules an adapter obeys, and what order the rest gets built in |
+| [docs/claude-code-bug.md](docs/claude-code-bug.md) | the Claude Code bug on its own terms, with no RTL attached |
+| [docs/issue-to-file.md](docs/issue-to-file.md) | the same, cut down to something that can be pasted into a public tracker |
+| [docs/launch-note.md](docs/launch-note.md) | what to say when this is published, including what not to claim |
 
 ## Licence
 

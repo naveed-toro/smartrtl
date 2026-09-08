@@ -1,6 +1,8 @@
-# The nine builds, and what each one actually contained
+# The twenty-five builds, and what each one actually contained
 
-Compiled by opening every `.vsix` and reading what is inside it, not from memory.
+Compiled by opening every `.vsix` and reading what is inside it, not from memory. The
+second table was rebuilt the same way after the fact, which is why some of its rows say
+plainly that nothing changed in a build.
 
 **A tick means "this statement is true"** - including the statements about what a build got
 wrong. Everything is ticked to my best evidence; untick anything that does not hold when
@@ -131,6 +133,158 @@ and six tests cover it - the first of which is simply that it loads.
 - [ ] everything 0.0.7 did, still working **(unseen — this is the one to try)**
 - [ ] after uninstalling, the effect is gone by the next day on its own **(unseen)**
 - [x] **known:** that expiry is bounded, not instant. Instant still needs the Remove command
+
+---
+
+## What was in each build, 0.1.0 onwards
+
+Read out of the packaged `.vsix` the same way, months later. `·` means the build carried
+it; a blank means it did not.
+
+| | 0.1.0-4 | 0.1.5 | 0.1.6-7 | 0.2.0 | 0.3.0 | 0.3.1 | 0.3.2 | 0.3.3 | 0.3.4 | 0.4.0 | 0.4.1 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| answers read right-to-left | · | · | · | · | · | · | · | · | · | · | · |
+| your own messages read right-to-left | · | · | · | · | · | · | · | · | · | · | · |
+| a sent message decided line by line | | | | · | · | · | · | · | · | · | · |
+| the composer takes one direction | · | · | · | · | · | | | | · | · | · |
+| the composer decided **per line** | | | | | · | | | · | | | |
+| ... by `unicode-bidi: plaintext` | | | | | | · | · | | | | |
+| ... with a third, "mixed" state | | | | | | | · | | | | |
+| a clone of React's mirror | | | | | | | | · | | | |
+| its own undo stack | | | | | · | | | · | | | |
+| the timeline dot | · | · | · | · | · | · | · | · | · | · | · |
+| an expanded message unpinned | · | · | · | · | · | · | · | · | · | · | · |
+| the view follows the message | · | · | · | · | · | · | · | · | · | · | · |
+| **closing gives back the reader's line** | | | | | | | | | | | · |
+| the block expires on its own | · | · | · | · | · | · | · | · | · | · | · |
+| **a fault stops where it happens** | | | | | | | | | | · | · |
+| **a fuse box, and `__bidiStatus()`** | | | | | | | | | | · | · |
+| **stands down if Claude Code fixes it** | | | | | | | | | | · | · |
+| **crashed the panel** | | | | | **✗** | | | | | | |
+| **typed blank spaces** | | | | | **✗** | | | | | | |
+| **every keystroke one late** | | | | | | | | **✗** | | | |
+| payload, bytes | 28,975 | 30,998 | 31,371 | 35,485 | 59,047 | 51,513 | 54,185 | 71,979 | 51,754 | 66,147 | 69,798 |
+
+The byte count is worth reading as a line of its own. It climbs while the composer is
+being fought over — 35K to 59K to 72K — and comes back down to 51K when that was given
+up. Everything after that is resilience, and it costs 18K.
+
+---
+
+## Version by version, 0.1.0 onwards
+
+### 0.1.0 – 0.1.4 — five builds, one payload
+Byte-identical payloads, and `extension.js` changed twice across the five. These are
+rebuilds made while testing on a live editor: a version number is how one build is told
+apart from another when both are installed the same way. Nothing about the fix itself
+changed.
+
+- [x] identical payload in all five **(code)**
+- [x] `extension.js` differs at 0.1.2 and again at 0.1.3 - the on/off switch **(code)**
+
+### 0.1.5 — the text is aligned, not merely reordered
+The rule had been setting `direction` and nothing else. A host that writes
+`text-align: left` on a container beats direction outright: the words come out in the
+right order and every line still hugs the left edge. `text-align: start` was added, which
+follows whatever direction was just decided rather than naming a side.
+
+- [x] an Urdu line starts at the right edge, not merely reads right to left **(live)**
+- [x] a table header stays centred - `th` is excluded, because centre is centre either
+      way and overriding it was restyling somebody's table **(lab)**
+
+### 0.1.6 – 0.1.7 — closing a message from inside it must not hide it
+"Put it back on the exact pixel" is only right while the message WAS somewhere you could
+see. Read to the end of an expanded message and its head is far above the panel;
+restoring that pixel faithfully put the message you were reading back off the top of the
+screen. The target is now clamped to the visible band.
+
+- [x] closing from deep inside a long message brings it back into view **(live)**
+- [x] closing one you can see does not move it **(lab)**
+
+### 0.2.0 — a sent message decided line by line
+A typed message is one element with newlines in it, so a single decision governed all of
+it: paste a command, press shift+enter, write Urdu under it, and the command was dragged
+round with the Urdu. Its lines are now split into elements of their own, and each decides
+by the formula.
+
+- [x] an English line inside an Urdu message is left alone **(live)**
+- [x] copying the message back gives the original text, newlines included **(lab)**
+- [x] a mention chip is moved, not rebuilt, so it keeps what the host attached **(lab)**
+
+### 0.3.0 — the composer per line. **Broken. Do not install.**
+The same idea taken into the box you type in: an element per line, made inside the
+`mentionMirror`. That mirror is React's, and the spans threw React's own text node away.
+
+- [x] **failed:** the box typed **blank spaces** - React went on writing every keystroke
+      into a node no longer in the page **(live)**
+- [x] **failed:** React's next `removeChild` threw inside its commit phase and **took the
+      whole panel down** **(live)**
+- [x] six tests were green. The modelled mirror kept no reference to anything it created,
+      so the one contract the real page enforces did not exist in the model **(lab)**
+- [x] **failed, and only found later:** its inline isolates ordered a line right to left
+      and left it hugging the left edge. It never aligned anything **(lab)**
+
+### 0.3.1 — no elements at all
+The crash removed by removing its cause: `unicode-bidi: plaintext` on both layers gives
+per-line direction with nothing of ours in anybody's DOM.
+
+- [x] the crash is gone, and so are the blank spaces **(live)**
+- [x] **failed:** `plaintext` is the browser's rule - first strong character - so
+      `Hello ہیلو` came back left to right, which is the fault this project exists for **(live)**
+
+### 0.3.2 — three states instead of two
+A draft that is one language throughout turns as a whole, by the project's rule; only a
+draft holding both languages is handed to the browser line by line.
+
+- [x] `Hello ہیلو` reads right to left again **(live)**
+- [x] **failed:** adding an English line underneath put the whole box into per-line, and
+      the Urdu line already on the screen **silently swung back to the left**. A line
+      somebody has finished writing is finished **(live)**
+
+### 0.3.3 — elements again, in the half nobody owns
+React renders no children into the box you type in, so its contents are the browser's and
+ours. React's mirror was left untouched and a clone of it drawn instead.
+
+- [x] the rule is right on every line, and a decided line stays decided **(lab)**
+- [x] **failed:** every keystroke reached the screen **one keystroke late** - type a
+      letter, see nothing; type the next, see the first **(live)**
+- [x] **failed:** 18ms of work per character on an eighty-line draft, more than a whole
+      frame at 60fps **(lab)**
+
+### 0.3.4 — the composer takes one direction, and that is the answer
+Three attempts, three faults, each found by a person typing. The box now takes ONE
+direction, live, from any RTL letter in it: one attribute, one CSS rule, nothing of ours
+inside either layer, and no code of ours running while anybody types.
+
+- [x] typing feels exactly as it does without the extension **(live)**
+- [x] undo, IME, dictation and spellcheck are the browser's again **(lab)**
+- [x] **given up on purpose:** a draft mixing two languages goes right to left as a whole
+      while it is being typed. Written down as a passing test, not a wish **(lab)**
+
+### 0.4.0 — a string of lamps, not a circuit in series
+Nothing new on the screen. Everything about what happens when Claude Code changes:
+a fault now stops at the block it happened in, every feature is switched on separately
+and reports itself, and anything that Claude Code fixes itself is stood down rather than
+argued with.
+
+- [x] one block that throws no longer takes the rest of the batch with it **(lab)**
+- [x] `__bidiStatus()` in the webview console says what is on and what is not **(live)**
+- [x] a build that reads a mixed line correctly gets nothing installed at all **(lab)**
+- [x] **found by booting the real 5MB bundle, not by any test:** the stand-down check
+      asked itself for ever and hung the panel. Fixed, and now has a test **(lab)**
+
+### 0.4.1 — closing a message gives back the line you were reading
+The half of the long-message fix that was still missing. A collapsed message is sticky
+again the moment it closes, so its top IS the panel's top whatever the scroll position -
+the drift measured against it is zero, nothing is scrolled, and somebody halfway down a
+long answer got the answer back from its beginning.
+
+- [x] open a question from partway down a long answer, close it, and land on the line you
+      were reading **(live)**
+- [x] the same after reading to the very end of the message first **(lab)**
+- [x] anchoring to the turn was tried: its top came back to the pixel and the reader still
+      landed 20px out, because the message's own collapsed height had changed. The anchor
+      has to be an element BELOW the message **(lab)**
 
 ---
 

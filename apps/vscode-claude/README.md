@@ -77,7 +77,12 @@ nothing else.
   contenteditable over a visible mirror; one flag on the container they share turns both,
   so the caret can never sit on one side while the glyph sits on the other. Nothing of
   ours goes inside either layer, and no code of ours runs while you type
+- **your own messages, line by line** - a sent message is one element with newlines in
+  it, so one decision would govern all of it: paste a command, press shift+enter, write
+  Urdu underneath, and the command is dragged round with the Urdu. Its lines are split
+  into elements of their own and each is decided by the formula
 - **the timeline dot** - moves to the side its own message reads from
+
 Each of those, and the formulas and fixes that were tried and rejected first, is written
 up in [docs/decisions.md](../../docs/decisions.md) - twenty-nine sections, including
 three attempts at per-line direction in the composer that were built, shipped and then
@@ -154,6 +159,47 @@ that broke an earlier version.
 - `real-webview.test.js` - every question above, put to Claude Code's own stylesheet with
   its own class names read out of it at run time, so an update cannot leave a green suite
   measuring a page nobody has
+- `docs.test.js` - the documents get the same treatment as the code: every link, every
+  file name, every count and every promise made about what the payload contains, put back
+  to the thing it is about. A document that has gone stale reads exactly like one that has
+  not
+
+## When Claude Code changes
+
+It will. This is a guest inside a product that ships every week, so the question worth
+answering is not whether everything keeps working - it is **how much goes dark, and
+whether anything here starts arguing with a fix of theirs.**
+
+Every part is on its own circuit. Before it is switched on it is asked two questions, and
+both answers are kept where you can read them:
+
+```js
+__bidiStatus()      // in the webview console: Developer: Open Webview Developer Tools
+```
+```
+{ direction: "on",
+  unpinExpandedMessage: "on",
+  composer: "on",
+  splitSentMessages: "on",
+  keepTheViewOnTheMessage: "on",
+  engine: { blocks: "watching", perLine: "on", contained: 0 } }
+```
+
+**Is it possible?** If a class name is renamed or a component restyled, the part that
+depended on it goes off *on its own* and says so. Nothing else notices, and a block that
+throws for a reason nobody anticipated is caught at that block - `contained` counts them,
+because a fix that has quietly stopped working looks exactly like one that is working.
+
+**Is it needed?** If Claude Code fixes something itself, the part of this that existed for
+it goes quiet rather than fighting it - two fixes for one fault argue invisibly. That is
+**measured, not read**: a copy of their own markdown root, off screen, is asked to lay out
+the exact sentence the fault is about, and where the browser puts the first character is
+the answer. A stylesheet can be renamed, moved or overridden; where the text ends up
+cannot. The unpinning rule asks the live element whether a turn header is still
+`position: sticky`, and stands down if it is not.
+
+If the whole of it ever stands down, everything comes out through the same path a person
+would use - and `__bidiFixOff()` in that console is that path, live, at any time.
 
 ## Limits
 

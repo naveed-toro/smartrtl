@@ -51,6 +51,10 @@
    * @param {object} [config]
    *   blocks       {string}   CSS selector for the blocks that carry text
    *   boxSelector  {string}   hint for "one message" - tried first when scoping a decision
+   *   boundary     {string}   the ceiling a decision may never climb past, so one message's
+   *                           answer cannot reach the message beside it
+   *   perLine      {string}   blocks that hold a WHOLE message, newlines and all, and must
+   *                           be split into an element per line before being decided
    *   quietMs      {number}   silence after which a half-written block is treated as final
    *   maxBox       {number}   largest container, in blocks, a single decision may claim
    *   extraCss     {string}   rules the adapter wants in the same stylesheet
@@ -61,7 +65,14 @@
    *   onDecision   {function} (block, box) - called once, when a message is decided
    *   onCleanup    {function} () - called by the escape hatch, to undo the adapter's own work
    *
-   * @returns {{stop: function, refresh: function}|null}  null if something is already running
+   * Every selector above is checked once, here, and one that the browser refuses switches
+   * off only the part that needed it. Nothing in this file may fail in a way that reaches
+   * the page it is a guest on.
+   *
+   * @returns {{stop, refresh, status}|null}  null if something is already running.
+   *   status() reports what is watching, what is off, and how many faults were caught and
+   *   contained - because a fix that has quietly stopped working looks exactly like one
+   *   that is working.
    */
   function start(rule, config) {
     var cfg = config || {};

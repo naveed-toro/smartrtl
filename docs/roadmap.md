@@ -46,22 +46,75 @@ first line - `SmartRTLDom.start(SmartRTL, {...})`.
 |---|---|
 | `blocks` | selector for the elements that carry text, if the default is wrong |
 | `boxSelector` | hint for "one message", tried first when scoping a decision |
+| `boundary` | the ceiling a decision may never climb past, so one message's answer cannot reach the message beside it |
+| `perLine` | blocks that hold a WHOLE message, newlines and all, and must be split into an element per line before being decided |
 | `composer` | `{ container, layers[], probe }` - the box the user types into |
 | `extraCss` | rules the adapter wants in the same stylesheet |
 | `onDecision` | `(block, box)` - run once, when a message is decided |
 | `onCleanup` | `()` - undo the adapter's own work when the escape hatch is pulled |
 | `quietMs`, `maxBox` | timing and scope limits, if this surface needs different ones |
 
+`start()` returns `{ stop, refresh, status }`. `status()` is not decoration: a fix that has
+quietly stopped working looks exactly like one that is working, and an adapter is expected
+to surface it - the VS Code one puts it on `window.__bidiStatus()`.
+
 An adapter should also carry, in its own package: how the code gets onto the page, and a
 test that renders the built result against that product's own CSS. The tests are not
 optional - they are what makes it possible to change the engine later without opening
 five products by hand.
 
+### Four rules, and each one was paid for
+
+Not style. Each of these is a fault that shipped, and the next adapter inherits the bill
+if it is written down as advice instead of as a rule.
+
+**1. An attribute is ours to set. Somebody else's child node is not ours to move.**
+Setting `data-bidi` on a host's element is safe - a framework does not enumerate
+attributes it never set. Re-parenting, replacing or dropping one of its children is not,
+however carefully it is done, because the host is entitled to remove that node from the
+parent *it* put it in. Doing it inside React's own layer crashed the whole panel, and
+before it crashed, the box typed blank spaces for a while.
+
+**2. Nothing of ours runs between a key going down and the frame being painted.**
+An editor is a live thing somebody else owns, and that gap has no margin in it. Two
+different correct-looking designs died there: one put every keystroke on the screen a
+keystroke late, and the other cost 18ms per character on a long draft - more than a whole
+frame. A box that types a letter behind is worse than a box that reads the wrong way round.
+
+**3. Every dependency fails to "nothing happens", never to "something breaks".**
+One renamed class switches off one thing. A block that throws does not take the batch with
+it. A selector the browser refuses is asked once, not on every pass for ever. And all of
+it is reportable, because silence is indistinguishable from success.
+
+**4. If the host fixes it, stand down - and MEASURE whether it has.**
+Two fixes for one fault fight each other, and the fight is invisible to whoever shipped
+either of them. "Has it been fixed" is answered by laying out the exact text the fault is
+about and looking at where the browser put it - never by reading the host's stylesheet,
+which can be renamed, moved or overridden. And the instrument checks itself first: a
+control line that must come out right, or the measurement is thrown away rather than
+believed.
+
+### And one rule for the harness
+
+**A model that is easier than the thing cannot see the thing's faults.** Three separate
+bugs shipped past a green suite for the same reason, and each time the model was the
+simpler of the two:
+
+| the model said | the page actually | cost |
+|---|---|---|
+| the mirror is a `textContent` assignment | it is React, and it owns those nodes | the panel crashed |
+| the composer is in the page at start-up | it is rendered later, so anything attaching to it is dead | every keystroke arrived one late |
+| there is always something to measure | at boot there is not, and asking again mutates the page | the panel hung |
+
+So: build the surface the way the product builds it, including *when*. And boot the real
+thing occasionally - the third of those was found by loading the actual 5MB bundle and
+nothing else would have found it.
+
 ## The surfaces
 
 | surface | how the fix is delivered | state |
 |---|---|---|
-| Claude Code in VS Code | companion extension, patches the webview bundle | works, tested, not published |
+| Claude Code in VS Code | companion extension, patches the webview bundle | done at 0.4.1; tested live; not published yet |
 | AI chat sites in the browser | Chrome extension, one adapter per site | next |
 | a markdown editor | three surfaces of its own - VS Code, desktop, web | shape not decided |
 | Claude desktop app | not investigated | unknown |
@@ -78,17 +131,35 @@ it, and it has been broken since VS Code 1.69 -
 Backlog. It was built, shipped in 0.0.7, and measured: uninstalled, nothing was cleaned.
 `deactivate()` was tried before it and broke the extension outright.
 
-Two steps, in order, in [decisions.md section 14](decisions.md): first prove whether the
-hook fires at all, with a build that logs before it does anything; then, if it never fires,
-make the block expire on its own so an orphan lapses without needing anybody.
+Both steps in [decisions.md section 14](decisions.md) have since been taken. The hook was
+built, shipped in 0.0.7 and measured: uninstalled, nothing was cleaned. So the block was
+given an expiry instead - 24 hours, re-stamped by the extension while it is installed, so
+an orphan lapses on its own without needing anybody. That shipped in 0.0.8, and 0.0.9
+fixed the build that broke doing it.
+
+What remains is bounded rather than open: the expiry is a day, not instant, so **the
+Remove command is still the way to make it stop now**, and disabling the extension still
+fires no hook at all. The instructions for that are in the app README and they are not to
+be softened - a workaround presented as a feature is how people end up surprised.
 
 ## Order, and why
 
-**0. Finish the VS Code extension first.** Live testing settled the collapse behaviour -
-opening and closing a long message now works from any scroll position, and Claude Code is
-left byte-identical on uninstall. What is left on it is the text *inside* that box: a user
-message must read exactly as the rule says, in every case, not merely in the ones tried so
-far. That is the next sitting's first job, before any new surface is started.
+**0. The VS Code extension is done, at 0.4.1.** What finished it, in order, and none of it
+was on this list when the list was written:
+
+- a sent message is decided line by line, so an English line inside an Urdu one is left
+  alone - by the formula, measured against Claude Code's own stylesheet
+- the composer takes one direction and nothing else, after three attempts at per-line that
+  were built, shipped, typed into and withdrawn. See rule 2 above; the limit that leaves is
+  written down as a passing test
+- closing a long message gives the reader back the line they were reading, which was the
+  half of the long-message fix nobody had noticed was missing
+- every part now fails on its own, reports itself, and stands down if Claude Code fixes it
+
+What is deliberately NOT on it: any further attempt at per-line direction in a live
+editor. That is not "not yet" - it is measured, written up in
+[decisions.md sections 25-28](decisions.md), and the next person to want it should read
+the numbers before spending a week on it.
 
 **1. The Chrome extension, in full, starting with one site.**
 
@@ -116,6 +187,11 @@ website. Those are one phase, at the end, once there is something worth pointing
 
 Written down because they are the reasons step 1 comes first, and because they are easy to
 forget once they stop hurting.
+
+Two of these were answered the hard way by the VS Code extension, and are worth carrying
+across rather than rediscovering: a host that owns its own DOM will take it back whenever
+it likes (rule 1), and a page that is built after your code runs cannot be modelled as
+though it were already there (the harness rule).
 
 - **Recycled nodes.** Chat sites virtualise their message lists: the same DOM element is
   reused for a different message as you scroll. `data-bidi="ltr"` would ride along on it,
