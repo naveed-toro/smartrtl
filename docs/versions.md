@@ -1,4 +1,4 @@
-# The twenty-five builds, and what each one actually contained
+# The twenty-six builds, and what each one actually contained
 
 Compiled by opening every `.vsix` and reading what is inside it, not from memory. The
 second table was rebuilt the same way after the fact, which is why some of its rows say
@@ -141,29 +141,29 @@ and six tests cover it - the first of which is simply that it loads.
 Read out of the packaged `.vsix` the same way, months later. `·` means the build carried
 it; a blank means it did not.
 
-| | 0.1.0-4 | 0.1.5 | 0.1.6-7 | 0.2.0 | 0.3.0 | 0.3.1 | 0.3.2 | 0.3.3 | 0.3.4 | 0.4.0 | 0.4.1 |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| answers read right-to-left | · | · | · | · | · | · | · | · | · | · | · |
-| your own messages read right-to-left | · | · | · | · | · | · | · | · | · | · | · |
-| a sent message decided line by line | | | | · | · | · | · | · | · | · | · |
-| the composer takes one direction | · | · | · | · | · | | | | · | · | · |
-| the composer decided **per line** | | | | | · | | | · | | | |
-| ... by `unicode-bidi: plaintext` | | | | | | · | · | | | | |
-| ... with a third, "mixed" state | | | | | | | · | | | | |
-| a clone of React's mirror | | | | | | | | · | | | |
-| its own undo stack | | | | | · | | | · | | | |
-| the timeline dot | · | · | · | · | · | · | · | · | · | · | · |
-| an expanded message unpinned | · | · | · | · | · | · | · | · | · | · | · |
-| the view follows the message | · | · | · | · | · | · | · | · | · | · | · |
-| **closing gives back the reader's line** | | | | | | | | | | | · |
-| the block expires on its own | · | · | · | · | · | · | · | · | · | · | · |
-| **a fault stops where it happens** | | | | | | | | | | · | · |
-| **a fuse box, and `__bidiStatus()`** | | | | | | | | | | · | · |
-| **stands down if Claude Code fixes it** | | | | | | | | | | · | · |
-| **crashed the panel** | | | | | **✗** | | | | | | |
-| **typed blank spaces** | | | | | **✗** | | | | | | |
-| **every keystroke one late** | | | | | | | | **✗** | | | |
-| payload, bytes | 28,975 | 30,998 | 31,371 | 35,485 | 59,047 | 51,513 | 54,185 | 71,979 | 51,754 | 66,147 | 69,798 |
+| | 0.1.0-4 | 0.1.5 | 0.1.6-7 | 0.2.0 | 0.3.0 | 0.3.1 | 0.3.2 | 0.3.3 | 0.3.4 | 0.4.0 | 0.4.1 | 0.4.2 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| answers read right-to-left | · | · | · | · | · | · | · | · | · | · | · | · |
+| your own messages read right-to-left | · | · | · | · | · | · | · | · | · | · | · | · |
+| a sent message decided line by line | | | | · | · | · | · | · | · | · | · | · |
+| the composer takes one direction | · | · | · | · | · | | | | · | · | · | · |
+| the composer decided **per line** | | | | | · | | | · | | | | |
+| ... by `unicode-bidi: plaintext` | | | | | | · | · | | | | | |
+| ... with a third, "mixed" state | | | | | | | · | | | | | |
+| a clone of React's mirror | | | | | | | | · | | | | |
+| its own undo stack | | | | | · | | | · | | | | |
+| the timeline dot | · | · | · | · | · | · | · | · | · | · | · | · |
+| an expanded message unpinned | · | · | · | · | · | · | · | · | · | · | · | · |
+| the view follows the message | · | · | · | · | · | · | · | · | · | · | · | · |
+| **closing gives back the reader's line** | | | | | | | | | | | · | · |
+| the block expires on its own | · | · | · | · | · | · | · | · | · | · | · | · |
+| **a fault stops where it happens** | | | | | | | | | | · | · | · |
+| **a fuse box, and `__bidiStatus()`** | | | | | | | | | | · | · | · |
+| **stands down if Claude Code fixes it** | | | | | | | | | | · | · | · |
+| **crashed the panel** | | | | | **✗** | | | | | | | |
+| **typed blank spaces** | | | | | **✗** | | | | | | | |
+| **every keystroke one late** | | | | | | | | **✗** | | | | |
+| payload, bytes | 28,975 | 30,998 | 31,371 | 35,485 | 59,047 | 51,513 | 54,185 | 71,979 | 51,754 | 66,147 | 69,798 | 70,554 |
 
 The byte count is worth reading as a line of its own. It climbs while the composer is
 being fought over — 35K to 59K to 72K — and comes back down to 51K when that was given
@@ -285,6 +285,20 @@ long answer got the answer back from its beginning.
 - [x] anchoring to the turn was tried: its top came back to the pixel and the reader still
       landed 20px out, because the message's own collapsed height had changed. The anchor
       has to be an element BELOW the message **(lab)**
+
+### 0.4.2 — the same code, and the documents that describe it
+No behaviour change of any kind. With comments and whitespace stripped the payload is
+byte-identical to 0.4.1 - 21,206 bytes of code either way. What changed is the engine's
+own configuration comment, which had lost two keys that ship and a `@returns` that
+predated `status()`, and which the roadmap copies from.
+
+It exists because of a rule worth keeping: **what is installed should be what is
+committed.** 0.4.1 was packaged before that comment was corrected, so the installed build
+and the repository had drifted - by nothing that runs, which is exactly the kind of drift
+that is easy to let stand and then impossible to reason about later.
+
+- [x] code identical to 0.4.1 with comments removed **(code)**
+- [x] every document now checked by a test rather than by hand **(lab)**
 
 ---
 

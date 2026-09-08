@@ -70,11 +70,22 @@ test("the counts the documents quote are the counts that are true", () => {
     }
   }
 
+  // versions.md counts the builds in its own title, in words. Read the number back out
+  // rather than hard-coding it, or this test has to be edited on every release - and a
+  // test that has to be edited to stay green stops being a test.
+  const WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight",
+    "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen",
+    "seventeen", "eighteen", "nineteen", "twenty"];
+  const inWords = (n) => n <= 20 ? WORDS[n]
+    : ["twenty", "thirty", "forty", "fifty"][Math.floor(n / 10) - 2] +
+      (n % 10 ? "-" + WORDS[n % 10] : "");
+
   const builds = fs.readdirSync(path.join(ROOT, "apps/vscode-claude"))
     .filter((f) => f.endsWith(".vsix")).length;
   if (builds) {
-    assert.match(read("docs/versions.md"), /twenty-five builds/,
-      "there are " + builds + " builds on disk and versions.md says otherwise");
+    assert.match(read("docs/versions.md"), new RegExp("^# The " + inWords(builds) + " builds", "m"),
+      "there are " + builds + " builds on disk, so versions.md should say " +
+      "\"The " + inWords(builds) + " builds\"");
   }
 });
 
