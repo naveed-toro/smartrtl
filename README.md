@@ -13,6 +13,23 @@ things like `useState`, `npm` or `package.json`.
 
 This repository fixes that, one surface at a time.
 
+## And one bug that is not about language at all
+
+The Claude Code extension for VS Code has a fault that costs every user the same,
+whatever they write in: **a long message you have already sent cannot be closed again.**
+
+A message that heads a turn is pinned to the top of the panel. Collapsed that is the
+point of it; expanded it has no height cap, and a pinned element taller than the window
+can never show its own bottom, because it does not move. The wheel scrolls the
+conversation behind it, invisibly, and its own "Show less" is at the end of the pinned
+block, out of reach for the length of the turn.
+
+The companion extension fixes that too: an expanded message scrolls like ordinary
+content, opening one keeps it under your eye, and closing it gives you back the line of
+the answer you were reading. It is written up on its own terms, with no RTL attached, in
+[docs/claude-code-bug.md](docs/claude-code-bug.md) so that it can be reported and fixed
+upstream - at which point this half of the extension stands down by itself.
+
 ## Does this sound familiar?
 
 - my Urdu text starts from the left instead of the right
@@ -30,7 +47,7 @@ Then yes, this is the same bug.
 
 | where | what it is | status |
 |---|---|---|
-| Claude Code in VS Code | companion extension | works; tested live; not published |
+| Claude Code in VS Code | companion extension | works; tested live; not published yet |
 | AI chat sites in the browser | Chrome extension | next |
 | a markdown editor | VS Code, desktop, web | shape not decided |
 | Claude desktop app | not investigated yet | unknown |
