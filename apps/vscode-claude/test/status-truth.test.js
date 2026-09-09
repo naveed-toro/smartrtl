@@ -119,10 +119,9 @@ test("the winding cannot be slower than the running out", () => {
     "and a missed wind must not be able to reach the expiry");
 });
 
-test("the tooltip is one line, and says a different one only where it matters", () => {
-  // Five situations end in "off", but four of them are put right by the same click, so
-  // they get the same line. The fifth cannot be clicked out of at all, and used to
-  // invite the click anyway and then refuse it - that is the only split worth having.
+test("the tooltip is a label, short enough to take in without reading it", () => {
+  // A tooltip is read by somebody whose hand is already on the mouse. Anything that has
+  // to be parsed as a sentence has missed its moment - so this holds them to labels.
   const on = whyItSays({ installed: true, present: true, live: true });
   const off = whyItSays({ installed: true, present: false, live: false });
   const expired = whyItSays({ installed: true, present: true, live: false });
@@ -131,14 +130,13 @@ test("the tooltip is one line, and says a different one only where it matters", 
   assert.equal(expired, off, "an expired block is put right by the same click as any other off");
   assert.equal(new Set([on, off, noClaude]).size, 3);
 
-  // short enough to be taken in at a glance, which is the whole point of cutting them
   for (const line of [on, off, noClaude]) {
-    assert.ok(line.length <= 80, "too long to read in a tooltip: " + line);
-    assert.ok(!line.includes(String.fromCharCode(10)), "a tooltip with paragraphs in it is not read: " + line);
+    assert.ok(line.length <= 32, "not a label any more, it is a sentence: " + line);
+    assert.ok(!/[.!]/.test(line), "punctuation means prose, and prose has to be read: " + line);
+    assert.ok(!line.includes(String.fromCharCode(10)), "a tooltip with lines in it is not glanced at: " + line);
   }
 
-  assert.match(on, /uninstalling does not/);        // the one thing nobody guesses
-  assert.match(noClaude, /not installed/);
-  assert.doesNotMatch(noClaude, /Click/);           // and never that dead end again
-  assert.match(off, /Click to turn it on/);
+  assert.match(on, /^Turn off/);                    // what the click does, not what is true
+  assert.match(off, /^Turn on/);
+  assert.doesNotMatch(noClaude, /Turn/);            // nothing to turn, and it must not pretend
 });

@@ -177,25 +177,27 @@ function refresh(ctx) {
 }
 
 /**
- * One line, and only where the line changes what somebody should do.
+ * A label, not a sentence.
  *
- * "Off" does cover five situations - Claude Code missing, an update not yet patched
- * back, a write that failed, auto-apply turned off, and the person turning it off - and
- * for one build each of them had its own sentence. That was the wrong lesson from the
- * right observation. A tooltip is not free after all: it is read by somebody who is
- * already unsure, and handing them a paragraph to sort through leaves them worse off
- * than the single short answer they came for.
+ * Two builds were spent learning this. First there were five explanations, one for each
+ * situation that ends in "off". Then three short sentences. Both were still prose, and
+ * prose in a tooltip has to be READ - which is the one thing the person hovering has not
+ * agreed to do. They are already unsure, their hand is on the mouse, and they want the
+ * answer in the time it takes to look.
  *
- * So the question is not "how many situations are there" but "how many DIFFERENT things
- * should the person do". Two. Clicking puts the fix back in four of the five, so they
- * share one line. The fifth cannot be clicked out of - there is nothing installed to
- * fix - and it used to invite the click anyway and then refuse it, which is the only
- * reason this is a function and not a constant.
+ * So: what happens if I click. Nothing else. The state is already on the bar beside it,
+ * spelled out, so repeating it here would be the second copy of something they can see.
+ *
+ * The warning about Uninstall not being the off switch used to live here. It belongs
+ * where somebody is actually uninstalling - the Extensions view, where this contributes
+ * its own Turn Off command right beside Uninstall - and it is also in the README, in the
+ * first reload prompt, and in the status command. A person hovering the status bar is not
+ * uninstalling anything.
  */
 function whyItSays(st) {
-  if (st.live) return "Right-to-left fix is on. Click to turn it off - uninstalling does not.";
-  if (!st.installed) return "Claude Code is not installed, so there is nothing to fix.";
-  return "Right-to-left fix is off. Click to turn it on.";
+  if (st.live) return "Turn off right-to-left fix";
+  if (!st.installed) return "Claude Code not installed";
+  return "Turn on right-to-left fix";
 }
 
 /* ------------------------------------------------------------------ *

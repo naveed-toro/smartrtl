@@ -1862,18 +1862,29 @@ already unsure, and a paragraph handed to an unsure person is worse than the one
 answer they came for: they now have to work out which part is about them. **A rare mark
 was traded for a permanent wall of text.**
 
-The right question is not how many situations there are, but **how many different things
-the person should do**. Two. Clicking puts the fix back in four of the five, so those four
-share one line. The fifth cannot be clicked out of - there is nothing installed to fix -
-and that one used to invite the click and then refuse it, which is the only reason the
-split exists at all:
+Cutting them to three did not fix it either, and that took a third build to admit. Three
+short sentences are still sentences: they have to be **read**, and reading is the one thing
+the person hovering has not agreed to do. Their hand is already on the mouse. They want the
+answer in the time it takes to look at it, not to parse it.
 
-    on            "Right-to-left fix is on. Click to turn it off - uninstalling does not."
-    off           "Right-to-left fix is off. Click to turn it on."
-    no Claude     "Claude Code is not installed, so there is nothing to fix."
+So the tooltip stopped describing the situation and started naming the action:
 
-The test holds them to it: three lines, none over eighty characters, none with a paragraph
-break in it, and never the word "Click" in the one that cannot be clicked.
+    on            "Turn off right-to-left fix"
+    off           "Turn on right-to-left fix"
+    no Claude     "Claude Code not installed"
+
+The state is on the bar beside it, spelled out - `✓ RTL on` - so saying it again in the
+tooltip was a second copy of something already on screen. What is not on screen is what
+happens if you click, and that is now the whole of it.
+
+The Uninstall warning went with the prose, and it belongs where it went. Somebody hovering
+a status bar is not uninstalling anything; somebody in the Extensions view is, and this
+contributes its own Turn Off command **right beside Uninstall** there. It is also in the
+README, in the first reload prompt, and in the status command. Four places, all of them
+where the person actually is.
+
+The test holds the line: three labels, none over 32 characters, none with a full stop in
+it, and never the word "Turn" in the one that cannot be turned.
 
 ### The thing that was actually wrong pointed the other way
 
