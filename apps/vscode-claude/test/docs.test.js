@@ -96,6 +96,21 @@ test("the counts the documents quote are the counts that are true", () => {
   }
 });
 
+test("the big table in versions.md has the same number of columns all the way down", () => {
+  // it is edited a column at a time, by hand and by script, and a row that has drifted
+  // one cell wide renders as a table that is quietly wrong about which build did what.
+  const lines = read("docs/versions.md").split(String.fromCharCode(10));
+  const head = lines.findIndex((l) => l.startsWith("| | 0.1.0-4 |"));
+  assert.ok(head > -1, "the builds table has gone");
+  const width = lines[head].split("|").slice(1, -1).length;
+  const wrong = [];
+  for (let i = head; i < lines.length && lines[i].startsWith("|"); i++) {
+    const n = lines[i].split("|").slice(1, -1).length;
+    if (n !== width) wrong.push("line " + (i + 1) + " has " + n + ", the header has " + width);
+  }
+  assert.deepEqual(wrong, []);
+});
+
 test("the newest version is the one the documents describe", () => {
   const version = JSON.parse(read("apps/vscode-claude/package.json")).version;
   assert.match(read("docs/versions.md"), new RegExp("### " + version.replace(/\./g, "\\.")),

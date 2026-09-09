@@ -1,4 +1,4 @@
-# The thirty-seven builds, and what each one actually contained
+# The thirty-eight builds, and what each one actually contained
 
 Compiled by opening every `.vsix` and reading what is inside it, not from memory. The
 second table was rebuilt the same way after the fact, which is why some of its rows say
@@ -141,30 +141,30 @@ and six tests cover it - the first of which is simply that it loads.
 Read out of the packaged `.vsix` the same way, months later. `·` means the build carried
 it; a blank means it did not.
 
-| | 0.1.0-4 | 0.1.5 | 0.1.6-7 | 0.2.0 | 0.3.0 | 0.3.1 | 0.3.2 | 0.3.3 | 0.3.4 | 0.4.0 | 0.4.1 | 0.4.2 | 0.4.3 | 0.4.4 | 0.4.5 | 0.4.6 | 0.4.7 | 0.4.8 | 0.4.9 | 0.4.10 | 0.4.11 | 0.4.12 | 0.4.13 |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| answers read right-to-left | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| your own messages read right-to-left | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| a sent message decided line by line | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| | 0.1.0-4 | 0.1.5 | 0.1.6-7 | 0.2.0 | 0.3.0 | 0.3.1 | 0.3.2 | 0.3.3 | 0.3.4 | 0.4.0 | 0.4.1 | 0.4.2 | 0.4.3 | 0.4.4 | 0.4.5 | 0.4.6 | 0.4.7 | 0.4.8 | 0.4.9 | 0.4.10 | 0.4.11 | 0.4.12 | 0.4.13 | 0.4.14 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| answers read right-to-left | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| your own messages read right-to-left | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| a sent message decided line by line | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
 | ... **as a copy, moving nothing of theirs** | | | | | | | | | | | | | · | · | · | · | · | · | · | · | · | · | · | · |
-| the composer takes one direction | · | · | · | · | · | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| the composer decided **per line** | | | | | · | | | · | | | | | | | | | | | | | | | |
-| ... by `unicode-bidi: plaintext` | | | | | | · | · | | | | | | | | | | | | | | | | |
-| ... with a third, "mixed" state | | | | | | | · | | | | | | | | | | | | | | | | |
-| a clone of React's mirror | | | | | | | | · | | | | | | | | | | | | | | | |
-| its own undo stack | | | | | · | | | · | | | | | | | | | | | | | | | |
-| the timeline dot | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| an expanded message unpinned | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| the view follows the message | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| the composer takes one direction | · | · | · | · | · | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| the composer decided **per line** | | | | | · | | | · | | | | | | | | | | | | | | | | |
+| ... by `unicode-bidi: plaintext` | | | | | | · | · | | | | | | | | | | | | | | | | | |
+| ... with a third, "mixed" state | | | | | | | · | | | | | | | | | | | | | | | | | |
+| a clone of React's mirror | | | | | | | | · | | | | | | | | | | | | | | | | |
+| its own undo stack | | | | | · | | | · | | | | | | | | | | | | | | | | |
+| the timeline dot | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| an expanded message unpinned | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| the view follows the message | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
 | **closing gives back the reader's line** | | | | | | | | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| the block expires on its own | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| **a fault stops where it happens** | | | | | | | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| **a fuse box, and `__bidiStatus()`** | | | | | | | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| **stands down if Claude Code fixes it** | | | | | | | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| **crashed the panel** | | | | | **✗** | | | | | | | | | | | | | | | | | | |
-| **typed blank spaces** | | | | | **✗** | | | | | | | | | | | | | | | | | | |
-| **every keystroke one late** | | | | | | | | **✗** | | | | | | | | | | | | | | | |
-| payload, bytes | 28,975 | 30,998 | 31,371 | 35,485 | 59,047 | 51,513 | 54,185 | 71,979 | 51,754 | 66,147 | 69,798 | 70,554 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 |
+| the block expires on its own | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| **a fault stops where it happens** | | | | | | | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| **a fuse box, and `__bidiStatus()`** | | | | | | | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| **stands down if Claude Code fixes it** | | | | | | | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| **crashed the panel** | | | | | **✗** | | | | | | | | | | | | | | | | | | | |
+| **typed blank spaces** | | | | | **✗** | | | | | | | | | | | | | | | | | | | |
+| **every keystroke one late** | | | | | | | | **✗** | | | | | | | | | | | | | | | | |
+| payload, bytes | 28,975 | 30,998 | 31,371 | 35,485 | 59,047 | 51,513 | 54,185 | 71,979 | 51,754 | 66,147 | 69,798 | 70,554 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 |
 
 The byte count is worth reading as a line of its own. It climbs while the composer is
 being fought over — 35K to 59K to 72K — and comes back down to 51K when that was given
@@ -517,6 +517,44 @@ One tooltip line, twice more. Neither change is cosmetic.
 - [ ] a week of ordinary use **(unseen - this is the one to try)**
 
 Payload untouched for the eleventh build running: 75,495.
+
+### 0.4.14 — the blurb goes back to where it started
+
+Three attempts at one sentence, and the first one was right.
+
+    0.4.11   … panel. ⚠ Uninstalling does not turn it off — turn it off from the ⚙ menu first.
+    0.4.12   … panel.                              (warning dropped, README carries it)
+    0.4.14   … panel. ⚠ Uninstalling does not turn it off — use the ⚙ menu first.
+
+Finishing the sentence made it heavier than the thing it is attached to, and the page
+cannot separate them - `description` goes through `textContent` into an element whose
+only rule is `margin-top:10px`, so there is no second line and no smaller text.
+
+Dropping it went too far the other way. The README block below is bigger and clearer,
+but it is *below*, and the extension list shows the blurb on its own. What that blurb
+needs is not the whole instruction - it is enough of one to make somebody stop and go
+looking, and "use the ⚙ menu first" does that in six words.
+
+- [x] the short warning is back, unfinished on purpose: it points, and the README block
+      directly under it finishes the job **(code)**
+- [ ] a week of ordinary use **(unseen - this is the one to try)**
+
+### What a person is told when this is installed
+
+Measured rather than assumed, by running `activate()` in a stand-in editor:
+
+| what happened | what they are told |
+|---|---|
+| first install, Claude Code never patched | *Right-to-left text is fixed. Reload to see it.* |
+| re-install, the same payload already in place | **nothing** |
+| re-install, and they had switched the fix off | *SmartRTL is installed, but the right-to-left fix is off.* |
+
+The silence in the middle row is the right answer and looks like a fault: eleven builds
+in a row have had a byte-identical payload, so re-installing changes nothing, needs no
+reload, and has nothing to say. It is also why nobody testing this has seen the first
+message since the very first install.
+
+Payload untouched for the twelfth build running: 75,495.
 
 ---
 
