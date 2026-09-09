@@ -78,7 +78,7 @@ test("turned off, uninstalled, and the SAME version installed again - it asks", 
 
   const shown = e.start();
   assert.equal(shown.length, 1, "the reinstall is asked about exactly once");
-  assert.match(shown[0], /turned off/, shown[0]);
+  assert.match(shown[0], /right-to-left fix is off/, shown[0]);
 });
 
 test("and having answered 'Keep it off', it does not ask again", () => {

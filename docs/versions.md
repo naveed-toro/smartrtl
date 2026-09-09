@@ -1,4 +1,4 @@
-# The thirty-two builds, and what each one actually contained
+# The thirty-three builds, and what each one actually contained
 
 Compiled by opening every `.vsix` and reading what is inside it, not from memory. The
 second table was rebuilt the same way after the fact, which is why some of its rows say
@@ -141,30 +141,30 @@ and six tests cover it - the first of which is simply that it loads.
 Read out of the packaged `.vsix` the same way, months later. `·` means the build carried
 it; a blank means it did not.
 
-| | 0.1.0-4 | 0.1.5 | 0.1.6-7 | 0.2.0 | 0.3.0 | 0.3.1 | 0.3.2 | 0.3.3 | 0.3.4 | 0.4.0 | 0.4.1 | 0.4.2 | 0.4.3 | 0.4.4 | 0.4.5 | 0.4.6 | 0.4.7 | 0.4.8 |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| answers read right-to-left | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| your own messages read right-to-left | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| a sent message decided line by line | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| ... **as a copy, moving nothing of theirs** | | | | | | | | | | | | | · | · | · | · | · | · | · |
-| the composer takes one direction | · | · | · | · | · | | | | · | · | · | · | · | · | · | · | · | · |
-| the composer decided **per line** | | | | | · | | | · | | | | | | | | | | |
-| ... by `unicode-bidi: plaintext` | | | | | | · | · | | | | | | | | | | | |
-| ... with a third, "mixed" state | | | | | | | · | | | | | | | | | | | |
-| a clone of React's mirror | | | | | | | | · | | | | | | | | | | |
-| its own undo stack | | | | | · | | | · | | | | | | | | | | |
-| the timeline dot | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| an expanded message unpinned | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| the view follows the message | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| **closing gives back the reader's line** | | | | | | | | | | | · | · | · | · | · | · | · | · | · |
-| the block expires on its own | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| **a fault stops where it happens** | | | | | | | | | | · | · | · | · | · | · | · | · | · |
-| **a fuse box, and `__bidiStatus()`** | | | | | | | | | | · | · | · | · | · | · | · | · | · |
-| **stands down if Claude Code fixes it** | | | | | | | | | | · | · | · | · | · | · | · | · | · |
-| **crashed the panel** | | | | | **✗** | | | | | | | | | | | | | |
-| **typed blank spaces** | | | | | **✗** | | | | | | | | | | | | | |
-| **every keystroke one late** | | | | | | | | **✗** | | | | | | | | | | |
-| payload, bytes | 28,975 | 30,998 | 31,371 | 35,485 | 59,047 | 51,513 | 54,185 | 71,979 | 51,754 | 66,147 | 69,798 | 70,554 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 |
+| | 0.1.0-4 | 0.1.5 | 0.1.6-7 | 0.2.0 | 0.3.0 | 0.3.1 | 0.3.2 | 0.3.3 | 0.3.4 | 0.4.0 | 0.4.1 | 0.4.2 | 0.4.3 | 0.4.4 | 0.4.5 | 0.4.6 | 0.4.7 | 0.4.8 | 0.4.9 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| answers read right-to-left | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| your own messages read right-to-left | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| a sent message decided line by line | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| ... **as a copy, moving nothing of theirs** | | | | | | | | | | | | | · | · | · | · | · | · | · | · |
+| the composer takes one direction | · | · | · | · | · | | | | · | · | · | · | · | · | · | · | · | · | · |
+| the composer decided **per line** | | | | | · | | | · | | | | | | | | | | | |
+| ... by `unicode-bidi: plaintext` | | | | | | · | · | | | | | | | | | | | | |
+| ... with a third, "mixed" state | | | | | | | · | | | | | | | | | | | | |
+| a clone of React's mirror | | | | | | | | · | | | | | | | | | | | |
+| its own undo stack | | | | | · | | | · | | | | | | | | | | | |
+| the timeline dot | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| an expanded message unpinned | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| the view follows the message | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| **closing gives back the reader's line** | | | | | | | | | | | · | · | · | · | · | · | · | · | · | · |
+| the block expires on its own | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| **a fault stops where it happens** | | | | | | | | | | · | · | · | · | · | · | · | · | · | · |
+| **a fuse box, and `__bidiStatus()`** | | | | | | | | | | · | · | · | · | · | · | · | · | · | · |
+| **stands down if Claude Code fixes it** | | | | | | | | | | · | · | · | · | · | · | · | · | · | · |
+| **crashed the panel** | | | | | **✗** | | | | | | | | | | | | | | |
+| **typed blank spaces** | | | | | **✗** | | | | | | | | | | | | | | |
+| **every keystroke one late** | | | | | | | | **✗** | | | | | | | | | | | |
+| payload, bytes | 28,975 | 30,998 | 31,371 | 35,485 | 59,047 | 51,513 | 54,185 | 71,979 | 51,754 | 66,147 | 69,798 | 70,554 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 |
 
 The byte count is worth reading as a line of its own. It climbs while the composer is
 being fought over — 35K to 59K to 72K — and comes back down to 51K when that was given
@@ -422,6 +422,26 @@ was the problem; the warning was not.
 - [ ] a week of ordinary use **(unseen - this is the one to try)**
 
 Payload untouched for the sixth build running: 75,495.
+
+### 0.4.9 — thirteen messages, read out loud
+
+Every string a person can ever see, taken one at a time and read next to the others for
+the first time. Written up in [decisions.md section 32](decisions.md).
+
+- [x] the tooltip's second line says what happens, not what does not: `The fix stays on
+      after uninstall` **(code)**
+- [x] a third mark, `⚠ RTL`, carrying no on/off word - with no Claude Code in the
+      editor neither of them is true **(code)**
+- [x] `(anthropic.claude-code)` and version numbers out of every message; each one now
+      ends with what it means for the reader **(code)**
+- [x] **both settings removed.** One let right-to-left text break silently; the other's
+      own description had to warn people off choosing it **(code)**
+- [x] `turnOn` decides from what was RUNNING, not from whether the file changed - an
+      expired block used to answer "already on" to somebody clicking a bar that read
+      `RTL off` **(code)**
+- [ ] a week of ordinary use **(unseen - this is the one to try)**
+
+Payload untouched for the seventh build running: 75,495.
 
 ---
 

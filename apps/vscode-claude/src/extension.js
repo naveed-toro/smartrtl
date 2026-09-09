@@ -34,7 +34,6 @@ const fmt = require("./patch-format.js");
 
 const ON_KEY = "smartrtl.on";          // remembered across restarts
 const CONTEXT_KEY = "smartrtl.active"; // drives which command is offered
-const SEEN_KEY = "smartrtl.introShown";
 const OFF_AT_KEY = "smartrtl.offAtVersion";   // which build was running when it was turned off
 const RAN_KEY = "smartrtl.hasRun";     // set once we have activated at least once
 const MARKER = ".smartrtl-installed";  // lives in our own folder, so it dies with it
@@ -99,14 +98,13 @@ function askIfStillOff(ctx, fresh) {
   if (!fresh && ctx.globalState.get(OFF_AT_KEY) === version(ctx)) return;   // same build, already answered
 
   vscode.window.showInformationMessage(
-    "SmartRTL is installed but the right-to-left fix is turned off.",
+    "SmartRTL is installed, but the right-to-left fix is off.",
     "Turn it on", "Keep it off"
   ).then((choice) => {
     if (choice === "Turn it on") turnOn(ctx);
     else if (choice === "Keep it off") ctx.globalState.update(OFF_AT_KEY, version(ctx));
   });
 }
-const autoApply = () => vscode.workspace.getConfiguration("smartrtl").get("autoApply", true);
 
 function offerReload(message) {
   vscode.window.showInformationMessage(message, "Reload Window").then((choice) => {
@@ -139,7 +137,7 @@ function claudeCodeFocused() {
   } catch (err) { return null; }
 }
 
-function refresh(ctx) {
+function refresh() {
   const st = patcher.state();
 
   // The commands act on what is in the file; the status bar reports whether the fix is
@@ -147,12 +145,13 @@ function refresh(ctx) {
   // those are two different questions, so they are answered from two different fields.
   vscode.commands.executeCommand("setContext", CONTEXT_KEY, st.present);
 
-  const mode = vscode.workspace.getConfiguration("smartrtl").get("statusBar", "whenClaudeCodeIsFocused");
-  const show = mode === "always" ? true
-             : mode === "never" ? false
-             : claudeCodeFocused() === true;    // only while you are actually in Claude Code
-
-  if (!show) { status.hide(); return; }
+  // Only while you are actually looking at Claude Code. There was a setting for this
+  // once, offering "always" and "never" as well. Neither earned its place. "Always"
+  // puts a mark in the corner of windows that have nothing to do with Claude Code, and
+  // "never" hides the one thing in the whole editor that tells the truth about this -
+  // its own description had to warn people off choosing it, which is a setting
+  // admitting it should not exist.
+  if (claudeCodeFocused() !== true) { status.hide(); return; }
 
   /* $(whole-word) had to go: that glyph is Find's "match whole word" toggle, so it
      already meant something else to everybody who uses Ctrl+F, and at 16px it was two
@@ -167,11 +166,18 @@ function refresh(ctx) {
 
      A screen reader can do neither, so it is handed a sentence below. */
   const on = st.live;
-  status.text = on ? "$(check) RTL on" : "$(circle-slash) RTL off";
+  // Three marks, not two. "Off" is a state somebody chose; with no Claude Code in the
+  // editor there is nothing to have chosen, and saying "off" there sends a person
+  // looking for a switch they turned. It gets its own mark and no on/off word at all.
+  status.text = !st.installed ? "$(warning) RTL"
+              : on            ? "$(check) RTL on"
+                              : "$(circle-slash) RTL off";
   status.accessibilityInformation = {
-    label: on ? "Right-to-left fix is on" : "Right-to-left fix is off"
+    label: !st.installed ? "Claude Code is not installed"
+         : on            ? "Right-to-left fix is on"
+                         : "Right-to-left fix is off"
   };
-  status.tooltip = whyItSays(st);
+  status.tooltip = new vscode.MarkdownString(whyItSays(st));
   status.command = on ? "smartrtl.turnOff" : "smartrtl.turnOn";
   status.show();
 }
@@ -195,8 +201,10 @@ function refresh(ctx) {
  * a label turns back into a sentence.
  */
 function whyItSays(st) {
-  if (st.live) return "Turn off right-to-left fix\n\nUninstall does not turn it off";
-  if (!st.installed) return "Claude Code not installed";
+  if (st.live) {
+    return "Turn off right-to-left fix\n\nDo this before uninstalling  \nThe fix stays on after uninstall";
+  }
+  if (!st.installed) return "Claude Code is not installed";
   return "Turn on right-to-left fix";
 }
 
@@ -207,30 +215,42 @@ function whyItSays(st) {
 function turnOn(ctx) {
   ctx.globalState.update(ON_KEY, true);
   ctx.globalState.update(OFF_AT_KEY, undefined);
+
+  // Was anything actually running before this? That, and not what apply() had to do to
+  // the file, is what decides both the message and whether a reload is worth asking for.
+  //
+  // apply() answers a narrower question - did the FILE change - and reading the message
+  // off it was wrong in one real case: a block whose stamp had run out is still in the
+  // file, so apply() only re-stamps it and answers "restamped", while the panel on
+  // screen carries on running the dead copy. Choosing by that answer told somebody who
+  // had just clicked a bar reading "RTL off" that it was "already on", and offered them
+  // no reload - the one thing that would have put it right.
+  const before = patcher.state();
   const result = patcher.apply(ctx.extensionPath);
-  refresh(ctx);
+  refresh();
   if (result.state === "no-target") {
     vscode.window.showWarningMessage(
-      `Claude Code (${patcher.TARGET_ID}) is not installed in this editor, so there is nothing to fix.`);
+      "Claude Code is not installed, so there is nothing to fix.");
     return;
   }
-  if (result.state === "applied") offerReload(`Right-to-left text fixed in Claude Code ${result.install.version}. Reload to see it.`);
-  else vscode.window.showInformationMessage("The fix is already on.");
+  if (before.live) vscode.window.showInformationMessage("Right-to-left fix is already on.");
+  else offerReload("Right-to-left text is fixed. Reload to see it.");
 }
 
 function turnOff(ctx) {
   ctx.globalState.update(ON_KEY, false);
   ctx.globalState.update(OFF_AT_KEY, version(ctx));
   const result = patcher.remove();
-  refresh(ctx);
+  refresh();
   if (result.state === "no-target") {
-    vscode.window.showWarningMessage(`Claude Code (${patcher.TARGET_ID}) is not installed in this editor.`);
+    vscode.window.showWarningMessage(
+      "Claude Code is not installed, so there is nothing to turn off.");
     return;
   }
   if (result.state === "removed") {
-    offerReload("The right-to-left fix is off and Claude Code is back to how it was. Reload to see it.");
+    offerReload("Right-to-left fix is off and Claude Code is back to normal. Reload to see it.");
   } else {
-    vscode.window.showInformationMessage("The fix was already off - Claude Code is untouched.");
+    vscode.window.showInformationMessage("Right-to-left fix is already off. Claude Code is untouched.");
   }
 }
 
@@ -248,33 +268,26 @@ function keepAlive(ctx, why) {
 
 /** Startup, and after a Claude Code update. Silent unless something needs a reload. */
 function syncQuietly(ctx, why) {
-  if (!wantedOn(ctx)) { log.appendLine(`[${why}] turned off by the user`); refresh(ctx); return; }
-  if (!autoApply()) { log.appendLine(`[${why}] auto-apply is turned off`); refresh(ctx); return; }
+  if (!wantedOn(ctx)) { log.appendLine(`[${why}] turned off by the user`); refresh(); return; }
 
   let result;
   try { result = patcher.apply(ctx.extensionPath); }
   catch (err) {
     // Whatever the bar is showing now, it is no longer the truth. Say so.
     log.appendLine(`[${why}] failed: ${err && err.message ? err.message : err}`);
-    refresh(ctx);
+    refresh();
     return;
   }
 
   if (result.install) lastSeen = { dir: result.install.dir, version: result.install.version };
   if (result.state !== "no-target") stampedAt = Date.now();
   log.appendLine(`[${why}] ${result.state}${result.install ? ` (Claude Code ${result.install.version})` : ""}`);
-  refresh(ctx);
+  refresh();
 
   if (result.state === "applied") {
-    // The first time only, the reload prompt carries the one thing a person needs to
-    // know later and will not think to look for: that Uninstall is not the off switch.
-    const first = !ctx.globalState.get(SEEN_KEY, false);
-    if (first) ctx.globalState.update(SEEN_KEY, true);
-
     offerReload(why === "extensions-changed"
-      ? `Claude Code updated to ${result.install.version} and replaced its bundle. The right-to-left fix has been put back - reload to see it.`
-      : `Right-to-left text fixed in Claude Code ${result.install.version}. Reload to see it.` +
-        (first ? " To turn it off later, use the gear menu on this extension - Uninstall does not remove it." : ""));
+      ? `Claude Code updated. Right-to-left text is fixed again. Reload to see it.`
+      : `Right-to-left text is fixed. Reload to see it.`);
   }
 }
 
@@ -289,12 +302,13 @@ function activate(context) {
     vscode.commands.registerCommand("smartrtl.status", () => {
       const install = patcher.findClaudeCode();
       if (!install) {
-        vscode.window.showWarningMessage(`Claude Code (${patcher.TARGET_ID}) is not installed in this editor.`);
+        vscode.window.showWarningMessage(
+          "Claude Code is not installed, so there is nothing to fix.");
         return;
       }
-      vscode.window.showInformationMessage(
-        `Claude Code ${install.version} - the right-to-left fix is ${patcher.isPatched() ? "on" : "off"}.` +
-        (patcher.isPatched() ? " Disabling or uninstalling this extension will not turn it off; use SmartRTL: Turn the right-to-left fix off." : ""));
+      vscode.window.showInformationMessage(patcher.isPatched()
+        ? "Right-to-left fix is on."
+        : "Right-to-left fix is off. Claude Code is untouched.");
     })
   );
 
@@ -347,12 +361,9 @@ function activate(context) {
     // the status bar item follows whichever tab you are on - and opening a tab is also
     // the moment a webview is about to load, so it gets a chance to wind the clock too:
     // a machine coming back from sleep wakes with its timers already late
-    vscode.window.tabGroups.onDidChangeTabs(() => { keepAlive(context, "tab"); refresh(context); }),
-    vscode.window.tabGroups.onDidChangeTabGroups(() => refresh(context)),
-    vscode.window.onDidChangeActiveTextEditor(() => refresh(context)),
-    vscode.workspace.onDidChangeConfiguration((e) => {
-      if (e.affectsConfiguration("smartrtl")) refresh(context);
-    })
+    vscode.window.tabGroups.onDidChangeTabs(() => { keepAlive(context, "tab"); refresh(); }),
+    vscode.window.tabGroups.onDidChangeTabGroups(() => refresh()),
+    vscode.window.onDidChangeActiveTextEditor(() => refresh())
   );
 }
 

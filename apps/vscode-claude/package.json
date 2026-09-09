@@ -1,8 +1,8 @@
 {
   "name": "claude-code-rtl",
   "displayName": "SmartRTL for Claude Code",
-  "description": "Fixes right-to-left text (Urdu, Arabic, Hebrew, Persian) in the Claude Code panel. ⚠ Uninstalling does not turn it off — use the ⚙ menu first.",
-  "version": "0.4.8",
+  "description": "Fixes right-to-left text (Urdu, Arabic, Hebrew, Persian) in the Claude Code panel. ⚠ Turn it off from the ⚙ menu before uninstalling.",
+  "version": "0.4.9",
   "publisher": "smartrtl",
   "icon": "icon.png",
   "galleryBanner": {
@@ -58,31 +58,6 @@
         "category": "SmartRTL"
       }
     ],
-    "configuration": {
-      "title": "SmartRTL",
-      "properties": {
-        "smartrtl.autoApply": {
-          "type": "boolean",
-          "default": true,
-          "description": "Put the right-to-left fix back by itself after Claude Code updates. Turn this off to apply it only by command."
-        },
-        "smartrtl.statusBar": {
-          "type": "string",
-          "enum": [
-            "whenClaudeCodeIsFocused",
-            "always",
-            "never"
-          ],
-          "default": "whenClaudeCodeIsFocused",
-          "enumDescriptions": [
-            "Show a small on/off item only while you are looking at a Claude Code tab.",
-            "Always show it.",
-            "Never show it. Disabling or uninstalling this extension does not turn the fix off, so leave yourself another way to find it."
-          ],
-          "description": "Where to show whether the fix is on. This is the only reliable indicator: VS Code's own Enable, Disable and Uninstall buttons do not control it."
-        }
-      }
-    },
     "menus": {
       "commandPalette": [
         {

@@ -10,7 +10,7 @@ search for, in several languages.
 
 ## What is in here
 
-Thirty-one sections, in the order they were written, which is the order the faults were
+Thirty-two sections, in the order they were written, which is the order the faults were
 found. The ones worth reading first are marked.
 
  1. [The root cause](#1-the-root-cause)
@@ -44,6 +44,7 @@ found. The ones worth reading first are marked.
 29. [A string of lamps, not a circuit in series](#29-a-string-of-lamps-not-a-circuit-in-series) ←
 30. [The copy button that blinks — found, measured, and deliberately left alone](#30-the-copy-button-that-blinks--found-measured-and-deliberately-left-alone)
 31. [The status bar was telling the truth about the wrong thing](#31-the-status-bar-was-telling-the-truth-about-the-wrong-thing) ←
+32. [Every message, read out loud one at a time](#32-every-message-read-out-loud-one-at-a-time) ←
 
 ← 6 and 7 are the rule and the design it forced. 13 is what the first live run found.
 25 and 27 are the composer crash and the decision to stop; 28 is what that would have
@@ -1840,7 +1841,7 @@ Each of these was set up on a real disk with a real stand-in for Claude Code and
 | | situation | how likely |
 |---|---|---|
 | R1 | Claude Code is not installed at all | invisible under the default setting — the item only appears on a Claude Code tab, which cannot exist |
-| R2 | `autoApply` is off and Claude Code updated | needs a non-default setting |
+| ~~R2~~ | ~~`autoApply` is off and Claude Code updated~~ | **gone in 0.4.9** - the setting was removed, and this way of ending up off went with it |
 | R3 | the write failed — EPERM, a lock, antivirus, a read-only file | environmental, and unmeasurable from here |
 | R4 | Claude Code re-installed at the **same** version, so the `onDidChange` guard skips it | occasional |
 | R5 | the moment during any update, before the fix goes back | every update, for an instant |
@@ -1870,9 +1871,10 @@ answer in the time it takes to look at it, not to parse it.
 So the tooltip stopped describing the situation and started naming the action:
 
     on            "Turn off right-to-left fix"
-                  "Uninstall does not turn it off"
+                  "Do this before uninstalling"
+                  "The fix stays on after uninstall"
     off           "Turn on right-to-left fix"
-    no Claude     "Claude Code not installed"
+    no Claude     "Claude Code is not installed"
 
 The state is on the bar beside it, spelled out - `✓ RTL on` - so saying it again in the
 tooltip was a second copy of something already on screen. What is not on screen is what
@@ -1945,3 +1947,69 @@ written back.
 
 The test for it plants a `BEGIN` at the **front** of a 3MB file and requires that it is
 not reported, which is what makes the cheap read honest rather than lucky.
+
+---
+
+## 32. Every message, read out loud one at a time
+
+Thirteen things this extension can say to somebody. They had grown the way strings do —
+each written at the moment it was needed, none of them ever read next to the others.
+Going through them in order found the same three faults again and again.
+
+### Half a sentence is worse than none
+
+The one that took three attempts was a single tooltip line. It began as
+
+    Uninstalling does not turn it off
+
+which says what will NOT happen and leaves the reader to work out the rest. It became
+
+    Do this before uninstalling
+    Uninstall does not stop it
+
+— an instruction with a reason under it, which is the right shape and still the wrong
+words: "it" has to be resolved, and "does not stop" is a negative the reader has to turn
+into a consequence themselves. Both of those are work. The version that stands says the
+consequence outright:
+
+    Do this before uninstalling
+    The fix stays on after uninstall
+
+**Where you tell somebody to do something, put the reason underneath — and state the
+reason as a thing that happens, not as a thing that does not.**
+
+### Two ideas on one line is how a label turns back into prose
+
+`Turn off right-to-left fix - uninstalling does not` reads as a sentence and has to be
+parsed. The same words on two lines are taken in at a glance. Nothing was cut; a line
+break did the work.
+
+### Say what it means for the reader, not what is true
+
+    Claude Code (anthropic.claude-code) is not installed in this editor.
+    Claude Code is not installed, so there is nothing to fix.
+
+The first is accurate and leaves somebody asking "and?". The extension id was the first
+thing the eye landed on and means nothing to a reader. The clause that replaced it is the
+only part they needed.
+
+### And two faults that were not about words at all
+
+**A setting whose own description has to warn you off it should not exist.**
+`smartrtl.statusBar` offered "never", and its text had to add "use the command to turn the
+fix off instead". `smartrtl.autoApply` was worse: turning it off did nothing except let
+right-to-left text break silently after a Claude Code update — it was R2 in the table in
+section 31, one of the five ways to end up "off". Both settings are gone and the settings
+page is empty. Ten sentences a person had to read and decide about, for two choices
+nobody benefits from making.
+
+**And one message was being chosen by the wrong question.** `turnOn` read its answer off
+`apply()`, which reports whether the FILE changed. A block whose stamp has run out is
+still in the file, so apply() only re-stamps it and answers "restamped" — while the panel
+on screen carries on running the dead copy. Somebody who had just clicked a bar reading
+`RTL off` was told **"Right-to-left fix is already on"**, and offered no reload, which was
+the one thing that would have put it right. It now asks what was actually RUNNING before,
+which is the question the person is asking.
+
+That one was found because somebody refused to accept "it can happen in theory" and asked
+for it to be run instead.

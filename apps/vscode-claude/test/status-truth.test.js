@@ -133,7 +133,7 @@ test("the tooltip is labels, one idea to a line", () => {
 
   for (const tip of [on, off, noClaude]) {
     const lines = tip.split(String.fromCharCode(10)).filter((l) => l.trim() !== "");
-    assert.ok(lines.length <= 2, "more than two lines is a paragraph: " + tip);
+    assert.ok(lines.length <= 3, "more than three lines is a paragraph: " + tip);
     for (const line of lines) {
       assert.ok(line.length <= 32, "not a label any more, it is a sentence: " + line);
       assert.ok(!/[.!]/.test(line), "punctuation means prose, and prose has to be read: " + line);
@@ -141,7 +141,8 @@ test("the tooltip is labels, one idea to a line", () => {
   }
 
   assert.match(on.split(String.fromCharCode(10))[0], /^Turn off/);   // the click, first
-  assert.match(on, /Uninstall does not turn it off/);                // the thing nobody guesses
+  assert.match(on, /Do this before uninstalling/);      // what to do
+  assert.match(on, /The fix stays on after uninstall/);       // and why, on the line under it
   assert.match(off, /^Turn on/);
   assert.ok(!off.includes("Uninstall"), "there is nothing left running to warn about");
   assert.doesNotMatch(noClaude, /Turn/);                             // nothing to turn
