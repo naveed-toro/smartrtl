@@ -119,23 +119,26 @@ test("the winding cannot be slower than the running out", () => {
     "and a missed wind must not be able to reach the expiry");
 });
 
-test('"off" says which of the five it is, because they are not the same thing', () => {
-  const ctxOn = { globalState: { get: (k, d) => d } };            // nothing remembered: on
-  const ctxOff = { globalState: { get: () => false } };           // turned off by hand
+test("the tooltip is one line, and says a different one only where it matters", () => {
+  // Five situations end in "off", but four of them are put right by the same click, so
+  // they get the same line. The fifth cannot be clicked out of at all, and used to
+  // invite the click anyway and then refuse it - that is the only split worth having.
+  const on = whyItSays({ installed: true, present: true, live: true });
+  const off = whyItSays({ installed: true, present: false, live: false });
+  const expired = whyItSays({ installed: true, present: true, live: false });
+  const noClaude = whyItSays({ installed: false, present: false, live: false });
 
-  const said = {
-    live: whyItSays(ctxOn, { installed: true, present: true, live: true }),
-    expired: whyItSays(ctxOn, { installed: true, present: true, live: false }),
-    noClaude: whyItSays(ctxOn, { installed: false, present: false, live: false }),
-    turnedOff: whyItSays(ctxOff, { installed: true, present: false, live: false }),
-    notPutBack: whyItSays(ctxOn, { installed: true, present: false, live: false })
-  };
+  assert.equal(expired, off, "an expired block is put right by the same click as any other off");
+  assert.equal(new Set([on, off, noClaude]).size, 3);
 
-  assert.equal(new Set(Object.values(said)).size, 5, "five situations, five sentences");
-  assert.match(said.live, /does NOT turn it off/);      // the one thing nobody guesses
-  assert.match(said.expired, /run out/);
-  assert.match(said.noClaude, /not installed/);         // and NOT "click to turn it on"
-  assert.doesNotMatch(said.noClaude, /turn it on/);
-  assert.match(said.turnedOff, /Click to turn it on/);
-  assert.match(said.notPutBack, /put it back/);
+  // short enough to be taken in at a glance, which is the whole point of cutting them
+  for (const line of [on, off, noClaude]) {
+    assert.ok(line.length <= 80, "too long to read in a tooltip: " + line);
+    assert.ok(!line.includes(String.fromCharCode(10)), "a tooltip with paragraphs in it is not read: " + line);
+  }
+
+  assert.match(on, /uninstalling does not/);        // the one thing nobody guesses
+  assert.match(noClaude, /not installed/);
+  assert.doesNotMatch(noClaude, /Click/);           // and never that dead end again
+  assert.match(off, /Click to turn it on/);
 });

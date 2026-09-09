@@ -1,4 +1,4 @@
-# The twenty-nine builds, and what each one actually contained
+# The thirty builds, and what each one actually contained
 
 Compiled by opening every `.vsix` and reading what is inside it, not from memory. The
 second table was rebuilt the same way after the fact, which is why some of its rows say
@@ -141,30 +141,30 @@ and six tests cover it - the first of which is simply that it loads.
 Read out of the packaged `.vsix` the same way, months later. `·` means the build carried
 it; a blank means it did not.
 
-| | 0.1.0-4 | 0.1.5 | 0.1.6-7 | 0.2.0 | 0.3.0 | 0.3.1 | 0.3.2 | 0.3.3 | 0.3.4 | 0.4.0 | 0.4.1 | 0.4.2 | 0.4.3 | 0.4.4 | 0.4.5 |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| answers read right-to-left | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| your own messages read right-to-left | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| a sent message decided line by line | | | | · | · | · | · | · | · | · | · | · | · | · | · |
-| ... **as a copy, moving nothing of theirs** | | | | | | | | | | | | | · | · | · | · |
-| the composer takes one direction | · | · | · | · | · | | | | · | · | · | · | · | · | · |
-| the composer decided **per line** | | | | | · | | | · | | | | | | | |
-| ... by `unicode-bidi: plaintext` | | | | | | · | · | | | | | | | | |
-| ... with a third, "mixed" state | | | | | | | · | | | | | | | | |
-| a clone of React's mirror | | | | | | | | · | | | | | | | |
-| its own undo stack | | | | | · | | | · | | | | | | | |
-| the timeline dot | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| an expanded message unpinned | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| the view follows the message | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| **closing gives back the reader's line** | | | | | | | | | | | · | · | · | · | · | · |
-| the block expires on its own | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| **a fault stops where it happens** | | | | | | | | | | · | · | · | · | · | · |
-| **a fuse box, and `__bidiStatus()`** | | | | | | | | | | · | · | · | · | · | · |
-| **stands down if Claude Code fixes it** | | | | | | | | | | · | · | · | · | · | · |
-| **crashed the panel** | | | | | **✗** | | | | | | | | | | |
-| **typed blank spaces** | | | | | **✗** | | | | | | | | | | |
-| **every keystroke one late** | | | | | | | | **✗** | | | | | | | |
-| payload, bytes | 28,975 | 30,998 | 31,371 | 35,485 | 59,047 | 51,513 | 54,185 | 71,979 | 51,754 | 66,147 | 69,798 | 70,554 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 |
+| | 0.1.0-4 | 0.1.5 | 0.1.6-7 | 0.2.0 | 0.3.0 | 0.3.1 | 0.3.2 | 0.3.3 | 0.3.4 | 0.4.0 | 0.4.1 | 0.4.2 | 0.4.3 | 0.4.4 | 0.4.5 | 0.4.6 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| answers read right-to-left | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| your own messages read right-to-left | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| a sent message decided line by line | | | | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| ... **as a copy, moving nothing of theirs** | | | | | | | | | | | | | · | · | · | · | · |
+| the composer takes one direction | · | · | · | · | · | | | | · | · | · | · | · | · | · | · |
+| the composer decided **per line** | | | | | · | | | · | | | | | | | | |
+| ... by `unicode-bidi: plaintext` | | | | | | · | · | | | | | | | | | |
+| ... with a third, "mixed" state | | | | | | | · | | | | | | | | | |
+| a clone of React's mirror | | | | | | | | · | | | | | | | | |
+| its own undo stack | | | | | · | | | · | | | | | | | | |
+| the timeline dot | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| an expanded message unpinned | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| the view follows the message | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| **closing gives back the reader's line** | | | | | | | | | | | · | · | · | · | · | · | · |
+| the block expires on its own | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| **a fault stops where it happens** | | | | | | | | | | · | · | · | · | · | · | · |
+| **a fuse box, and `__bidiStatus()`** | | | | | | | | | | · | · | · | · | · | · | · |
+| **stands down if Claude Code fixes it** | | | | | | | | | | · | · | · | · | · | · | · |
+| **crashed the panel** | | | | | **✗** | | | | | | | | | | | |
+| **typed blank spaces** | | | | | **✗** | | | | | | | | | | | |
+| **every keystroke one late** | | | | | | | | **✗** | | | | | | | | |
+| payload, bytes | 28,975 | 30,998 | 31,371 | 35,485 | 59,047 | 51,513 | 54,185 | 71,979 | 51,754 | 66,147 | 69,798 | 70,554 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 |
 
 The byte count is worth reading as a line of its own. It climbs while the composer is
 being fought over — 35K to 59K to 72K — and comes back down to 51K when that was given
@@ -370,6 +370,27 @@ the corner look like.
 - [ ] a week of ordinary use **(unseen - this is the one to try)**
 
 Written up in [decisions.md section 31](decisions.md).
+
+### 0.4.6 — the words come back, and the tooltips go
+
+0.4.5 held for one afternoon. Two of its three decisions were wrong in the same way:
+both moved something a person reads out of the place they read it.
+
+- [x] `✓ RTL on` and `⊘ RTL off` — the words are back. The blur test was sound and its
+      conclusion was not: a blur is the half-second nobody is asking, and the moment
+      the words matter is the opposite one, when somebody has turned their head to the
+      corner of the screen on purpose. **The mark is for the glance, the word is for
+      the look** **(code)**
+- [x] five tooltips became three lines, none over eighty characters and none with a
+      paragraph in it. A rare mark had been traded for a permanent wall of text, which
+      is a worse trade than the one it was avoiding **(code)**
+- [x] the split that survives: clicking puts it right in four of the five situations,
+      so they share a line; the fifth cannot be clicked out of and no longer pretends
+      it can **(code)**
+- [x] `$(whole-word)` stays gone, and `accessibilityInformation` stays **(code)**
+- [ ] a week of ordinary use **(unseen - this is the one to try)**
+
+Payload again untouched: 75,495 for the fourth build running.
 
 ---
 

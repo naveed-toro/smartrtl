@@ -1806,25 +1806,31 @@ of `workbench.desktop.main.js` rather than guessed at. The picture cannot say "r
 left". Only the word can. Which leaves the mark exactly one job: to say which of the two
 states this is.
 
-### The words were doing that job badly
+### The words: taken away, and put back
 
 `RTL on` and `RTL off` differ by one letter, at the end of the phrase. Rendered at the
 real 12px in a 22px bar, on the real theme colours, and then blurred to roughly what the
 corner of an eye receives — which is how a status bar is actually read, because nobody
 looks at it — **the words vanish and the marks do not.**
 
-So the words were contributing nothing at the moment they were needed, and anybody who
-stops to read has the tooltip. The name identifies, the mark reports: `✓ RTL` and
-`⊘ RTL`. That is what every other item in that bar does; the branch item says `main`, not
-`branch: main, checked out`.
+That measurement is real and it is still the reason the marks are there. The conclusion
+drawn from it was not. **0.4.5 dropped the words. 0.4.6 put them back**, and the reason is
+worth more than the original argument was.
 
-There is one real loss in dropping them, and it is not visual: a screen reader cannot see
-a tick, and would hear "RTL" in both states. `StatusBarItem.accessibilityInformation`
-exists for exactly this, so the sentence is not deleted, only moved to where it is still
-needed.
+A blur is not how anybody uses this. It is how the bar looks in the half-second you are
+not attending to it — and in that half-second nobody is asking the question either. The
+moment the words matter is the opposite moment: somebody has stopped, turned their head to
+the corner of the screen, and is deliberately trying to find something out. At *that*
+moment a word beats a symbol, because a symbol still has to be decoded and a word does not.
 
-`⊘ RTL off` was rejected as the compromise, by the way. The slashed circle already means
-"not", so the word makes it two negatives in one small item.
+So both, and each for the case it is good at. **The mark is for the glance, the word is
+for the look.** `✓ RTL on` and `⊘ RTL off`.
+
+Two objections that had to be given up with it. `⊘ RTL off` does put a negation in twice -
+the slashed circle already means "not" - and that is a real cost, paid because being told
+plainly beats being elegant. And a screen reader still cannot see a tick, which is why
+`StatusBarItem.accessibilityInformation` carries the full sentence regardless: "RTL" as an
+abbreviation is worse spoken than written.
 
 ### "Off" was five situations wearing one word
 
@@ -1847,9 +1853,27 @@ The tempting fix was a third state, `⚠ RTL not applied`. Counting honestly is 
 it: **almost nobody would ever see it.** A visible state built for an audience of nobody
 is not carefulness, it is weight — more to render, more to explain, more to get wrong.
 
-So there are still two marks, and the reason moved into the tooltip, which costs nothing
-until somebody wants it and is exactly right when they do. Five situations, five
-sentences, and a test that there are five.
+So there are still two marks. But the replacement - a sentence for each of the five,
+living in the tooltip - was the wrong lesson from the right observation, and it lasted
+exactly one build.
+
+"A tooltip costs nothing until somebody wants it" is false. It is read by somebody who is
+already unsure, and a paragraph handed to an unsure person is worse than the one short
+answer they came for: they now have to work out which part is about them. **A rare mark
+was traded for a permanent wall of text.**
+
+The right question is not how many situations there are, but **how many different things
+the person should do**. Two. Clicking puts the fix back in four of the five, so those four
+share one line. The fifth cannot be clicked out of - there is nothing installed to fix -
+and that one used to invite the click and then refuse it, which is the only reason the
+split exists at all:
+
+    on            "Right-to-left fix is on. Click to turn it off - uninstalling does not."
+    off           "Right-to-left fix is off. Click to turn it on."
+    no Claude     "Claude Code is not installed, so there is nothing to fix."
+
+The test holds them to it: three lines, none over eighty characters, none with a paragraph
+break in it, and never the word "Click" in the one that cannot be clicked.
 
 ### The thing that was actually wrong pointed the other way
 

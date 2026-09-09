@@ -154,51 +154,48 @@ function refresh(ctx) {
 
   if (!show) { status.hide(); return; }
 
-  /* The name says what it is, the mark says how it is - which is what every other
-     item in that bar does. The words "on" and "off" earn nothing here: blurred to
-     what the corner of an eye actually receives, they are unreadable while the two
-     marks are still plainly different, and anybody who stops to read has the
-     tooltip. $(whole-word) had to go for a separate reason - that glyph is Find's
-     "match whole word" toggle, so it already means something else to everybody who
-     uses Ctrl+F.
+  /* $(whole-word) had to go: that glyph is Find's "match whole word" toggle, so it
+     already meant something else to everybody who uses Ctrl+F, and at 16px it was two
+     letters and an underline. A tick and a slashed circle say which of two states this
+     is, and say it from the corner of an eye.
 
-     The word is not lost, only moved. A screen reader cannot see a tick, so it is
-     handed the sentence instead. */
+     The words stayed, and one build was spent finding that out. Dropping them reads
+     well as an argument - the marks survive a blur and the words do not - but a blur
+     is not how anybody uses this. Somebody who has stopped and looked at the corner of
+     their screen is trying to be told something, and at that moment a word beats a
+     symbol they have to decode. The mark is for the glance; the word is for the look.
+
+     A screen reader can do neither, so it is handed a sentence below. */
   const on = st.live;
-  status.text = on ? "$(check) RTL" : "$(circle-slash) RTL";
+  status.text = on ? "$(check) RTL on" : "$(circle-slash) RTL off";
   status.accessibilityInformation = {
     label: on ? "Right-to-left fix is on" : "Right-to-left fix is off"
   };
-  status.tooltip = whyItSays(ctx, st);
+  status.tooltip = whyItSays(st);
   status.command = on ? "smartrtl.turnOff" : "smartrtl.turnOn";
   status.show();
 }
 
 /**
- * "Off" means five different things, and only one of them is a decision somebody made.
+ * One line, and only where the line changes what somebody should do.
  *
- * Claude Code may not be installed at all; it may have been replaced by an update that
- * has not been patched back yet; the write may have failed on a locked or protected
- * file; auto-apply may be turned off on purpose; or the person simply turned it off.
+ * "Off" does cover five situations - Claude Code missing, an update not yet patched
+ * back, a write that failed, auto-apply turned off, and the person turning it off - and
+ * for one build each of them had its own sentence. That was the wrong lesson from the
+ * right observation. A tooltip is not free after all: it is read by somebody who is
+ * already unsure, and handing them a paragraph to sort through leaves them worse off
+ * than the single short answer they came for.
  *
- * None of those earns its own thing in the status bar - that would be four more states
- * almost nobody will ever meet, which is programming for an audience of nobody. A line
- * of tooltip costs nothing until somebody wants it, and is exactly right when they do.
+ * So the question is not "how many situations are there" but "how many DIFFERENT things
+ * should the person do". Two. Clicking puts the fix back in four of the five, so they
+ * share one line. The fifth cannot be clicked out of - there is nothing installed to
+ * fix - and it used to invite the click anyway and then refuse it, which is the only
+ * reason this is a function and not a constant.
  */
-function whyItSays(ctx, st) {
-  if (st.live) {
-    return "Right-to-left text in Claude Code is being fixed. Click to turn it off." +
-           "\n\nDisabling or uninstalling this extension does NOT turn it off - use this.";
-  }
-  if (st.present) {
-    return "The fix is still in Claude Code's bundle, but its stamp has run out, so it is " +
-           "doing nothing. Click to renew it.";
-  }
-  if (!st.installed) {
-    return "Claude Code is not installed in this editor, so there is nothing to fix.";
-  }
-  if (!wantedOn(ctx)) return "The right-to-left fix is off. Click to turn it on.";
-  return "Claude Code has been replaced and the fix has not been put back. Click to put it back.";
+function whyItSays(st) {
+  if (st.live) return "Right-to-left fix is on. Click to turn it off - uninstalling does not.";
+  if (!st.installed) return "Claude Code is not installed, so there is nothing to fix.";
+  return "Right-to-left fix is off. Click to turn it on.";
 }
 
 /* ------------------------------------------------------------------ *
