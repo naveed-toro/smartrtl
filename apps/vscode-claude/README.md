@@ -2,7 +2,7 @@
 
 > # ⚠ Uninstalling does not turn this off
 >
-> ### ⚙ menu above → “Turn the right-to-left fix off”
+> ### ⚙ menu above → “Turn off the right-to-left fix”
 >
 > Then uninstall or disable as normal. Forgot? It stops working by itself within a day.
 
@@ -215,7 +215,7 @@ exact to the byte, and a test asserts that rather than hoping for it.
 
 That shape matters more than any hook. It means the change can be undone by anyone, with
 or without this extension - by the `vscode:uninstall` script VS Code runs after the
-extension is removed, by `SmartRTL: Remove the right-to-left fix` on demand, by Claude
+extension is removed, by `SmartRTL: Turn off the right-to-left fix` on demand, by Claude
 Code's own next update (which installs into a fresh folder), or by hand:
 
 ```powershell

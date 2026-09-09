@@ -530,7 +530,7 @@ fixes it. It is simply not something to promise.
 
 ### What can be promised instead
 
-- `SmartRTL: Remove the right-to-left fix` - instant, complete, on demand
+- `SmartRTL: Turn off the right-to-left fix` - instant, complete, on demand
 - the block is one truncation away from gone, by hand, with the one-liner in the app README
 - Claude Code installs each update into a fresh folder, so an orphan clears itself at its
   next update - which for a tool that ships as often as Claude Code is days, not months

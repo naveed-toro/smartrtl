@@ -148,6 +148,23 @@ test("the adapter keys the roadmap lists are the ones the engine reads", () => {
   }
 });
 
+test("every command the documents tell somebody to run is a command that exists", () => {
+  // The uninstall guidance named `SmartRTL: Remove the right-to-left fix` from 0.1.4
+  // until 0.4.21. There has been no such command since 0.1.4 - it became Turn on/Turn
+  // off in the same release - and the pinned test above was holding the wrong name in
+  // place rather than the right instruction.
+  const titles = new Set(JSON.parse(read("apps/vscode-claude/package.json"))
+    .contributes.commands.map((c) => c.category + ": " + c.title));
+  const missing = [];
+  for (const doc of DOCS) {
+    for (const m of read(doc).matchAll(/SmartRTL: [A-Za-z][A-Za-z -]+/g)) {
+      const named = m[0].replace(/[ -]+$/, "");
+      if (!titles.has(named)) missing.push(doc + " tells people to run " + named);
+    }
+  }
+  assert.deepEqual(missing, [], "commands named in the docs that do not exist");
+});
+
 test("the instructions for turning it off before uninstalling are still there, word for word", () => {
   // Pinned on purpose. This is the only thing standing between somebody and a patch left
   // in a file they do not know about, and it is the one paragraph in this repository
@@ -155,9 +172,9 @@ test("the instructions for turning it off before uninstalling are still there, w
   const readme = read("apps/vscode-claude/README.md");
   const pinned = [
     "⚠ Uninstalling does not turn this off",
-    "Turn the right-to-left fix off",
+    "Turn off the right-to-left fix",
     "Then uninstall or disable as normal. Forgot? It stops working by itself within a day.",
-    "SmartRTL: Remove the right-to-left fix",
+    "SmartRTL: Turn off the right-to-left fix",
     "smart-rtl-direction patch BEGIN"
   ];
   for (const line of pinned) {

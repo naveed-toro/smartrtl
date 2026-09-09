@@ -206,10 +206,10 @@ function refresh() {
  */
 function whyItSays(st) {
   if (st.live) {
-    return "Turn off right-to-left fix\n\nUninstalling does not turn it off";
+    return "Turn off the right-to-left fix\n\nUninstalling does not turn it off";
   }
   if (!st.installed) return "Claude Code is not installed";
-  return "Turn on right-to-left fix";
+  return "Turn on the right-to-left fix";
 }
 
 /* ------------------------------------------------------------------ *
