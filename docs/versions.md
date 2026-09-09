@@ -1,4 +1,4 @@
-# The thirty-four builds, and what each one actually contained
+# The thirty-five builds, and what each one actually contained
 
 Compiled by opening every `.vsix` and reading what is inside it, not from memory. The
 second table was rebuilt the same way after the fact, which is why some of its rows say
@@ -141,30 +141,30 @@ and six tests cover it - the first of which is simply that it loads.
 Read out of the packaged `.vsix` the same way, months later. `·` means the build carried
 it; a blank means it did not.
 
-| | 0.1.0-4 | 0.1.5 | 0.1.6-7 | 0.2.0 | 0.3.0 | 0.3.1 | 0.3.2 | 0.3.3 | 0.3.4 | 0.4.0 | 0.4.1 | 0.4.2 | 0.4.3 | 0.4.4 | 0.4.5 | 0.4.6 | 0.4.7 | 0.4.8 | 0.4.9 | 0.4.10 |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| answers read right-to-left | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| your own messages read right-to-left | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| a sent message decided line by line | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| ... **as a copy, moving nothing of theirs** | | | | | | | | | | | | | · | · | · | · | · | · | · | · | · |
-| the composer takes one direction | · | · | · | · | · | | | | · | · | · | · | · | · | · | · | · | · | · | · |
-| the composer decided **per line** | | | | | · | | | · | | | | | | | | | | | | |
-| ... by `unicode-bidi: plaintext` | | | | | | · | · | | | | | | | | | | | | | |
-| ... with a third, "mixed" state | | | | | | | · | | | | | | | | | | | | | |
-| a clone of React's mirror | | | | | | | | · | | | | | | | | | | | | |
-| its own undo stack | | | | | · | | | · | | | | | | | | | | | | |
-| the timeline dot | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| an expanded message unpinned | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| the view follows the message | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| **closing gives back the reader's line** | | | | | | | | | | | · | · | · | · | · | · | · | · | · | · | · |
-| the block expires on its own | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| **a fault stops where it happens** | | | | | | | | | | · | · | · | · | · | · | · | · | · | · | · |
-| **a fuse box, and `__bidiStatus()`** | | | | | | | | | | · | · | · | · | · | · | · | · | · | · | · |
-| **stands down if Claude Code fixes it** | | | | | | | | | | · | · | · | · | · | · | · | · | · | · | · |
-| **crashed the panel** | | | | | **✗** | | | | | | | | | | | | | | | |
-| **typed blank spaces** | | | | | **✗** | | | | | | | | | | | | | | | |
-| **every keystroke one late** | | | | | | | | **✗** | | | | | | | | | | | | |
-| payload, bytes | 28,975 | 30,998 | 31,371 | 35,485 | 59,047 | 51,513 | 54,185 | 71,979 | 51,754 | 66,147 | 69,798 | 70,554 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 |
+| | 0.1.0-4 | 0.1.5 | 0.1.6-7 | 0.2.0 | 0.3.0 | 0.3.1 | 0.3.2 | 0.3.3 | 0.3.4 | 0.4.0 | 0.4.1 | 0.4.2 | 0.4.3 | 0.4.4 | 0.4.5 | 0.4.6 | 0.4.7 | 0.4.8 | 0.4.9 | 0.4.10 | 0.4.11 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| answers read right-to-left | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| your own messages read right-to-left | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| a sent message decided line by line | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| ... **as a copy, moving nothing of theirs** | | | | | | | | | | | | | · | · | · | · | · | · | · | · | · | · |
+| the composer takes one direction | · | · | · | · | · | | | | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| the composer decided **per line** | | | | | · | | | · | | | | | | | | | | | | | |
+| ... by `unicode-bidi: plaintext` | | | | | | · | · | | | | | | | | | | | | | | |
+| ... with a third, "mixed" state | | | | | | | · | | | | | | | | | | | | | | |
+| a clone of React's mirror | | | | | | | | · | | | | | | | | | | | | | |
+| its own undo stack | | | | | · | | | · | | | | | | | | | | | | | |
+| the timeline dot | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| an expanded message unpinned | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| the view follows the message | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| **closing gives back the reader's line** | | | | | | | | | | | · | · | · | · | · | · | · | · | · | · | · | · |
+| the block expires on its own | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| **a fault stops where it happens** | | | | | | | | | | · | · | · | · | · | · | · | · | · | · | · | · |
+| **a fuse box, and `__bidiStatus()`** | | | | | | | | | | · | · | · | · | · | · | · | · | · | · | · | · |
+| **stands down if Claude Code fixes it** | | | | | | | | | | · | · | · | · | · | · | · | · | · | · | · | · |
+| **crashed the panel** | | | | | **✗** | | | | | | | | | | | | | | | | |
+| **typed blank spaces** | | | | | **✗** | | | | | | | | | | | | | | | | |
+| **every keystroke one late** | | | | | | | | **✗** | | | | | | | | | | | | | |
+| payload, bytes | 28,975 | 30,998 | 31,371 | 35,485 | 59,047 | 51,513 | 54,185 | 71,979 | 51,754 | 66,147 | 69,798 | 70,554 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 |
 
 The byte count is worth reading as a line of its own. It climbs while the composer is
 being fought over — 35K to 59K to 72K — and comes back down to 51K when that was given
@@ -460,6 +460,21 @@ shown, and answers it by building a stand-in editor rather than by reading the s
 - [ ] a week of ordinary use **(unseen - this is the one to try)**
 
 Payload untouched for the eighth build running: 75,495.
+
+### 0.4.11 — the shop window says the whole thing
+
+One line, changed twice on the way to being right. The Marketplace blurb is the only
+place somebody meets this before installing it, so it is the one place the WARNING has to
+come before the instruction - "use the gear menu" means nothing until you know why.
+
+- [x] `⚠ Uninstalling does not turn it off — turn it off from the ⚙ menu first.`
+      Problem, then what to do about it, and the second half now names the action
+      instead of pointing at a menu **(code)**
+- [x] two earlier attempts recorded rather than quietly dropped: shortening it to just
+      the instruction lost the reason, and rewording the reason lost the plain words
+- [ ] a week of ordinary use **(unseen - this is the one to try)**
+
+Payload untouched for the ninth build running: 75,495.
 
 ---
 
