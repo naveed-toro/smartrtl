@@ -38,6 +38,10 @@ const OFF_AT_KEY = "smartrtl.offAtVersion";   // which build was running when it
 const RAN_KEY = "smartrtl.hasRun";     // set once we have activated at least once
 const MARKER = ".smartrtl-installed";  // lives in our own folder, so it dies with it
 
+/* Said in three places, and it has to end with what it means for the reader rather than
+   with what is true: "not installed" on its own leaves somebody asking "and?". */
+const NO_CLAUDE_CODE = "Claude Code is not installed, so there is nothing to fix.";
+
 /* How often the winding is CONSIDERED. Cheap on purpose - almost every one of these
    is a comparison of two numbers in memory and nothing more. What it guards is
    fmt.STAMP_EVERY_MS, which is the interval that actually reaches the disk. */
@@ -215,26 +219,17 @@ function whyItSays(st) {
 function turnOn(ctx) {
   ctx.globalState.update(ON_KEY, true);
   ctx.globalState.update(OFF_AT_KEY, undefined);
-
-  // Was anything actually running before this? That, and not what apply() had to do to
-  // the file, is what decides both the message and whether a reload is worth asking for.
-  //
-  // apply() answers a narrower question - did the FILE change - and reading the message
-  // off it was wrong in one real case: a block whose stamp had run out is still in the
-  // file, so apply() only re-stamps it and answers "restamped", while the panel on
-  // screen carries on running the dead copy. Choosing by that answer told somebody who
-  // had just clicked a bar reading "RTL off" that it was "already on", and offered them
-  // no reload - the one thing that would have put it right.
-  const before = patcher.state();
   const result = patcher.apply(ctx.extensionPath);
   refresh();
-  if (result.state === "no-target") {
-    vscode.window.showWarningMessage(
-      "Claude Code is not installed, so there is nothing to fix.");
-    return;
-  }
-  if (before.live) vscode.window.showInformationMessage("Right-to-left fix is already on.");
-  else offerReload("Right-to-left text is fixed. Reload to see it.");
+  if (result.state === "no-target") { vscode.window.showWarningMessage(NO_CLAUDE_CODE); return; }
+
+  // One answer, because it is true however much or little apply() had to do: the fix is
+  // in place now. There used to be a second one here - "already on" - for the case where
+  // nothing needed doing. Nothing can reach it: the command is only offered while the
+  // fix is off, in the palette, in the Extensions menu and on the status bar alike. It
+  // was also wrong when it did fire, telling somebody who had just clicked a bar reading
+  // "RTL off" that it was already on. Both problems went with the branch.
+  offerReload("Right-to-left text is fixed. Reload to see it.");
 }
 
 function turnOff(ctx) {
@@ -242,16 +237,11 @@ function turnOff(ctx) {
   ctx.globalState.update(OFF_AT_KEY, version(ctx));
   const result = patcher.remove();
   refresh();
-  if (result.state === "no-target") {
-    vscode.window.showWarningMessage(
-      "Claude Code is not installed, so there is nothing to turn off.");
-    return;
-  }
-  if (result.state === "removed") {
-    offerReload("Right-to-left fix is off and Claude Code is back to normal. Reload to see it.");
-  } else {
-    vscode.window.showInformationMessage("Right-to-left fix is already off. Claude Code is untouched.");
-  }
+  if (result.state === "no-target") { vscode.window.showWarningMessage(NO_CLAUDE_CODE); return; }
+
+  // Same again: true whether there was a block to take out or not, and the "already off"
+  // branch that used to be here could not be reached either.
+  offerReload("Right-to-left fix is off and Claude Code is back to normal. Reload to see it.");
 }
 
 /**
@@ -302,8 +292,7 @@ function activate(context) {
     vscode.commands.registerCommand("smartrtl.status", () => {
       const install = patcher.findClaudeCode();
       if (!install) {
-        vscode.window.showWarningMessage(
-          "Claude Code is not installed, so there is nothing to fix.");
+        vscode.window.showWarningMessage(NO_CLAUDE_CODE);
         return;
       }
       vscode.window.showInformationMessage(patcher.isPatched()

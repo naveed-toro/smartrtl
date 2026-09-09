@@ -47,7 +47,7 @@ Then yes, this is the same bug.
 
 | where | what it is | status |
 |---|---|---|
-| Claude Code in VS Code | companion extension | done at 0.4.9; tested live; not published yet |
+| Claude Code in VS Code | companion extension | done at 0.4.10; tested live; not published yet |
 | AI chat sites in the browser | Chrome extension | next |
 | a markdown editor | VS Code, desktop, web | shape not decided |
 | Claude desktop app | not investigated yet | unknown |

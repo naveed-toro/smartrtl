@@ -1,0 +1,181 @@
+/**
+ * Every message this extension can say, and whether anybody can ever be shown it.
+ *
+ * Wording was argued about for a long time before somebody asked the question that
+ * mattered: does this situation happen at all? Three of them did not. "Right-to-left fix
+ * is already on" could only appear if the command were offered while the fix was on, and
+ * it is offered only while it is off - in the palette, in the Extensions menu and on the
+ * status bar alike. Same for "already off", and for the no-Claude-Code warning on a
+ * command that no editor will hand you without Claude Code.
+ *
+ * So this builds a stand-in editor, runs activate() in it, and for every state the disk
+ * can be in presses exactly the commands VS Code would offer - honouring the same
+ * when-clauses from package.json. Anything the source can say that nothing here produces
+ * is a message written for nobody, and this fails.
+ */
+const test = require("node:test");
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const os = require("node:os");
+const path = require("node:path");
+
+module.paths.unshift(path.join(__dirname, "stub", "node_modules"));
+require("module").Module._initPaths();
+process.env.NODE_PATH = path.join(__dirname, "stub", "node_modules");
+require("module")._initPaths();
+
+const APP = path.resolve(__dirname, "..");
+const pkg = JSON.parse(fs.readFileSync(path.join(APP, "package.json"), "utf8"));
+
+/* ---- the stand-in editor ---------------------------------------------------- */
+let shown = [], ctxKeys = {}, bar = null, claudeDir = null, disposables = [], onExtensionsChanged = null;
+let claudeVersion = "2.1.263";
+const noop = () => ({ dispose() {} });
+const fake = {
+  StatusBarAlignment: { Right: 2 },
+  MarkdownString: class { constructor(v) { this.value = v; } },
+  window: {
+    createOutputChannel: () => ({ appendLine() {}, dispose() {} }),
+    createStatusBarItem: () => (bar = { text: "", show() { this.shown = true; }, hide() { this.shown = false; }, dispose() {} }),
+    showInformationMessage: (m) => { shown.push(m); return Promise.resolve(undefined); },
+    showWarningMessage: (m) => { shown.push(m); return Promise.resolve(undefined); },
+    registerUriHandler: noop,
+    onDidChangeActiveTextEditor: noop,
+    tabGroups: {
+      get activeTabGroup() { return { activeTab: { input: { viewType: "claude-code.panel" } } }; },
+      onDidChangeTabs: noop, onDidChangeTabGroups: noop
+    }
+  },
+  commands: {
+    registerCommand: (id, fn) => { CMD[id] = fn; return { dispose() {} }; },
+    executeCommand: (id, key, val) => { if (id === "setContext") ctxKeys[key] = val; }
+  },
+  workspace: { onDidChangeConfiguration: noop, getConfiguration: () => ({ get: (k, d) => d }) },
+  extensions: {
+    getExtension: (id) => (id === "anthropic.claude-code" && claudeDir)
+      ? { extensionPath: claudeDir, packageJSON: { version: claudeVersion } } : undefined,
+    onDidChange: (fn) => { onExtensionsChanged = fn; return { dispose() {} }; }
+  }
+};
+const CMD = {};
+const stubPath = require.resolve("vscode");
+require("vscode");
+require.cache[stubPath].exports = fake;
+
+const ext = require("../src/extension.js");
+const patcher = require("../src/patcher.js");
+
+const store = {};
+const ctx = {
+  extensionPath: APP,
+  subscriptions: { push(...d) { disposables.push(...d); } },
+  globalState: { get: (k, d) => (k in store ? store[k] : d), update: (k, v) => { store[k] = v; } },
+  extension: { packageJSON: { version: pkg.version } }
+};
+
+const root = fs.mkdtempSync(path.join(os.tmpdir(), "reach-"));
+const dir = path.join(root, "anthropic.claude-code-2.1.263");
+fs.mkdirSync(path.join(dir, "webview"), { recursive: true });
+const target = path.join(dir, "webview", "index.js");
+const bundle = () => fs.writeFileSync(target, "//claude code bundle\n", "utf8");
+const age = (when) => fs.writeFileSync(target,
+  fs.readFileSync(target, "utf8").replace(/var EXPIRES_AT = \d+;/, "var EXPIRES_AT = " + when + ";"), "utf8");
+
+/** Exactly the commands VS Code would put in front of somebody, by its own rules. */
+function offered() {
+  const active = !!ctxKeys["smartrtl.active"];
+  const out = [];
+  for (const m of pkg.contributes.menus.commandPalette) {
+    const ok = m.when === "smartrtl.active" ? active : m.when === "!smartrtl.active" ? !active : true;
+    if (ok) out.push(m.command);
+  }
+  out.push("smartrtl.status");        // no when-clause anywhere, so always offered
+  return out;
+}
+
+const STATES = [
+  ["Claude Code there, fix on", () => { claudeDir = dir; bundle(); patcher.apply(APP); }, true],
+  ["Claude Code there, fix off", () => { claudeDir = dir; bundle(); }, false],
+  ["a block whose stamp has run out", () => { claudeDir = dir; bundle(); patcher.apply(APP); age(Date.now() - 1000); }, true],
+  ["no Claude Code at all", () => { claudeDir = null; }, true]
+];
+
+function everythingAnybodyCanBeShown() {
+  const seen = new Set();
+  for (const [, setup, wanted] of STATES) {
+    setup();
+    store["smartrtl.on"] = wanted;
+    ctxKeys = {};
+    ext.activate(ctx);
+    for (const id of offered()) {
+      shown = [];
+      CMD[id]();
+      shown.forEach((m) => seen.add(m));
+      setup();
+      store["smartrtl.on"] = wanted;
+    }
+  }
+  // the two nobody presses a button for: an update landing under the editor, and a
+  // re-install that finds the fix switched off
+  claudeDir = dir; claudeVersion = "2.1.263"; bundle(); store["smartrtl.on"] = true;
+  ctxKeys = {}; ext.activate(ctx);
+
+  // a real update: a NEW folder with a new version in it, and our block gone with the
+  // old one. Anything less is caught by the guard that ignores other extensions being
+  // installed, which is exactly what that guard is for.
+  const next = path.join(root, "anthropic.claude-code-2.1.264");
+  fs.mkdirSync(path.join(next, "webview"), { recursive: true });
+  fs.writeFileSync(path.join(next, "webview", "index.js"), "//a newer bundle", "utf8");
+  claudeDir = next; claudeVersion = "2.1.264";
+  shown = [];
+  if (onExtensionsChanged) onExtensionsChanged();
+  shown.forEach((m) => seen.add(m));
+
+  store["smartrtl.on"] = false;
+  shown = [];
+  ext.askIfStillOff(ctx, true);
+  shown.forEach((m) => seen.add(m));
+  return seen;
+}
+
+/** Every sentence the source can hand to a person. */
+function everySentenceInTheSource() {
+  const src = fs.readFileSync(path.join(APP, "src", "extension.js"), "utf8");
+  const out = new Set();
+  const LIT = /"((?:[^"\\]|\\.)*)"|`((?:[^`\\$]|\\.)*)`/g;
+  for (const m of src.matchAll(LIT)) {
+    const lit = (m[1] || m[2] || "").split("\\n").join("\n");
+    if (lit.includes(" ") && lit.trim().endsWith(".")) out.add(lit);
+  }
+  return out;
+}
+
+test("no message is written for a situation nobody can reach", () => {
+  const reachable = everythingAnybodyCanBeShown();
+  const written = everySentenceInTheSource();
+  const orphans = [...written].filter((s) => !reachable.has(s));
+  assert.deepEqual(orphans, [],
+    "these can be said by the code and by nothing a person can do:\n  " + orphans.join("\n  "));
+});
+
+test("and every state has something to say for itself", () => {
+  for (const [name, setup, wanted] of STATES) {
+    setup();
+    store["smartrtl.on"] = wanted;
+    ctxKeys = {};
+    ext.activate(ctx);
+    assert.ok(bar.text, name + ": the status bar says nothing");
+    for (const id of offered()) {
+      shown = [];
+      CMD[id]();
+      assert.ok(shown.length > 0, name + ": " + id + " says nothing at all");
+      setup();
+      store["smartrtl.on"] = wanted;
+    }
+  }
+});
+
+test.after(() => {
+  disposables.forEach((d) => d && d.dispose && d.dispose());
+  fs.rmSync(root, { recursive: true, force: true });
+});

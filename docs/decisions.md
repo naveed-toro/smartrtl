@@ -2013,3 +2013,39 @@ which is the question the person is asking.
 
 That one was found because somebody refused to accept "it can happen in theory" and asked
 for it to be run instead.
+
+### Then somebody asked whether they happen at all
+
+The wording had been argued over for an afternoon before the useful question arrived:
+**which of these does a person ever see?**
+
+It cannot be answered by reading, because the answer lives in three places at once — the
+`when` clauses in package.json, the command the status bar item carries, and what
+`apply()` and `remove()` return. So a stand-in editor was built instead:
+`test/reachable-messages.test.js` runs `activate()` in it and, for every state the disk
+can be in, presses exactly the commands VS Code would offer, honouring the same
+when-clauses VS Code honours.
+
+Three messages were produced by nothing:
+
+| | why it cannot happen |
+|---|---|
+| "Right-to-left fix is already on." | Turn On is only offered while the fix is off — in the palette, the Extensions menu and on the status bar alike |
+| "Right-to-left fix is already off. Claude Code is untouched." | and Turn Off only while it is on |
+| "Claude Code is not installed, so there is nothing to turn off." | Turn Off is not offered at all without Claude Code |
+
+All three are gone, and with them the branches that chose between them. What is left says
+the resulting state — *the fix is in place* / *the fix is off* — which is true whether or
+not anything had to be done to the file. **One answer that is always right beats two that
+have to be chosen between.**
+
+That also retired the fix from the paragraph above. `turnOn` had been taught to ask what
+was RUNNING rather than what apply() did to the file, to stop it saying "already on" to
+somebody looking at a bar reading `RTL off`. Deleting the message deletes the question:
+there is nothing left to choose.
+
+The test stays, and it has teeth — it was checked by putting an unreachable message back
+and watching it fail. It also caught a fault in its own harness first: firing
+`extensions.onDidChange` was not enough to reproduce a Claude Code update, because the
+real thing arrives as a **new folder with a new version in it**, which is precisely what
+the guard against other extensions being installed is there to tell apart.
