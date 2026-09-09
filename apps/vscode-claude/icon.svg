@@ -1,0 +1,46 @@
+<!--
+  SmartRTL for Claude Code — the extension icon.
+
+  What it has to say, at 32px, in a list of fifty other extensions: right-to-left text.
+  So it says that and nothing else — four lines, right-aligned, with the ragged edge on
+  the LEFT. That shape is already in everybody's hands as the "align right" button, which
+  is the whole reason it reads without being explained.
+
+  Chosen by looking at four of them side by side at 128, 48 and 32 on both a dark and a
+  light ground, which is the only way to find out that an idea that works at 128 turns to
+  mush at 32:
+
+    four thin lines, one two-tone   the two-tone line merged into a smudge at 32
+    three bold lines                the second colour read as a stray bullet
+    an arrow over two lines         legible, and says "back" or "undo" to anybody who has
+                                    used any other software
+    four bold lines, one accent     this one
+
+  Deliberately NOT in Claude's orange. This is a companion, not an official Anthropic
+  product, and borrowing their colour would be claiming otherwise.
+
+  icon.png is generated from this file. Edit this, then run:
+      node build/render-icon.js --preview
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="ground" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2B3153"/>
+      <stop offset="1" stop-color="#171A2B"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="128" height="128" rx="28" fill="url(#ground)"/>
+
+  <!-- Four lines of text. Every right edge is at 102; the left edge is deliberately
+       ragged, because that raggedness IS the message. -->
+  <g fill="#F2EFE8">
+    <rect x="26" y="28" width="76" height="13" rx="6.5"/>
+    <rect x="62" y="67" width="40" height="13" rx="6.5"/>
+    <rect x="38" y="87" width="64" height="13" rx="6.5"/>
+  </g>
+
+  <!-- One line in the accent, so the icon has somewhere for the eye to land and does not
+       read as a generic "align right" button. -->
+  <rect x="46" y="47" width="56" height="13" rx="6.5" fill="#E8B44A"/>
+</svg>

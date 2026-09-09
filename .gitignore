@@ -15,3 +15,4 @@ playwright-report/
 # build that could not even load.
 !apps/vscode-claude/test/stub/node_modules/
 !apps/vscode-claude/test/stub/node_modules/**
+apps/vscode-claude/icon-preview.png

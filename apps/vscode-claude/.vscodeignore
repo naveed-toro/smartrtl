@@ -5,3 +5,5 @@ test/**
 .gitignore
 **/*.map
 **/.DS_Store
+icon-preview.png
+icon.svg

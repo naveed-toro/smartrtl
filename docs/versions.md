@@ -1,4 +1,4 @@
-# The twenty-seven builds, and what each one actually contained
+# The twenty-eight builds, and what each one actually contained
 
 Compiled by opening every `.vsix` and reading what is inside it, not from memory. The
 second table was rebuilt the same way after the fact, which is why some of its rows say
@@ -141,30 +141,30 @@ and six tests cover it - the first of which is simply that it loads.
 Read out of the packaged `.vsix` the same way, months later. `·` means the build carried
 it; a blank means it did not.
 
-| | 0.1.0-4 | 0.1.5 | 0.1.6-7 | 0.2.0 | 0.3.0 | 0.3.1 | 0.3.2 | 0.3.3 | 0.3.4 | 0.4.0 | 0.4.1 | 0.4.2 | 0.4.3 |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| answers read right-to-left | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| your own messages read right-to-left | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| a sent message decided line by line | | | | · | · | · | · | · | · | · | · | · | · |
-| ... **as a copy, moving nothing of theirs** | | | | | | | | | | | | | · | · |
-| the composer takes one direction | · | · | · | · | · | | | | · | · | · | · | · |
-| the composer decided **per line** | | | | | · | | | · | | | | | |
-| ... by `unicode-bidi: plaintext` | | | | | | · | · | | | | | | |
-| ... with a third, "mixed" state | | | | | | | · | | | | | | |
-| a clone of React's mirror | | | | | | | | · | | | | | |
-| its own undo stack | | | | | · | | | · | | | | | |
-| the timeline dot | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| an expanded message unpinned | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| the view follows the message | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| **closing gives back the reader's line** | | | | | | | | | | | · | · | · | · |
-| the block expires on its own | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| **a fault stops where it happens** | | | | | | | | | | · | · | · | · |
-| **a fuse box, and `__bidiStatus()`** | | | | | | | | | | · | · | · | · |
-| **stands down if Claude Code fixes it** | | | | | | | | | | · | · | · | · |
-| **crashed the panel** | | | | | **✗** | | | | | | | | |
-| **typed blank spaces** | | | | | **✗** | | | | | | | | |
-| **every keystroke one late** | | | | | | | | **✗** | | | | | |
-| payload, bytes | 28,975 | 30,998 | 31,371 | 35,485 | 59,047 | 51,513 | 54,185 | 71,979 | 51,754 | 66,147 | 69,798 | 70,554 | 75,495 |
+| | 0.1.0-4 | 0.1.5 | 0.1.6-7 | 0.2.0 | 0.3.0 | 0.3.1 | 0.3.2 | 0.3.3 | 0.3.4 | 0.4.0 | 0.4.1 | 0.4.2 | 0.4.3 | 0.4.4 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| answers read right-to-left | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| your own messages read right-to-left | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| a sent message decided line by line | | | | · | · | · | · | · | · | · | · | · | · | · |
+| ... **as a copy, moving nothing of theirs** | | | | | | | | | | | | | · | · | · |
+| the composer takes one direction | · | · | · | · | · | | | | · | · | · | · | · | · |
+| the composer decided **per line** | | | | | · | | | · | | | | | | |
+| ... by `unicode-bidi: plaintext` | | | | | | · | · | | | | | | | |
+| ... with a third, "mixed" state | | | | | | | · | | | | | | | |
+| a clone of React's mirror | | | | | | | | · | | | | | | |
+| its own undo stack | | | | | · | | | · | | | | | | |
+| the timeline dot | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| an expanded message unpinned | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| the view follows the message | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| **closing gives back the reader's line** | | | | | | | | | | | · | · | · | · | · |
+| the block expires on its own | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| **a fault stops where it happens** | | | | | | | | | | · | · | · | · | · |
+| **a fuse box, and `__bidiStatus()`** | | | | | | | | | | · | · | · | · | · |
+| **stands down if Claude Code fixes it** | | | | | | | | | | · | · | · | · | · |
+| **crashed the panel** | | | | | **✗** | | | | | | | | | |
+| **typed blank spaces** | | | | | **✗** | | | | | | | | | |
+| **every keystroke one late** | | | | | | | | **✗** | | | | | | |
+| payload, bytes | 28,975 | 30,998 | 31,371 | 35,485 | 59,047 | 51,513 | 54,185 | 71,979 | 51,754 | 66,147 | 69,798 | 70,554 | 75,495 | 75,495 | 75,495 |
 
 The byte count is worth reading as a line of its own. It climbs while the composer is
 being fought over — 35K to 59K to 72K — and comes back down to 51K when that was given
@@ -327,6 +327,23 @@ working.
       textContent would get it doubled. Nothing reads it - checked every `getText:` in
       their bundle - and the build this replaces mangled that text anyway **(code)**
 - [ ] a week of ordinary use **(unseen — this is the one to try)**
+
+### 0.4.4 — an icon
+Nothing in the payload changed: byte for byte the same 75,495 as 0.4.3. Until now the
+extension showed VS Code's default box in a list of fifty other extensions, which is the
+one place somebody decides whether a thing looks looked-after before trying it.
+
+Four lines, right-aligned, with the ragged edge on the left - the shape everybody
+already has as the "align right" button, which is why it needs no explaining. Chosen by
+rendering four candidates at 128, 48 and 32 on both a dark and a light ground and
+looking at them, which is how three ideas that worked at 128 were found to turn to mush
+at 32: a two-tone line smudged, a second colour read as a stray bullet, and an arrow
+said "back" rather than "right to left".
+
+- [x] the source is icon.svg; icon.png is generated from it by build/render-icon.js **(code)**
+- [x] rendered by the browser already here for the tests - no image toolchain added **(code)**
+- [x] icon.svg and the preview sheet are kept out of the package **(code)**
+- [x] deliberately not in Claude's own colour: this is a companion, not their product
 
 ---
 
