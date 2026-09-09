@@ -119,9 +119,10 @@ test("the winding cannot be slower than the running out", () => {
     "and a missed wind must not be able to reach the expiry");
 });
 
-test("the tooltip is a label, short enough to take in without reading it", () => {
+test("the tooltip is labels, one idea to a line", () => {
   // A tooltip is read by somebody whose hand is already on the mouse. Anything that has
-  // to be parsed as a sentence has missed its moment - so this holds them to labels.
+  // to be parsed as a sentence has missed its moment - so this holds every line to a
+  // label, and holds the number of lines down to what an eye takes in at once.
   const on = whyItSays({ installed: true, present: true, live: true });
   const off = whyItSays({ installed: true, present: false, live: false });
   const expired = whyItSays({ installed: true, present: true, live: false });
@@ -130,13 +131,18 @@ test("the tooltip is a label, short enough to take in without reading it", () =>
   assert.equal(expired, off, "an expired block is put right by the same click as any other off");
   assert.equal(new Set([on, off, noClaude]).size, 3);
 
-  for (const line of [on, off, noClaude]) {
-    assert.ok(line.length <= 32, "not a label any more, it is a sentence: " + line);
-    assert.ok(!/[.!]/.test(line), "punctuation means prose, and prose has to be read: " + line);
-    assert.ok(!line.includes(String.fromCharCode(10)), "a tooltip with lines in it is not glanced at: " + line);
+  for (const tip of [on, off, noClaude]) {
+    const lines = tip.split(String.fromCharCode(10)).filter((l) => l.trim() !== "");
+    assert.ok(lines.length <= 2, "more than two lines is a paragraph: " + tip);
+    for (const line of lines) {
+      assert.ok(line.length <= 32, "not a label any more, it is a sentence: " + line);
+      assert.ok(!/[.!]/.test(line), "punctuation means prose, and prose has to be read: " + line);
+    }
   }
 
-  assert.match(on, /^Turn off/);                    // what the click does, not what is true
+  assert.match(on.split(String.fromCharCode(10))[0], /^Turn off/);   // the click, first
+  assert.match(on, /Uninstall does not turn it off/);                // the thing nobody guesses
   assert.match(off, /^Turn on/);
-  assert.doesNotMatch(noClaude, /Turn/);            // nothing to turn, and it must not pretend
+  assert.ok(!off.includes("Uninstall"), "there is nothing left running to warn about");
+  assert.doesNotMatch(noClaude, /Turn/);                             // nothing to turn
 });

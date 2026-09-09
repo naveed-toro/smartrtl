@@ -177,25 +177,25 @@ function refresh(ctx) {
 }
 
 /**
- * A label, not a sentence.
+ * Labels, not sentences - and never more than one idea to a line.
  *
- * Two builds were spent learning this. First there were five explanations, one for each
- * situation that ends in "off". Then three short sentences. Both were still prose, and
- * prose in a tooltip has to be READ - which is the one thing the person hovering has not
- * agreed to do. They are already unsure, their hand is on the mouse, and they want the
- * answer in the time it takes to look.
+ * Three builds went into this. First five explanations, one per situation. Then three
+ * short sentences. Both were prose, and prose in a tooltip has to be READ, which is the
+ * one thing the person hovering has not agreed to do: their hand is already on the mouse
+ * and they want the answer in the time it takes to look at it.
  *
- * So: what happens if I click. Nothing else. The state is already on the bar beside it,
- * spelled out, so repeating it here would be the second copy of something they can see.
+ * So the first line is what the click does. Nothing else - the state is already spelled
+ * out on the bar beside it, so repeating it here would be a second copy of something on
+ * screen.
  *
- * The warning about Uninstall not being the off switch used to live here. It belongs
- * where somebody is actually uninstalling - the Extensions view, where this contributes
- * its own Turn Off command right beside Uninstall - and it is also in the README, in the
- * first reload prompt, and in the status command. A person hovering the status bar is not
- * uninstalling anything.
+ * The second line exists for one fact and only in the one state where it is true. VS
+ * Code's own Uninstall does not undo this, because the file being edited belongs to
+ * somebody else and the editor has no idea it was touched. Nobody guesses that. It is on
+ * its own line rather than tacked onto the first, because two ideas sharing a line is how
+ * a label turns back into a sentence.
  */
 function whyItSays(st) {
-  if (st.live) return "Turn off right-to-left fix";
+  if (st.live) return "Turn off right-to-left fix\n\nUninstall does not turn it off";
   if (!st.installed) return "Claude Code not installed";
   return "Turn on right-to-left fix";
 }

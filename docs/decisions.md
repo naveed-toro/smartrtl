@@ -1870,6 +1870,7 @@ answer in the time it takes to look at it, not to parse it.
 So the tooltip stopped describing the situation and started naming the action:
 
     on            "Turn off right-to-left fix"
+                  "Uninstall does not turn it off"
     off           "Turn on right-to-left fix"
     no Claude     "Claude Code not installed"
 
@@ -1877,14 +1878,19 @@ The state is on the bar beside it, spelled out - `✓ RTL on` - so saying it aga
 tooltip was a second copy of something already on screen. What is not on screen is what
 happens if you click, and that is now the whole of it.
 
-The Uninstall warning went with the prose, and it belongs where it went. Somebody hovering
-a status bar is not uninstalling anything; somebody in the Extensions view is, and this
-contributes its own Turn Off command **right beside Uninstall** there. It is also in the
-README, in the first reload prompt, and in the status command. Four places, all of them
-where the person actually is.
+The Uninstall warning survives, and the reason it does is the reason it now has a line of
+its own. Nobody guesses that VS Code's own Uninstall leaves this running - the file being
+edited belongs to somebody else and the editor has no idea it was touched - so it is worth
+a line. What it was not worth is being **tacked onto the first one**, which is what made
+that first attempt a sentence: two ideas sharing a line is exactly how a label turns back
+into prose.
 
-The test holds the line: three labels, none over 32 characters, none with a full stop in
-it, and never the word "Turn" in the one that cannot be turned.
+So: the action on the first line, the one thing nobody guesses on the second, and only in
+the state where it is true. There is nothing to warn about when the fix is already off.
+
+The test holds the line: at most two lines, each of them under 32 characters, none with a
+full stop in it, no "Uninstall" in the off state, and never the word "Turn" in the one that
+cannot be turned.
 
 ### The thing that was actually wrong pointed the other way
 
