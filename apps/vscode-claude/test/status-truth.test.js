@@ -142,7 +142,7 @@ test("the tooltip is labels, one idea to a line", () => {
 
   assert.match(on.split(String.fromCharCode(10))[0], /^Turn off/);   // the click, first
   // one thing, so one line: what to do, and what happens if you do not
-  assert.match(on, /Do this before uninstalling/);
+  assert.match(on, /Uninstall does not turn it off/);
   assert.match(off, /^Turn on/);
   assert.ok(!off.includes("Uninstall"), "there is nothing left running to warn about");
   assert.doesNotMatch(noClaude, /Turn/);                             // nothing to turn
