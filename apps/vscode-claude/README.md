@@ -84,7 +84,7 @@ nothing else.
 - **the timeline dot** - moves to the side its own message reads from
 
 Each of those, and the formulas and fixes that were tried and rejected first, is written
-up in [docs/decisions.md](../../docs/decisions.md) - thirty sections, including
+up in [docs/decisions.md](../../docs/decisions.md) - thirty-one sections, including
 three attempts at per-line direction in the composer that were built, shipped and then
 withdrawn, and the measurements that ended each one.
 

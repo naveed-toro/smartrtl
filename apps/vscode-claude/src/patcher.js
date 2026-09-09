@@ -130,11 +130,69 @@ function remove() {
   return { state: "removed", install };
 }
 
-/** Cheap enough to call on every activation. */
-function isPatched() {
-  const install = findClaudeCode();
-  if (!install) return false;
-  return fs.readFileSync(install.target, "utf8").includes(BEGIN);
+/**
+ * The end of the bundle, and only the end.
+ *
+ * Everything this extension writes is appended, so "is it there, and is it still
+ * alive" is always answered by the last few kilobytes. This used to read the whole
+ * file - five megabytes - and it is asked on every tab change, which was five
+ * megabytes of reading to look at the end of a file.
+ *
+ * A byte window can cut a UTF-8 character in half where it starts. That is harmless
+ * here: what is searched for is ASCII, it sits well inside the window, and nothing
+ * read this way is ever written back.
+ */
+const TAIL_BYTES = 512 * 1024;
+
+function readTail(file) {
+  const fd = fs.openSync(file, "r");
+  try {
+    const size = fs.fstatSync(fd).size;
+    const want = Math.min(size, TAIL_BYTES);
+    const buf = Buffer.alloc(want);
+    fs.readSync(fd, buf, 0, want, size - want);
+    return buf.toString("utf8");
+  } finally {
+    fs.closeSync(fd);
+  }
 }
 
-module.exports = { findClaudeCode, apply, remove, isPatched, stripPatch, TARGET_ID, BEGIN };
+/**
+ * What the editor has to show, cheaply and without lying.
+ *
+ * Two facts, and they are not the same fact:
+ *
+ *   present - the block is in the file. This is what Turn Off acts on.
+ *   live    - it is in the file AND its stamp has not run out, which is the only
+ *             thing that means right-to-left text is actually being fixed.
+ *
+ * They disagree exactly when it matters. An expired block is still sitting in the
+ * file and does nothing whatsoever - the payload checks its date once, on the way in,
+ * and returns. For as long as only the marker was looked for, that was reported as
+ * the fix being on, which is the one claim this extension exists to keep honest.
+ *
+ * A block with no stamp at all counts as live, because that is what the payload does
+ * with it.
+ *
+ * @returns {{installed:boolean, present:boolean, live:boolean, expiresAt:number}}
+ */
+function state() {
+  const install = findClaudeCode();
+  if (!install) return { installed: false, present: false, live: false, expiresAt: 0 };
+
+  let tail;
+  try { tail = readTail(install.target); }
+  catch (e) { return { installed: true, present: false, live: false, expiresAt: 0 }; }
+
+  const present = tail.includes(BEGIN);
+  const expiresAt = present ? readExpiry(tail) : 0;
+  return { installed: true, present, expiresAt,
+           live: present && (!expiresAt || Date.now() < expiresAt) };
+}
+
+/** Cheap enough to call on every activation. Says nothing about whether it still runs. */
+function isPatched() {
+  return state().present;
+}
+
+module.exports = { findClaudeCode, apply, remove, isPatched, state, stripPatch, TARGET_ID, BEGIN };

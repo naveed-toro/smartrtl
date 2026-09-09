@@ -29,6 +29,21 @@ const WINDOW_MS = 24 * 60 * 60 * 1000;
 const REFRESH_BELOW_MS = 12 * 60 * 60 * 1000;
 
 /**
+ * How often a running editor winds the clock.
+ *
+ * The two numbers above assume somebody comes back before the block dies. For a long
+ * time the only thing that ever came back was activation - and activation happens once
+ * per window. A window left open for a day and a half let the block expire underneath
+ * it: the panel already on screen carried on, because the expiry is read once when the
+ * payload loads, but the next panel opened got nothing at all.
+ *
+ * This is the thing that comes back. It is far shorter than REFRESH_BELOW_MS on
+ * purpose - several of these can be missed outright, a laptop asleep being the ordinary
+ * way, and the block is still re-stamped with half a day in hand.
+ */
+const STAMP_EVERY_MS = 6 * 60 * 60 * 1000;
+
+/**
  * The file as it was before we ever touched it.
  *
  * The block is searched for WITH the newline that separates it from the bundle,
@@ -57,4 +72,4 @@ function stampExpiry(payload, now) {
   return payload.replace(STAMP, "var EXPIRES_AT = " + (now + WINDOW_MS) + ";");
 }
 
-module.exports = { BEGIN, MARK, WINDOW_MS, REFRESH_BELOW_MS, stripPatch, readExpiry, stampExpiry };
+module.exports = { BEGIN, MARK, WINDOW_MS, REFRESH_BELOW_MS, STAMP_EVERY_MS, stripPatch, readExpiry, stampExpiry };

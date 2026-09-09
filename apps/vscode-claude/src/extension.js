@@ -30,6 +30,7 @@ const vscode = require("vscode");
 const fs = require("node:fs");
 const path = require("node:path");
 const patcher = require("./patcher.js");
+const fmt = require("./patch-format.js");
 
 const ON_KEY = "smartrtl.on";          // remembered across restarts
 const CONTEXT_KEY = "smartrtl.active"; // drives which command is offered
@@ -38,8 +39,14 @@ const OFF_AT_KEY = "smartrtl.offAtVersion";   // which build was running when it
 const RAN_KEY = "smartrtl.hasRun";     // set once we have activated at least once
 const MARKER = ".smartrtl-installed";  // lives in our own folder, so it dies with it
 
+/* How often the winding is CONSIDERED. Cheap on purpose - almost every one of these
+   is a comparison of two numbers in memory and nothing more. What it guards is
+   fmt.STAMP_EVERY_MS, which is the interval that actually reaches the disk. */
+const WIND_CHECK_MS = 30 * 60 * 1000;
+
 let log, status;
 let lastSeen = null;                   // { dir, version } of the Claude Code we last patched
+let stampedAt = 0;                     // when the block was last written or checked - from memory
 
 const wantedOn = (ctx) => ctx.globalState.get(ON_KEY, true);
 const version = (ctx) => (ctx.extension && ctx.extension.packageJSON && ctx.extension.packageJSON.version) || "?";
@@ -133,8 +140,12 @@ function claudeCodeFocused() {
 }
 
 function refresh(ctx) {
-  const on = patcher.isPatched();
-  vscode.commands.executeCommand("setContext", CONTEXT_KEY, on);
+  const st = patcher.state();
+
+  // The commands act on what is in the file; the status bar reports whether the fix is
+  // actually doing anything. Once a block can be present and expired at the same time
+  // those are two different questions, so they are answered from two different fields.
+  vscode.commands.executeCommand("setContext", CONTEXT_KEY, st.present);
 
   const mode = vscode.workspace.getConfiguration("smartrtl").get("statusBar", "whenClaudeCodeIsFocused");
   const show = mode === "always" ? true
@@ -142,12 +153,52 @@ function refresh(ctx) {
              : claudeCodeFocused() === true;    // only while you are actually in Claude Code
 
   if (!show) { status.hide(); return; }
-  status.text = on ? "$(whole-word) RTL on" : "$(whole-word) RTL off";
-  status.tooltip = on
-    ? "Right-to-left text in Claude Code is being fixed. Click to turn it off.\n\nDisabling or uninstalling this extension does NOT turn it off - use this."
-    : "The right-to-left fix is off. Click to turn it on.";
+
+  /* The name says what it is, the mark says how it is - which is what every other
+     item in that bar does. The words "on" and "off" earn nothing here: blurred to
+     what the corner of an eye actually receives, they are unreadable while the two
+     marks are still plainly different, and anybody who stops to read has the
+     tooltip. $(whole-word) had to go for a separate reason - that glyph is Find's
+     "match whole word" toggle, so it already means something else to everybody who
+     uses Ctrl+F.
+
+     The word is not lost, only moved. A screen reader cannot see a tick, so it is
+     handed the sentence instead. */
+  const on = st.live;
+  status.text = on ? "$(check) RTL" : "$(circle-slash) RTL";
+  status.accessibilityInformation = {
+    label: on ? "Right-to-left fix is on" : "Right-to-left fix is off"
+  };
+  status.tooltip = whyItSays(ctx, st);
   status.command = on ? "smartrtl.turnOff" : "smartrtl.turnOn";
   status.show();
+}
+
+/**
+ * "Off" means five different things, and only one of them is a decision somebody made.
+ *
+ * Claude Code may not be installed at all; it may have been replaced by an update that
+ * has not been patched back yet; the write may have failed on a locked or protected
+ * file; auto-apply may be turned off on purpose; or the person simply turned it off.
+ *
+ * None of those earns its own thing in the status bar - that would be four more states
+ * almost nobody will ever meet, which is programming for an audience of nobody. A line
+ * of tooltip costs nothing until somebody wants it, and is exactly right when they do.
+ */
+function whyItSays(ctx, st) {
+  if (st.live) {
+    return "Right-to-left text in Claude Code is being fixed. Click to turn it off." +
+           "\n\nDisabling or uninstalling this extension does NOT turn it off - use this.";
+  }
+  if (st.present) {
+    return "The fix is still in Claude Code's bundle, but its stamp has run out, so it is " +
+           "doing nothing. Click to renew it.";
+  }
+  if (!st.installed) {
+    return "Claude Code is not installed in this editor, so there is nothing to fix.";
+  }
+  if (!wantedOn(ctx)) return "The right-to-left fix is off. Click to turn it on.";
+  return "Claude Code has been replaced and the fix has not been put back. Click to put it back.";
 }
 
 /* ------------------------------------------------------------------ *
@@ -184,6 +235,18 @@ function turnOff(ctx) {
   }
 }
 
+/**
+ * Wind the clock, if it needs winding.
+ *
+ * The disk is never asked how much time is left: the last stamp is remembered here, so
+ * the ordinary answer costs one comparison. Only every fmt.STAMP_EVERY_MS does anything
+ * touch Claude Code's folder at all.
+ */
+function keepAlive(ctx, why) {
+  if (Date.now() - stampedAt < fmt.STAMP_EVERY_MS) return;
+  syncQuietly(ctx, why);
+}
+
 /** Startup, and after a Claude Code update. Silent unless something needs a reload. */
 function syncQuietly(ctx, why) {
   if (!wantedOn(ctx)) { log.appendLine(`[${why}] turned off by the user`); refresh(ctx); return; }
@@ -191,9 +254,15 @@ function syncQuietly(ctx, why) {
 
   let result;
   try { result = patcher.apply(ctx.extensionPath); }
-  catch (err) { log.appendLine(`[${why}] failed: ${err && err.message ? err.message : err}`); return; }
+  catch (err) {
+    // Whatever the bar is showing now, it is no longer the truth. Say so.
+    log.appendLine(`[${why}] failed: ${err && err.message ? err.message : err}`);
+    refresh(ctx);
+    return;
+  }
 
   if (result.install) lastSeen = { dir: result.install.dir, version: result.install.version };
+  if (result.state !== "no-target") stampedAt = Date.now();
   log.appendLine(`[${why}] ${result.state}${result.install ? ` (Claude Code ${result.install.version})` : ""}`);
   refresh(ctx);
 
@@ -254,6 +323,15 @@ function activate(context) {
   // chance one: Claude Code was updated while the editor was closed
   syncQuietly(context, "startup");
 
+  /* And the case none of the chances below covers: this window simply stays open.
+     The block dies 24 hours after its last stamp, and until now activation was the
+     only thing that ever re-stamped it - which happens once per window. Two days of
+     ordinary work therefore let it expire quietly underneath, and because the expiry
+     is read once as the payload loads, the panel already on screen carried on while
+     the next one opened got nothing. Something has to come back; this is it. */
+  const wind = setInterval(() => keepAlive(context, "keep-alive"), WIND_CHECK_MS);
+  context.subscriptions.push({ dispose: () => clearInterval(wind) });
+
   // and never sit there silently doing nothing because of a switch flipped long ago
   askIfStillOff(context, freshInstall(context));
 
@@ -267,8 +345,10 @@ function activate(context) {
       if (lastSeen && lastSeen.dir === install.dir && lastSeen.version === install.version) return;
       syncQuietly(context, "extensions-changed");
     }),
-    // the status bar item follows whichever tab you are on
-    vscode.window.tabGroups.onDidChangeTabs(() => refresh(context)),
+    // the status bar item follows whichever tab you are on - and opening a tab is also
+    // the moment a webview is about to load, so it gets a chance to wind the clock too:
+    // a machine coming back from sleep wakes with its timers already late
+    vscode.window.tabGroups.onDidChangeTabs(() => { keepAlive(context, "tab"); refresh(context); }),
     vscode.window.tabGroups.onDidChangeTabGroups(() => refresh(context)),
     vscode.window.onDidChangeActiveTextEditor(() => refresh(context)),
     vscode.workspace.onDidChangeConfiguration((e) => {
@@ -281,5 +361,7 @@ function deactivate() {}
 
 /* freshInstall and askIfStillOff are exported for the tests. Between them they
    decide whether somebody is spoken to at startup, and how often - which is not a
-   thing to settle by reading the code and agreeing with yourself. */
-module.exports = { activate, deactivate, freshInstall, askIfStillOff };
+   thing to settle by reading the code and agreeing with yourself. And whyItSays is
+   there for the same reason: five situations share one word in the status bar, so
+   the only thing keeping them apart is the sentence each one produces. */
+module.exports = { activate, deactivate, freshInstall, askIfStillOff, whyItSays };

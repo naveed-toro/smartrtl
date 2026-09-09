@@ -1,4 +1,4 @@
-# The twenty-eight builds, and what each one actually contained
+# The twenty-nine builds, and what each one actually contained
 
 Compiled by opening every `.vsix` and reading what is inside it, not from memory. The
 second table was rebuilt the same way after the fact, which is why some of its rows say
@@ -141,30 +141,30 @@ and six tests cover it - the first of which is simply that it loads.
 Read out of the packaged `.vsix` the same way, months later. `·` means the build carried
 it; a blank means it did not.
 
-| | 0.1.0-4 | 0.1.5 | 0.1.6-7 | 0.2.0 | 0.3.0 | 0.3.1 | 0.3.2 | 0.3.3 | 0.3.4 | 0.4.0 | 0.4.1 | 0.4.2 | 0.4.3 | 0.4.4 |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| answers read right-to-left | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| your own messages read right-to-left | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| a sent message decided line by line | | | | · | · | · | · | · | · | · | · | · | · | · |
-| ... **as a copy, moving nothing of theirs** | | | | | | | | | | | | | · | · | · |
-| the composer takes one direction | · | · | · | · | · | | | | · | · | · | · | · | · |
-| the composer decided **per line** | | | | | · | | | · | | | | | | |
-| ... by `unicode-bidi: plaintext` | | | | | | · | · | | | | | | | |
-| ... with a third, "mixed" state | | | | | | | · | | | | | | | |
-| a clone of React's mirror | | | | | | | | · | | | | | | |
-| its own undo stack | | | | | · | | | · | | | | | | |
-| the timeline dot | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| an expanded message unpinned | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| the view follows the message | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| **closing gives back the reader's line** | | | | | | | | | | | · | · | · | · | · |
-| the block expires on its own | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| **a fault stops where it happens** | | | | | | | | | | · | · | · | · | · |
-| **a fuse box, and `__bidiStatus()`** | | | | | | | | | | · | · | · | · | · |
-| **stands down if Claude Code fixes it** | | | | | | | | | | · | · | · | · | · |
-| **crashed the panel** | | | | | **✗** | | | | | | | | | |
-| **typed blank spaces** | | | | | **✗** | | | | | | | | | |
-| **every keystroke one late** | | | | | | | | **✗** | | | | | | |
-| payload, bytes | 28,975 | 30,998 | 31,371 | 35,485 | 59,047 | 51,513 | 54,185 | 71,979 | 51,754 | 66,147 | 69,798 | 70,554 | 75,495 | 75,495 | 75,495 |
+| | 0.1.0-4 | 0.1.5 | 0.1.6-7 | 0.2.0 | 0.3.0 | 0.3.1 | 0.3.2 | 0.3.3 | 0.3.4 | 0.4.0 | 0.4.1 | 0.4.2 | 0.4.3 | 0.4.4 | 0.4.5 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| answers read right-to-left | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| your own messages read right-to-left | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| a sent message decided line by line | | | | · | · | · | · | · | · | · | · | · | · | · | · |
+| ... **as a copy, moving nothing of theirs** | | | | | | | | | | | | | · | · | · | · |
+| the composer takes one direction | · | · | · | · | · | | | | · | · | · | · | · | · | · |
+| the composer decided **per line** | | | | | · | | | · | | | | | | | |
+| ... by `unicode-bidi: plaintext` | | | | | | · | · | | | | | | | | |
+| ... with a third, "mixed" state | | | | | | | · | | | | | | | | |
+| a clone of React's mirror | | | | | | | | · | | | | | | | |
+| its own undo stack | | | | | · | | | · | | | | | | | |
+| the timeline dot | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| an expanded message unpinned | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| the view follows the message | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| **closing gives back the reader's line** | | | | | | | | | | | · | · | · | · | · | · |
+| the block expires on its own | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| **a fault stops where it happens** | | | | | | | | | | · | · | · | · | · | · |
+| **a fuse box, and `__bidiStatus()`** | | | | | | | | | | · | · | · | · | · | · |
+| **stands down if Claude Code fixes it** | | | | | | | | | | · | · | · | · | · | · |
+| **crashed the panel** | | | | | **✗** | | | | | | | | | | |
+| **typed blank spaces** | | | | | **✗** | | | | | | | | | | |
+| **every keystroke one late** | | | | | | | | **✗** | | | | | | | |
+| payload, bytes | 28,975 | 30,998 | 31,371 | 35,485 | 59,047 | 51,513 | 54,185 | 71,979 | 51,754 | 66,147 | 69,798 | 70,554 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 |
 
 The byte count is worth reading as a line of its own. It climbs while the composer is
 being fought over — 35K to 59K to 72K — and comes back down to 51K when that was given
@@ -344,6 +344,32 @@ said "back" rather than "right to left".
 - [x] rendered by the browser already here for the tests - no image toolchain added **(code)**
 - [x] icon.svg and the preview sheet are kept out of the package **(code)**
 - [x] deliberately not in Claude's own colour: this is a companion, not their product
+
+### 0.4.5 — the status bar stops overstating itself
+
+Nothing in the payload again: 75,495 bytes for the third build running. All of this is
+in the extension host, and all of it came out of one question - what should the thing in
+the corner look like.
+
+- [x] `$(whole-word)` is gone. That glyph is Find's **Match Whole Word** toggle, so it
+      already meant something else to anyone who uses Ctrl+F **(code)**
+- [x] `✓ RTL` and `⊘ RTL`: the name identifies, the mark reports. Chosen by rendering
+      both at the real 12px on the real theme colours and blurring them to what the
+      corner of an eye gets - the words disappear, the marks do not **(code)**
+- [x] `accessibilityInformation` carries the sentence a screen reader cannot see **(code)**
+- [x] five different situations were all saying "off"; each now says which one it is,
+      in the tooltip - including "Claude Code is not installed", which used to be a
+      click that led nowhere **(code)**
+- [x] and the one that mattered: **an expired block was being reported as the fix being
+      on.** Nothing wound the clock inside a window that stayed open, so a day and a
+      half of ordinary work let it run out under a tick **(code)**
+- [x] `STAMP_EVERY_MS` (6h) winds it; `patcher.state()` separates *present* from *live*
+      as the backstop **(code)**
+- [x] `isPatched()` was reading five megabytes on every tab change to find a marker in
+      the last few kilobytes. It reads the final 512KB **(code)**
+- [ ] a week of ordinary use **(unseen - this is the one to try)**
+
+Written up in [decisions.md section 31](decisions.md).
 
 ---
 

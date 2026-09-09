@@ -10,7 +10,7 @@ search for, in several languages.
 
 ## What is in here
 
-Thirty sections, in the order they were written, which is the order the faults were
+Thirty-one sections, in the order they were written, which is the order the faults were
 found. The ones worth reading first are marked.
 
  1. [The root cause](#1-the-root-cause)
@@ -43,6 +43,7 @@ found. The ones worth reading first are marked.
 28. [The question left over: would it ever have felt fast?](#28-the-question-left-over-would-it-ever-have-felt-fast) ←
 29. [A string of lamps, not a circuit in series](#29-a-string-of-lamps-not-a-circuit-in-series) ←
 30. [The copy button that blinks — found, measured, and deliberately left alone](#30-the-copy-button-that-blinks--found-measured-and-deliberately-left-alone)
+31. [The status bar was telling the truth about the wrong thing](#31-the-status-bar-was-telling-the-truth-about-the-wrong-thing) ←
 
 ← 6 and 7 are the rule and the design it forced. 13 is what the first live run found.
 25 and 27 are the composer crash and the decision to stop; 28 is what that would have
@@ -1781,3 +1782,125 @@ correct. Forcing the collapse row sticky looked correct. Both shipped and both w
 
 So the finding gets recorded with the same care as the fix, including the findings we
 decided not to act on. This is one of those.
+
+---
+
+## 31. The status bar was telling the truth about the wrong thing
+
+The item in the corner makes one claim — *the right-to-left fix is on* — and that claim
+is the entire reason it exists. VS Code's own Enable, Disable and Uninstall buttons
+cannot be believed about this extension, because it edits a file the editor does not know
+was touched. This is the only place a person can find out. So it had better be right.
+
+Three things were wrong with it. Only the first one was visible.
+
+### The icon already meant something else
+
+It was `$(whole-word)` — the "ab" glyph. That is the **Match Whole Word** toggle in VS
+Code's own Find widget, so to everybody who uses Ctrl+F it already means something, and
+what it means is not this. At 16px it is also two letters and an underline, which is mud.
+
+Looking for a better one answered the question a different way. Of the **759 codicons in
+the build**, not one is an alignment or a text-direction mark — the names were read out
+of `workbench.desktop.main.js` rather than guessed at. The picture cannot say "right to
+left". Only the word can. Which leaves the mark exactly one job: to say which of the two
+states this is.
+
+### The words were doing that job badly
+
+`RTL on` and `RTL off` differ by one letter, at the end of the phrase. Rendered at the
+real 12px in a 22px bar, on the real theme colours, and then blurred to roughly what the
+corner of an eye receives — which is how a status bar is actually read, because nobody
+looks at it — **the words vanish and the marks do not.**
+
+So the words were contributing nothing at the moment they were needed, and anybody who
+stops to read has the tooltip. The name identifies, the mark reports: `✓ RTL` and
+`⊘ RTL`. That is what every other item in that bar does; the branch item says `main`, not
+`branch: main, checked out`.
+
+There is one real loss in dropping them, and it is not visual: a screen reader cannot see
+a tick, and would hear "RTL" in both states. `StatusBarItem.accessibilityInformation`
+exists for exactly this, so the sentence is not deleted, only moved to where it is still
+needed.
+
+`⊘ RTL off` was rejected as the compromise, by the way. The slashed circle already means
+"not", so the word makes it two negatives in one small item.
+
+### "Off" was five situations wearing one word
+
+Each of these was set up on a real disk with a real stand-in for Claude Code and put to
+`isPatched()`, rather than argued from reading the code:
+
+| | situation | how likely |
+|---|---|---|
+| R1 | Claude Code is not installed at all | invisible under the default setting — the item only appears on a Claude Code tab, which cannot exist |
+| R2 | `autoApply` is off and Claude Code updated | needs a non-default setting |
+| R3 | the write failed — EPERM, a lock, antivirus, a read-only file | environmental, and unmeasurable from here |
+| R4 | Claude Code re-installed at the **same** version, so the `onDidChange` guard skips it | occasional |
+| R5 | the moment during any update, before the fix goes back | every update, for an instant |
+
+Only the sixth — the person turned it off — is a decision anybody made. And R1 was a
+closed door: with `statusBar: "always"` and no Claude Code, the item said "off" and
+invited a click that answered "Claude Code is not installed".
+
+The tempting fix was a third state, `⚠ RTL not applied`. Counting honestly is what killed
+it: **almost nobody would ever see it.** A visible state built for an audience of nobody
+is not carefulness, it is weight — more to render, more to explain, more to get wrong.
+
+So there are still two marks, and the reason moved into the tooltip, which costs nothing
+until somebody wants it and is exactly right when they do. Five situations, five
+sentences, and a test that there are five.
+
+### The thing that was actually wrong pointed the other way
+
+Chasing those five turned up a worse one, in the opposite direction — not "it says off
+when it is fine", but **it says on when it is not**.
+
+`isPatched()` looked for the `BEGIN` marker. That is not the same question as whether the
+fix runs. The block carries a 24-hour stamp; past it the payload returns immediately and
+does nothing at all, and it is still very much in the file. The two facts had been treated
+as one.
+
+Worse, nothing was winding the clock. Re-stamping happened on activation and on
+`extensions.onDidChange` — there is no timer anywhere in `src/` — and activation happens
+**once per window**. So:
+
+> Leave a VS Code window open past a day, then open a Claude Code tab. The stamp has run
+> out, the payload turns straight around, right-to-left text is not being fixed — and the
+> status bar is showing a tick.
+
+The panel already on screen keeps working, because the expiry is read once as the payload
+loads. It is the next one that gets nothing. `patch-format.js` said "every activation
+re-stamps it, so in use it never expires", and that sentence was only ever true of a
+window restarted daily.
+
+Two changes, and they are different in kind:
+
+- **`STAMP_EVERY_MS`, six hours.** Something has to come back, so now something does. It
+  is deliberately far shorter than the twelve-hour re-stamp threshold: several can be
+  missed outright — a sleeping laptop is the ordinary way — and the block is still
+  re-stamped with half a day in hand. A tab opening gets the same chance, because that is
+  the moment a webview is about to load and a machine waking from sleep has late timers.
+  The check itself is a comparison of two numbers in memory; the disk is reached at most
+  once every six hours.
+- **`patcher.state()` reports `present` and `live` separately.** The commands act on what
+  is in the file; the status bar reports whether anything is happening. Now that a block
+  can be both present and dead, those are two questions and they get two fields. The
+  timer should mean `live` is never false while the extension runs — this is the backstop
+  that stops it lying if it ever is.
+
+The expiry itself was left exactly as it is. It is what makes an uninstall certain when
+`vscode:uninstall` has been broken since 1.69 (see section 14), and that is worth more
+than the inconvenience it just caused.
+
+### And one thing found on the way
+
+`isPatched()` read Claude Code's **entire bundle — about five megabytes — on every tab
+change**, to look for a marker that is always in the last few kilobytes, because
+everything this extension writes is appended. It now reads the final 512KB. A byte window
+can cut a UTF-8 character in half where it starts; that is harmless here, because what is
+searched for is ASCII, sits well inside the window, and nothing read this way is ever
+written back.
+
+The test for it plants a `BEGIN` at the **front** of a 3MB file and requires that it is
+not reported, which is what makes the cheap read honest rather than lucky.
