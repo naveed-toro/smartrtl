@@ -722,8 +722,8 @@ It matters most in the one place this was built for: that line sits directly und
 
 ### And a command the documents have been naming for twenty builds does not exist
 
-`SmartRTL: Remove the right-to-left fix` was replaced by Turn on / Turn off in **0.1.4**.
-The README, decisions.md, roadmap.md and versions.md have all told people to run it ever
+The command it named, **Remove the right-to-left fix**, was replaced by Turn on / Turn off
+in **0.1.4**. The README, decisions.md, roadmap.md and versions.md have all told people to run it ever
 since - and the pinned uninstall test was holding **the wrong name** in place, which is
 the opposite of what pinning it was for.
 
