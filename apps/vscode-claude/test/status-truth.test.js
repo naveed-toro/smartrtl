@@ -135,14 +135,21 @@ test("the tooltip is labels, one idea to a line", () => {
     const lines = tip.split(String.fromCharCode(10)).filter((l) => l.trim() !== "");
     assert.ok(lines.length <= 2, "more than two lines is a paragraph: " + tip);
     for (const line of lines) {
-      assert.ok(line.length <= 32, "too long to take in at a glance: " + line);
-      assert.ok(!/[.!]/.test(line), "punctuation means prose, and prose has to be read: " + line);
+      // A number was the wrong guard. Every time a line grew an explanation the bound
+      // was raised to let it through - 32, then 50, then 60 - which is a rule doing as
+      // it is told. What actually separates a label from prose is structure: one idea,
+      // no joining, nothing that ends a sentence. The width is only a backstop now.
+      assert.ok(line.length <= 40, "too long to take in at a glance: " + line);
+      assert.ok(!/[.!,]/.test(line),
+        "a full stop or a comma means more than one idea: " + line);
+      assert.ok(!/ [-—–] /.test(line),
+        "a dash joins two things that wanted their own lines: " + line);
     }
   }
 
   assert.match(on.split(String.fromCharCode(10))[0], /^Turn off/);   // the click, first
   // one thing, so one line: what to do, and what happens if you do not
-  assert.match(on, /Uninstall does not turn it off/);
+  assert.match(on, /Uninstalling does not turn it off/);
   assert.match(off, /^Turn on/);
   assert.ok(!off.includes("Uninstall"), "there is nothing left running to warn about");
   assert.doesNotMatch(noClaude, /Turn/);                             // nothing to turn
