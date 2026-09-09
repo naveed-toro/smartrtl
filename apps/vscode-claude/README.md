@@ -59,8 +59,8 @@ npm run build
 The payload cannot `import` anything - it is concatenated onto someone else's bundle
 and runs as a plain script. The obvious shortcut is to paste the regexes in and move
 on. That is exactly how three products end up disagreeing about the same question six
-months later, so the build step inlines [`@smartrtl/core`](../../packages/core) - the
-rule - and [`@smartrtl/dom`](../../packages/dom) - the engine that decides when to ask
+months later, so the build step inlines [`@smartrtl/core`](https://github.com/naveed-toro/smartrtl/blob/main/packages/core) - the
+rule - and [`@smartrtl/dom`](https://github.com/naveed-toro/smartrtl/blob/main/packages/dom) - the engine that decides when to ask
 it - instead. What is left in this file is only what is true of Claude Code and of
 nothing else.
 
@@ -84,7 +84,7 @@ nothing else.
 - **the timeline dot** - moves to the side its own message reads from
 
 Each of those, and the formulas and fixes that were tried and rejected first, is written
-up in [docs/decisions.md](../../docs/decisions.md) - thirty-three sections, including
+up in [docs/decisions.md](https://github.com/naveed-toro/smartrtl/blob/main/docs/decisions.md) - thirty-three sections, including
 three attempts at per-line direction in the composer that were built, shipped and then
 withdrawn, and the measurements that ended each one.
 
@@ -105,7 +105,7 @@ types.
 
 **This one is not about language.** An English-only user hits it exactly as hard, and it
 is reported on its own terms in
-[docs/claude-code-bug.md](../../docs/claude-code-bug.md).
+[docs/claude-code-bug.md](https://github.com/naveed-toro/smartrtl/blob/main/docs/claude-code-bug.md).
 
 A message that heads a turn is `position: sticky`. Collapsed, that is a couple of lines
 of question held above a long answer, which is the point of it. Expanded, the same
@@ -140,7 +140,7 @@ npm test
 The tests do not check that the code says the right things; they render the payload
 in a page that carries the extension's own two CSS rules, and measure what a reader
 would see. That is how the reversed `250-400ms` was caught, and how the jitter numbers
-in [docs/decisions.md](../../docs/decisions.md) were arrived at.
+in [docs/decisions.md](https://github.com/naveed-toro/smartrtl/blob/main/docs/decisions.md) were arrived at.
 
 Every case is a line that came out of a real answer, and several are the exact lines
 that broke an earlier version.

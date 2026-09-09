@@ -2133,3 +2133,27 @@ the first install message and the status report both carried one - lost it. It i
 tooltip, the ⚙ menu, the README block and the Marketplace blurb, each where somebody is
 actually about to uninstall something. **Repeating it a fifth time punishes the person who
 only asked what the state was.**
+
+### Five links that only break once it is packaged
+
+The app README links to the write-ups by relative path - `../../docs/decisions.md` and
+four more. They resolve in the repository, they resolve on GitHub, and every test said so.
+
+They were dead on the Marketplace page.
+
+`vsce` turns relative links absolute for you, and it does it against the **repository
+root** rather than against the folder the readme is in. In a monorepo the readme is not at
+the root, so what it wrote was:
+
+    https://github.com/naveed-toro/smartrtl/blob/HEAD/../../docs/decisions.md
+
+A browser flattens that to `https://github.com/naveed-toro/smartrtl/docs/decisions.md`,
+which is not a file path GitHub answers to. All five, gone.
+
+This is the second fault today that **only exists after packaging** - the first was
+`.smartrtl-installed` being inside the .vsix. Neither can be seen by looking at the
+repository, and both were found by opening the built file and reading what was actually in
+it. That is now the habit: **check the thing that ships, not the thing it was built from.**
+
+- the five links are absolute
+- a test refuses any link in that readme that climbs out of its own folder

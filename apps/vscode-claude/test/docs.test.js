@@ -148,6 +148,18 @@ test("the adapter keys the roadmap lists are the ones the engine reads", () => {
   }
 });
 
+test("the README that ships has no link that climbs out of its own folder", () => {
+  // vsce turns relative links absolute against the REPOSITORY root, not against the
+  // folder the readme is in - so ../../docs/decisions.md became
+  // https://github.com/.../blob/HEAD/../../docs/decisions.md, which a browser flattens
+  // to https://github.com/.../docs/decisions.md and GitHub answers with a 404. Every
+  // one of the five links in this readme was dead on the Marketplace page.
+  const readme = read("apps/vscode-claude/README.md");
+  const climbing = [...readme.matchAll(new RegExp("\\]\\((\\.\\.\\/[^)]*)\\)", "g"))].map((m) => m[1]);
+  assert.deepEqual(climbing, [],
+    "these have to be absolute, or they break once packaged");
+});
+
 test("every command the documents tell somebody to run is a command that exists", () => {
   // The uninstall guidance named `SmartRTL: Remove the right-to-left fix` from 0.1.4
   // until 0.4.21. There has been no such command since 0.1.4 - it became Turn on/Turn
