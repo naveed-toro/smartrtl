@@ -229,7 +229,7 @@ function turnOn(ctx) {
   // fix is off, in the palette, in the Extensions menu and on the status bar alike. It
   // was also wrong when it did fire, telling somebody who had just clicked a bar reading
   // "RTL off" that it was already on. Both problems went with the branch.
-  offerReload("Right-to-left text is fixed. Reload to see it.");
+  offerReload(`Right-to-left text in Claude Code ${result.install.version} is fixed. Reload to see it.`);
 }
 
 function turnOff(ctx) {
@@ -281,16 +281,21 @@ function syncQuietly(ctx, why) {
 
   if (result.state === "no-target") return;
 
+  // The version is Claude Code's, not ours, and it is here because it names the thing
+  // that was worked on. A notification toast does not show which extension is speaking,
+  // so without it somebody who has just installed three things is told that something,
+  // somewhere, is fixed.
+  const v = result.install ? result.install.version : "";
   if (!before.live) {
     offerReload(why === "extensions-changed"
-      ? "Claude Code updated. Right-to-left text is fixed again. Reload to see it."
-      : "Right-to-left text is fixed. Reload to see it.");
+      ? `Claude Code updated to ${v}. Right-to-left text is fixed again. Reload to see it.`
+      : `Right-to-left text in Claude Code ${v} is fixed. Reload to see it.`);
   } else if (why === "installed") {
     // It was already working, so there is nothing to reload for - but somebody who has
     // just installed something is owed an answer either way. Silence after a deliberate
     // act reads as "did that do anything?", and this extension is silent by design the
     // rest of the time, so there is nothing else for them to go on.
-    vscode.window.showInformationMessage("Right-to-left text is fixed.");
+    vscode.window.showInformationMessage(`Right-to-left text in Claude Code ${v} is fixed.`);
   }
 }
 

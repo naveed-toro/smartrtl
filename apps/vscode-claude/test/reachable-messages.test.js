@@ -163,7 +163,7 @@ function everythingAnybodyCanBeShown() {
 function everySentenceInTheSource() {
   const src = fs.readFileSync(path.join(APP, "src", "extension.js"), "utf8");
   const out = new Set();
-  const LIT = /"((?:[^"\\]|\\.)*)"|`((?:[^`\\$]|\\.)*)`/g;
+  const LIT = /"((?:[^"\\]|\\.)*)"|`((?:[^`\\]|\\.)*)`/g;
   for (const m of src.matchAll(LIT)) {
     const lit = (m[1] || m[2] || "").split("\\n").join("\n");
     if (lit.includes(" ") && lit.trim().endsWith(".")) out.add(lit);
@@ -171,10 +171,47 @@ function everySentenceInTheSource() {
   return out;
 }
 
+/** The fixed words of a message, with any value dropped into it taken out. */
+function splitOnPlaceholders(s) {
+  const parts = []; let i = 0;
+  for (;;) {
+    const a = s.indexOf("${", i);
+    if (a === -1) { parts.push(s.slice(i)); break; }
+    parts.push(s.slice(i, a));
+    const b = s.indexOf("}", a);
+    if (b === -1) { parts.push(s.slice(a)); break; }
+    i = b + 1;
+  }
+  return parts;
+}
+
+/**
+ * Is this sentence one that somebody can be shown?
+ *
+ * Three of them carry Claude Code's version, so the string in the source never appears
+ * anywhere word for word. What has to match is everything around the value: the same
+ * opening, the same closing, and the same words in between, in order.
+ */
+function saysIt(written, reachable) {
+  const parts = splitOnPlaceholders(written);
+  if (parts.length === 1) return reachable.has(written);
+  for (const r of reachable) {
+    if (!r.startsWith(parts[0]) || !r.endsWith(parts[parts.length - 1])) continue;
+    let pos = 0, ok = true;
+    for (const p of parts) {
+      const at = r.indexOf(p, pos);
+      if (at === -1) { ok = false; break; }
+      pos = at + p.length;
+    }
+    if (ok) return true;
+  }
+  return false;
+}
+
 test("no message is written for a situation nobody can reach", () => {
   const reachable = everythingAnybodyCanBeShown();
   const written = everySentenceInTheSource();
-  const orphans = [...written].filter((s) => !reachable.has(s));
+  const orphans = [...written].filter((s) => !saysIt(s, reachable));
   assert.deepEqual(orphans, [],
     "these can be said by the code and by nothing a person can do:\n  " + orphans.join("\n  "));
 });
