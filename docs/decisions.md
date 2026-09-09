@@ -2109,3 +2109,27 @@ Three changes, because one of them is not enough:
 
 **A test that writes into the thing it is testing can ship its own droppings.** That is
 the lesson, and it cost eight builds of a feature that quietly did nothing.
+
+### Which messages name the version, and which do not
+
+Going back through all seven, one at a time and next to their own histories, settled a
+rule rather than a wording. **The build number belongs where the build is the point.**
+
+| | names Claude Code and its version | why |
+|---|---|---|
+| just installed | yes | says which build was worked on, and which extension is speaking - a toast does not |
+| Claude Code updated | yes | the version changing *is* the news |
+| Show status | yes | it is a report somebody asked for, not a notice they were handed |
+| you turned it off | no | nothing about switching it off depends on a build |
+| no Claude Code | no | there is no version to name |
+| re-installed, still off | no | it is about a decision the person made, not about Claude Code |
+
+Trying it in the wrong place shows why the rule is worth having. *"Right-to-left fix is
+off and Claude Code 2.1.264 is back to normal"* reads as though that version had been the
+thing wrong with it.
+
+The other half of the same pass: the wordings that had grown a warning about Uninstall -
+the first install message and the status report both carried one - lost it. It is in the
+tooltip, the ⚙ menu, the README block and the Marketplace blurb, each where somebody is
+actually about to uninstall something. **Repeating it a fifth time punishes the person who
+only asked what the state was.**

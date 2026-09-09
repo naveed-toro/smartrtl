@@ -313,9 +313,11 @@ function activate(context) {
         vscode.window.showWarningMessage(NO_CLAUDE_CODE);
         return;
       }
+      // A report, not a notice. Nobody runs "Show status" by accident, so the answer can
+      // carry the build it is about - the first thing anybody is asked for afterwards.
       vscode.window.showInformationMessage(patcher.isPatched()
-        ? "Right-to-left fix is on."
-        : "Right-to-left fix is off. Claude Code is untouched.");
+        ? `Right-to-left fix is on in Claude Code ${install.version}.`
+        : `Right-to-left fix is off. Claude Code ${install.version} is untouched.`);
     })
   );
 
