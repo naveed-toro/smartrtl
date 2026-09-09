@@ -1,8 +1,8 @@
 {
   "name": "claude-code-rtl",
   "displayName": "SmartRTL for Claude Code",
-  "description": "Fixes right-to-left text (Urdu, Arabic, Hebrew, Persian) in the Claude Code panel. ⚠ Uninstalling does not turn it off — turn it off from the ⚙ menu first.",
-  "version": "0.4.11",
+  "description": "Fixes right-to-left text (Urdu, Arabic, Hebrew, Persian) in the Claude Code panel.",
+  "version": "0.4.12",
   "publisher": "smartrtl",
   "icon": "icon.png",
   "galleryBanner": {
