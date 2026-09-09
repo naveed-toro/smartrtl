@@ -10,7 +10,7 @@ search for, in several languages.
 
 ## What is in here
 
-Thirty-two sections, in the order they were written, which is the order the faults were
+Thirty-three sections, in the order they were written, which is the order the faults were
 found. The ones worth reading first are marked.
 
  1. [The root cause](#1-the-root-cause)
@@ -45,6 +45,7 @@ found. The ones worth reading first are marked.
 30. [The copy button that blinks — found, measured, and deliberately left alone](#30-the-copy-button-that-blinks--found-measured-and-deliberately-left-alone)
 31. [The status bar was telling the truth about the wrong thing](#31-the-status-bar-was-telling-the-truth-about-the-wrong-thing) ←
 32. [Every message, read out loud one at a time](#32-every-message-read-out-loud-one-at-a-time) ←
+33. [Installing it said nothing, and the reason was a file we shipped by mistake](#33-installing-it-said-nothing-and-the-reason-was-a-file-we-shipped-by-mistake) ←
 
 ← 6 and 7 are the rule and the design it forced. 13 is what the first live run found.
 25 and 27 are the composer crash and the decision to stop; 28 is what that would have
@@ -2049,3 +2050,62 @@ and watching it fail. It also caught a fault in its own harness first: firing
 `extensions.onDidChange` was not enough to reproduce a Claude Code update, because the
 real thing arrives as a **new folder with a new version in it**, which is precisely what
 the guard against other extensions being installed is there to tell apart.
+
+---
+
+## 33. Installing it said nothing, and the reason was a file we shipped by mistake
+
+Somebody installs an extension and is told nothing at all. That is the question that
+started this, and it turned out to have two separate answers.
+
+### The first: silence was the design, and the design was half right
+
+Activation only spoke when `apply()` answered **"applied"** — when the file on disk had
+actually changed. Re-install the extension over a patch that is already there and
+identical, and nothing changed, so nothing was said.
+
+That is right for a window opening, and wrong for an install. **Installing something is a
+deliberate act, and silence after a deliberate act reads as "did that do anything?"** —
+especially here, where being quiet the rest of the time is the whole point, so there is
+nothing else for a person to go on.
+
+`freshInstall()` already knew the difference and was only being used to decide whether to
+ask about a fix left switched off. It writes a marker into the extension's own folder and
+reads it back; an upgrade lands in a **new folder**, so it is true for a re-install and
+for every update, and false for an ordinary restart. Now it also picks the greeting:
+
+| | what they are told |
+|---|---|
+| first install, nothing patched yet | *Right-to-left text is fixed. Reload to see it.* |
+| re-install or update, and it was already working | *Right-to-left text is fixed.* |
+| an ordinary window opening | nothing |
+| re-install, and they had switched it off | *SmartRTL is installed, but the right-to-left fix is off.* |
+
+Same sentence, and the half that asks for a reload appears only when there is a reason to
+reload. The reload test changed at the same time, from "did the file change" to
+**"was it actually running a moment ago"** — a block whose stamp has run out is still in
+the file, so the file needs no change while the panel on screen very much needs a reload.
+
+### The second: the marker was inside the .vsix
+
+And it would not have worked anyway.
+
+`.smartrtl-installed` was **committed to the repository and packaged into eight builds**.
+Packaged, it is already in the folder when the extension arrives — so `freshInstall()`
+finds a marker on its very first run and answers "no", for ever. The re-install question
+could never be asked in 0.4.10 through 0.4.17.
+
+It got there the way these things do: `test/reachable-messages.test.js` handed `activate()`
+the real extension folder, activation wrote its marker there, and `git add -A` swept it up
+in the same commit that added the test.
+
+Three changes, because one of them is not enough:
+
+- the file is untracked, and named in `.gitignore` and `.vscodeignore`
+- the test hands `activate()` a throwaway folder with only the payload in it, which is all
+  `apply()` reads from there — so nothing writes into the repository any more
+- and a test refuses to pass if the marker is in the extension folder or missing from
+  `.vscodeignore`, which is the pair of facts that made it ship
+
+**A test that writes into the thing it is testing can ship its own droppings.** That is
+the lesson, and it cost eight builds of a feature that quietly did nothing.

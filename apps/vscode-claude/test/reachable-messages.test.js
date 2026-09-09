@@ -65,15 +65,24 @@ require.cache[stubPath].exports = fake;
 const ext = require("../src/extension.js");
 const patcher = require("../src/patcher.js");
 
+const root = fs.mkdtempSync(path.join(os.tmpdir(), "reach-"));
+/* activate() writes a marker into its own folder to tell a re-install from a restart.
+   Handing it the real one puts that marker in the repository - which is how it came to
+   be committed once, and then shipped inside eight .vsix files, where its presence made
+   freshInstall() answer "no" for ever. It gets a throwaway folder with only the payload
+   in it, which is all patcher.apply() reads from there. */
+const home = path.join(root, "our-own-folder");
+fs.mkdirSync(path.join(home, "dist"), { recursive: true });
+fs.copyFileSync(path.join(APP, "dist", "payload.js"), path.join(home, "dist", "payload.js"));
+
 const store = {};
 const ctx = {
-  extensionPath: APP,
+  extensionPath: home,
   subscriptions: { push(...d) { disposables.push(...d); } },
   globalState: { get: (k, d) => (k in store ? store[k] : d), update: (k, v) => { store[k] = v; } },
   extension: { packageJSON: { version: pkg.version } }
 };
 
-const root = fs.mkdtempSync(path.join(os.tmpdir(), "reach-"));
 const dir = path.join(root, "anthropic.claude-code-2.1.263");
 fs.mkdirSync(path.join(dir, "webview"), { recursive: true });
 const target = path.join(dir, "webview", "index.js");
@@ -131,6 +140,18 @@ function everythingAnybodyCanBeShown() {
   if (onExtensionsChanged) onExtensionsChanged();
   shown.forEach((m) => seen.add(m));
 
+  // and the one only a re-install produces: the fix already working, so nothing to
+  // reload for, but somebody has just installed something and is owed an answer.
+  // freshInstall() says yes when we have run before and our folder has no marker in it -
+  // which is what an upgrade looks like, because an upgrade lands in a new folder.
+  claudeDir = dir; bundle(); patcher.apply(APP);
+  store["smartrtl.on"] = true;
+  store["smartrtl.hasRun"] = true;
+  try { fs.unlinkSync(path.join(home, ".smartrtl-installed")); } catch (e) {}
+  shown = [];
+  ext.activate(ctx);
+  shown.forEach((m) => seen.add(m));
+
   store["smartrtl.on"] = false;
   shown = [];
   ext.askIfStillOff(ctx, true);
@@ -173,6 +194,19 @@ test("and every state has something to say for itself", () => {
       store["smartrtl.on"] = wanted;
     }
   }
+});
+
+test("the marker that tells a re-install from a restart must never ship", () => {
+  // activate() writes it into its own folder and reads it back on the next install.
+  // Packaged inside the .vsix it is already there on arrival, so freshInstall() answers
+  // "no" for ever and the re-install question can never be asked. It reached eight
+  // builds that way, having been committed by a test that handed activate() the real
+  // folder - so both halves are guarded here: not in the package, and not on disk.
+  const ignore = fs.readFileSync(path.join(APP, ".vscodeignore"), "utf8").split(String.fromCharCode(10));
+  assert.ok(ignore.includes(".smartrtl-installed"),
+    ".vscodeignore does not exclude the marker, so it will be packaged");
+  assert.ok(!fs.existsSync(path.join(APP, ".smartrtl-installed")),
+    "a marker has been left in the extension folder - something ran activate() against it");
 });
 
 test.after(() => {

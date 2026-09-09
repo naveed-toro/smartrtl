@@ -47,7 +47,7 @@ Then yes, this is the same bug.
 
 | where | what it is | status |
 |---|---|---|
-| Claude Code in VS Code | companion extension | done at 0.4.17; tested live; not published yet |
+| Claude Code in VS Code | companion extension | done at 0.4.18; tested live; not published yet |
 | AI chat sites in the browser | Chrome extension | next |
 | a markdown editor | VS Code, desktop, web | shape not decided |
 | Claude desktop app | not investigated yet | unknown |
@@ -81,7 +81,7 @@ rule, and every wrong turn is written down rather than quietly dropped.
 
 | | |
 |---|---|
-| [docs/decisions.md](docs/decisions.md) | thirty-two sections: every rule and fix that was tried, measured and rejected, including the two that crashed and the one that was too slow |
+| [docs/decisions.md](docs/decisions.md) | thirty-three sections: every rule and fix that was tried, measured and rejected, including the two that crashed and the one that was too slow |
 | [docs/versions.md](docs/versions.md) | what was actually inside each of the twenty-five builds, read out of the `.vsix` rather than remembered |
 | [docs/roadmap.md](docs/roadmap.md) | what a new surface has to provide, the four rules an adapter obeys, and what order the rest gets built in |
 | [docs/claude-code-bug.md](docs/claude-code-bug.md) | the Claude Code bug on its own terms, with no RTL attached |
@@ -96,7 +96,7 @@ rule, and every wrong turn is written down rather than quietly dropped.
 
 | | |
 |---|---|
-| [docs/decisions.md](docs/decisions.md) | thirty-two sections: every rule and fix that was tried, measured and rejected, including the two that crashed and the one that was too slow |
+| [docs/decisions.md](docs/decisions.md) | thirty-three sections: every rule and fix that was tried, measured and rejected, including the two that crashed and the one that was too slow |
 | [docs/versions.md](docs/versions.md) | what was actually inside each of the twenty-five builds, read out of the `.vsix` rather than remembered |
 | [docs/roadmap.md](docs/roadmap.md) | what a new surface has to provide, the four rules an adapter obeys, and what order the rest gets built in |
 | [docs/claude-code-bug.md](docs/claude-code-bug.md) | the Claude Code bug on its own terms, with no RTL attached |
@@ -110,7 +110,7 @@ rule, and every wrong turn is written down rather than quietly dropped.
 
 | | |
 |---|---|
-| [docs/decisions.md](docs/decisions.md) | thirty-two sections: every rule and fix that was tried, measured and rejected, including the two that crashed and the one that was too slow |
+| [docs/decisions.md](docs/decisions.md) | thirty-three sections: every rule and fix that was tried, measured and rejected, including the two that crashed and the one that was too slow |
 | [docs/versions.md](docs/versions.md) | what was actually inside each of the twenty-five builds, read out of the `.vsix` rather than remembered |
 | [docs/roadmap.md](docs/roadmap.md) | what a new surface has to provide, the four rules an adapter obeys, and what order the rest gets built in |
 | [docs/claude-code-bug.md](docs/claude-code-bug.md) | the Claude Code bug on its own terms, with no RTL attached |

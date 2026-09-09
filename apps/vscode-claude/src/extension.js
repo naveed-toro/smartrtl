@@ -260,6 +260,11 @@ function keepAlive(ctx, why) {
 function syncQuietly(ctx, why) {
   if (!wantedOn(ctx)) { log.appendLine(`[${why}] turned off by the user`); refresh(); return; }
 
+  // Whether right-to-left text was ACTUALLY being fixed a moment ago is the only thing
+  // that decides whether a reload is worth asking for. apply() answers a narrower
+  // question - did the file change - and a block whose stamp has run out is still in the
+  // file, so it answers "restamped" while the panel on screen runs a dead copy.
+  const before = patcher.state();
   let result;
   try { result = patcher.apply(ctx.extensionPath); }
   catch (err) {
@@ -274,10 +279,18 @@ function syncQuietly(ctx, why) {
   log.appendLine(`[${why}] ${result.state}${result.install ? ` (Claude Code ${result.install.version})` : ""}`);
   refresh();
 
-  if (result.state === "applied") {
+  if (result.state === "no-target") return;
+
+  if (!before.live) {
     offerReload(why === "extensions-changed"
-      ? `Claude Code updated. Right-to-left text is fixed again. Reload to see it.`
-      : `Right-to-left text is fixed. Reload to see it.`);
+      ? "Claude Code updated. Right-to-left text is fixed again. Reload to see it."
+      : "Right-to-left text is fixed. Reload to see it.");
+  } else if (why === "installed") {
+    // It was already working, so there is nothing to reload for - but somebody who has
+    // just installed something is owed an answer either way. Silence after a deliberate
+    // act reads as "did that do anything?", and this extension is silent by design the
+    // rest of the time, so there is nothing else for them to go on.
+    vscode.window.showInformationMessage("Right-to-left text is fixed.");
   }
 }
 
@@ -323,7 +336,12 @@ function activate(context) {
   );
 
   // chance one: Claude Code was updated while the editor was closed
-  syncQuietly(context, "startup");
+  // Asked once, because asking writes the marker that answers it. An upgrade lands in a
+  // new folder, so this is true for a re-install and for every update, and false for an
+  // ordinary window opening.
+  const installed = freshInstall(context);
+
+  syncQuietly(context, installed ? "installed" : "startup");
 
   /* And the case none of the chances below covers: this window simply stays open.
      The block dies 24 hours after its last stamp, and until now activation was the
@@ -335,7 +353,7 @@ function activate(context) {
   context.subscriptions.push({ dispose: () => clearInterval(wind) });
 
   // and never sit there silently doing nothing because of a switch flipped long ago
-  askIfStillOff(context, freshInstall(context));
+  askIfStillOff(context, installed);
 
   // chance two: it happens while the editor is open. onDidChange also fires for any
   // other extension being installed, so only act when the copy of Claude Code we are
