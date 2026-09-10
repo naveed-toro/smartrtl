@@ -32,6 +32,10 @@
  *   5. Every scope fallback shrinks, never grows. Too small a container costs one
  *      extra decision; too large would drag a whole conversation into one
  *      direction.
+ *   6. Nothing of ours is ever put inside somebody else's DOM. Attributes and one
+ *      stylesheet, and that is all. The one place that used to build elements - a
+ *      sent message split into a line per element - is gone; see decisions.md
+ *      section 34.
  *
  * Never changes any text, and never touches a block with no RTL character in it.
  */
@@ -46,6 +50,10 @@
   var DEFAULT_QUIET_MS = 350;   // no changes for this long = the answer has stopped
   var DEFAULT_MAX_BOX = 200;    // never claim a container bigger than this many blocks
 
+  // An element that lays text out inline. A dir="auto" run that is one of these has no
+  // line of its own, so its direction has to be set on the block it sits in.
+  var INLINE = { SPAN: 1, B: 1, I: 1, EM: 1, STRONG: 1, A: 1, BDI: 1, LABEL: 1, SMALL: 1, MARK: 1 };
+
   /**
    * @param {object} rule  @smartrtl/core - containsRtl / containsRtlWord / containsRtlLetter
    * @param {object} [config]
@@ -53,15 +61,19 @@
    *   boxSelector  {string}   hint for "one message" - tried first when scoping a decision
    *   boundary     {string}   the ceiling a decision may never climb past, so one message's
    *                           answer cannot reach the message beside it
-   *   perLine      {string}   blocks that hold a WHOLE message, newlines and all, and must
-   *                           be split into an element per line before being decided
+   *   ownDirAuto   {boolean}  every run of text the page hands to dir="auto" - the browser's
+   *                           first-strong-character guess - is decided by the rule instead,
+   *                           as one piece. Needs no class name at all.
    *   quietMs      {number}   silence after which a half-written block is treated as final
    *   maxBox       {number}   largest container, in blocks, a single decision may claim
    *   extraCss     {string}   rules the adapter wants in the same stylesheet
-   *   composer     {object}   the box the user types into, or null:
-   *                             container {string}  the element both layers share
-   *                             layers    {string[]} every layer that must flip together
-   *                             probe     {string}  the layer that actually holds the text
+   *   composer     {object}   the box the user types into, or null. Each part is a LIST of
+   *                           selectors, tried in order, so that a renamed class leaves the
+   *                           next one standing:
+   *                             container {string}   the element both layers share, by name
+   *                             input     {string[]} the layer holding the text and the caret
+   *                             mirror    {string[]} a layer drawn over it, if there is one
+   *                           Both layers must be direct children of the same element.
    *   onDecision   {function} (block, box) - called once, when a message is decided
    *   onCleanup    {function} () - called by the escape hatch, to undo the adapter's own work
    *
@@ -69,10 +81,12 @@
    * off only the part that needed it. Nothing in this file may fail in a way that reaches
    * the page it is a guest on.
    *
-   * @returns {{stop, refresh, status}|null}  null if something is already running.
-   *   status() reports what is watching, what is off, and how many faults were caught and
-   *   contained - because a fix that has quietly stopped working looks exactly like one
-   *   that is working.
+   * @returns {{stop, standDownBlocks, refresh, status}|null}  null if something is
+   *   already running. standDownBlocks() takes back the block decisions and nothing else,
+   *   for a page found to decide its own blocks correctly. status() reports what is
+   *   watching, what is off, which way the stylesheet got in, and how many faults were
+   *   caught and contained - because a fix that has quietly stopped working looks exactly
+   *   like one that is working.
    */
   function start(rule, config) {
     var cfg = config || {};
@@ -80,11 +94,38 @@
       if (window.__bidiDirectionFix) return null;
       window.__bidiDirectionFix = 1;
 
-      var BLOCKS = cfg.blocks || DEFAULT_BLOCKS;
+      // blocks: false - no block decisions at all, while everything else here still
+      // runs. An adapter passes it when the page already decides its own blocks
+      // correctly, so that the other parts do not depend on that one being needed.
+      var BLOCKS = cfg.blocks === false ? null : (cfg.blocks || DEFAULT_BLOCKS);
       var QUIET_MS = cfg.quietMs || DEFAULT_QUIET_MS;
       var MAX_BOX = cfg.maxBox || DEFAULT_MAX_BOX;
       var BOX_HINT = cfg.boxSelector || null;
+      var OWN_DIR_AUTO = !!cfg.ownDirAuto;
       var composer = cfg.composer || null;
+
+      // A selector that the browser will not accept throws on every single batch, for
+      // ever, and silently. Asked once here instead: what cannot be used is not used,
+      // and the parts that do not depend on it carry on.
+      function usableSelector(sel) {
+        if (!sel) return false;
+        try { document.querySelector(sel); return true; } catch (e) { return false; }
+      }
+      function listOf(x) { return Array.isArray(x) ? x.slice() : x ? [x] : []; }
+
+      var blocksOk = usableSelector(BLOCKS);
+      if (BOX_HINT && !usableSelector(BOX_HINT)) BOX_HINT = null;
+
+      // The composer's selectors, each one kept only if the browser accepts it in the
+      // shape it will be used in - as a direct child of the element we mark.
+      var COMPOSER_BOX = null, INPUTS = [], MIRRORS = [];
+      if (composer) {
+        var childOk = function (s) { return usableSelector('[data-bidi-input] > ' + s); };
+        COMPOSER_BOX = usableSelector(composer.container) ? composer.container : null;
+        INPUTS = listOf(composer.input).filter(childOk);
+        MIRRORS = listOf(composer.mirror).filter(childOk);
+        if (!INPUTS.length) composer = null;
+      }
 
       /* ---------------------------------------------------------------
          One stylesheet, written once.
@@ -96,7 +137,7 @@
          two instead would demand that the container be found BELOW the box, and
          it is usually above it: the rule then matches nothing, silently.
       --------------------------------------------------------------- */
-      var css =
+      var css = !blocksOk ? "" :
         '[data-bidi="rtl"] :is(' + BLOCKS + '){direction:rtl!important;unicode-bidi:isolate!important}' +
         // the safety rule: a block with no RTL in it keeps what it had
         '[data-bidi="rtl"] :is(' + BLOCKS + ')[data-bidi="ltr"]{direction:ltr!important;unicode-bidi:isolate!important}' +
@@ -119,26 +160,35 @@
         // vote, so such a run is told to inherit the decision instead.
         '[data-bidi="rtl"] :is(' + BLOCKS + ') [dir="auto"]{direction:inherit!important;unicode-bidi:isolate!important}';
 
-      // The copy of a sent message, and the host's own span it stands in for. Only
-      // while the copy is actually there - anything that stops us building it leaves
-      // the host's own text on the screen, never a hidden one and no replacement.
-      var COPY_CLASS = "smart-rtl-copy";
-      css += '[data-bidi-lines="1"] [dir="auto"]:not(.' + COPY_CLASS + '){display:none}';
+      /* A run of text handed to dir="auto", decided by the rule instead.
+         ------------------------------------------------------------------
+         dir="auto" IS the first-strong-character guess, applied explicitly by the page
+         to text it did not want to decide itself - typically text a person typed. So a
+         run like that is decided here, as one piece, the way the rule decides anything:
+         any RTL word in it and it reads right to left; none, and it is left exactly as
+         the page had it.
 
-      // Lines we made ourselves, in a block that holds a whole message at once.
-      // NOTE: display:block is set on the element as well, inline, and that is not
-      // duplication - see decidePerLine.
-      css += ".smart-rtl-line{display:block;white-space:pre-wrap}" +
-             '.smart-rtl-line[data-bidi-line="rtl"]{direction:rtl;text-align:start;unicode-bidi:isolate}' +
-             ".smart-rtl-line:not([data-bidi-line]){direction:ltr;text-align:start;unicode-bidi:isolate}";
+         This path names no class at all. It rests on an HTML attribute, which a page
+         uses because the browser gives it meaning - not on a stylesheet's hashed
+         names, which change whenever somebody restyles. Where an adapter also names
+         the same text by class, the two arrive at the same answer independently, and
+         either one is enough.
 
+         Every property this depends on is set here, with !important, rather than
+         trusting the page not to set it. That is exactly how the composer broke in
+         Claude Code 2.1.267: the page added unicode-bidi:plaintext, and a rule that
+         had only ever set `direction` stopped doing anything. */
+      if (OWN_DIR_AUTO) {
+        css += '[data-bidi-run="rtl"]{direction:rtl!important;unicode-bidi:isolate!important;text-align:start!important}' +
+               '[data-bidi-run="rtl"] > [dir="auto"]{direction:inherit!important;unicode-bidi:isolate!important}';
+      }
 
       /* The box you type into.
          ------------------------------------------------------------------
          ONE direction for the whole box, from one attribute and one rule. Nothing
-         of ours goes into it, nothing is observed, nothing runs while somebody
-         types. That is not a first attempt: it is what is left after three goes at
-         doing better, and the two things that ended them are worth carrying here.
+         of ours goes into it. That is not a first attempt: it is what is left after
+         three goes at doing better, and the two things that ended them are worth
+         carrying here.
 
          What is actually there, read out of Claude Code's own bundle:
 
@@ -156,51 +206,63 @@
 
            0.3.3 kept React's mirror untouched and drew a clone of it instead. Safe,
            and still wrong: measured, every keystroke reached the screen one
-           keystroke late. Type a letter, see nothing; type the next, see the first.
-           The clone is painted from the host's mirror in a capture-phase input
-           handler, which runs BEFORE the host has redrawn it, and the observer meant
-           to correct that had nothing to attach to - the composer does not exist yet
-           when this code runs.
+           keystroke late.
 
          A box that types a letter behind is worse than a box that reads the wrong
-         way round, and no amount of care makes an editor somebody else owns behave
-         like an editor. So this is deliberate, and it is the end of that line of
-         attempts, not a step on the way: the composer takes ONE direction, live,
-         from any RTL letter in it. A draft that mixes languages goes right to left
-         as a whole. That is the platform's limit, accepted rather than fought.
+         way round, so the composer takes ONE direction, live, from any RTL letter in
+         it. A draft that mixes languages goes right to left as a whole. That is the
+         platform's limit, accepted rather than fought.
 
-         Where the rule still applies in full is the message once it is SENT, where
-         the lines are real elements in a page nobody is typing into.
+         Three things make the one direction hold up when the page changes:
+
+           - all three properties are set, with !important. 2.1.267 added
+             unicode-bidi:plaintext to both layers, and `direction` on a plaintext
+             element does nothing at all - the old rule, which set only direction,
+             went dead on that update without a single error.
+           - each layer is found by name AND by what it is: the box you type into
+             is contenteditable with role=textbox, the layer over it is aria-hidden.
+             A restyle renames classes; it does not usually change what an element
+             is for. Either is enough.
+           - the rule selects only direct children of the element we mark, so it can
+             never reach anything else the page keeps nearby.
 
          text-align is not decoration: measured, a host that writes text-align:left
          above the box beats direction outright - the words come out in the right
          order and every line still hugs the left edge. */
-      if (composer && composer.layers && composer.layers.length) {
-        var sel = [];
-        for (var s = 0; s < composer.layers.length; s++) {
-          sel.push(composer.container + '[data-bidi-input="rtl"] ' + composer.layers[s]);
-        }
-        css += sel.join(",") + "{direction:rtl;text-align:start}";
+      if (composer) {
+        var layerSel = [];
+        INPUTS.concat(MIRRORS).forEach(function (s) { layerSel.push('[data-bidi-input="rtl"] > ' + s); });
+        css += layerSel.join(",") + "{direction:rtl!important;unicode-bidi:isolate!important;text-align:start!important}";
       }
 
       if (cfg.extraCss) css += cfg.extraCss;
 
-      // A selector that the browser will not accept throws on every single batch, for
-      // ever, and silently. Asked once here instead: what cannot be used is not used,
-      // and the parts that do not depend on it carry on.
-      function usableSelector(sel) {
-        if (!sel) return false;
-        try { document.querySelector(sel); return true; } catch (e) { return false; }
-      }
-      var blocksOk = usableSelector(BLOCKS);
-      if (BOX_HINT && !usableSelector(BOX_HINT)) BOX_HINT = null;
-      if (cfg.perLine && !usableSelector(cfg.perLine)) cfg.perLine = null;
-      if (composer && !usableSelector(composer.container)) composer = null;
-
+      /* Everything above rides on one stylesheet getting in, so how it gets in is not
+         left to one road. A <style> element added from script is what a page with
+         'unsafe-inline' in its style-src allows - Claude Code's does, today. Without
+         that word the element is refused and every part of this would go dark at once.
+         Measured: under such a policy a constructed stylesheet handed to
+         document.adoptedStyleSheets still applies. So the element is tried first, and
+         if its rules did not arrive, the other road is taken - and the status says
+         which. */
       var style = document.createElement("style");
       style.id = "smart-rtl-direction";
       style.textContent = css;
       (document.head || document.documentElement).appendChild(style);
+      var adopted = null, sheetState = "style element";
+      var took = false;
+      try { took = !!(style.sheet && style.sheet.cssRules && style.sheet.cssRules.length); } catch (e) {}
+      if (!took) {
+        try {
+          adopted = new CSSStyleSheet();
+          adopted.replaceSync(css);
+          document.adoptedStyleSheets = document.adoptedStyleSheets.concat([adopted]);
+          sheetState = "adopted - the page refused a style element";
+        } catch (e) {
+          adopted = null;
+          sheetState = "off - the page refused every way of adding a stylesheet";
+        }
+      }
 
       /* ---------------------------------------------------------------
          Deciding
@@ -269,186 +331,8 @@
         return inside(p) && usable(p) ? p : null;
       }
 
-      /**
-       * One block, many lines.
-       *
-       * The rule was built for markdown, where every line is already its own
-       * element and one decision per block IS one decision per line. A message
-       * typed by a person is not markdown: it arrives as a single element with
-       * newlines inside it, so twenty lines share one direction. That is wrong for
-       * exactly the person this exists for - somebody writing Urdu and English
-       * turn about, a line of each.
-       *
-       * So a block named by `perLine` is split into one element per line and each
-       * line is decided on its own. This is the only place anything here changes a
-       * page's structure rather than its style, and two things make that safe to
-       * do:
-       *
-       *   - element children are MOVED, never copied, so a mention chip keeps the
-       *     handlers that make it clickable
-       *   - the newline characters are dropped and the lines become blocks, so
-       *     selecting and copying gives back the original text exactly rather than
-       *     doubling every line break. A test asserts that, because "nearly the
-       *     same text" in somebody's clipboard is not a small bug.
-       *
-       * Only ever done to text that has already arrived. Nothing streamed is split
-       * per line - see docs/decisions.md section 7 for why that would flicker.
-       *
-       * @returns {boolean} true if this block was handled here
-       */
-      /**
-       * A sent message, decided line by line - WITHOUT moving anything of the host's.
-       *
-       * A typed message is one element with newlines in it, so one decision would
-       * govern every line of it: paste a command, press shift+enter, write Urdu
-       * underneath, and the command is dragged round with the Urdu. The lines have to
-       * become elements before they can each be decided.
-       *
-       * Until now they were made out of the host's own nodes, taken out of the span
-       * React rendered them into and put back inside spans of ours. That worked, and
-       * shipped from 0.2.0, and it was the last place in this project standing on a
-       * promise it could not keep: React holds a pointer to every node it created and
-       * removes them through the parent it put them in. Ours is not that parent any
-       * more. The day React updates a sent message - the day Claude Code grows "edit
-       * your message", say - it calls removeChild on a node that is no longer there,
-       * throws inside its own commit phase, and the panel unmounts. Demonstrated, not
-       * feared: the same NotFoundError that took the panel down in 0.3.0.
-       *
-       * So: nothing is moved, removed or replaced. A COPY is built beside the host's
-       * span and the host's span is hidden by a CSS rule. React's own tree is exactly
-       * as React left it, and it can update or unmount it whenever it likes.
-       *
-       * The copy is a sibling of the span rather than a child of it, so it inherits
-       * the font and colour from the same place the original does, and so that adding
-       * it is the weakest thing that can be done to somebody else's DOM: an append,
-       * never an insert between two of their nodes.
-       *
-       * @mention chips are elements the host attached handlers to, and a clone has
-       * none. Each clone therefore forwards its own activation to the original, which
-       * is hidden but still in the page and still React's - so clicking a mention in a
-       * message still opens the file.
-       */
-      /** Has the host rewritten the message since the copy was made? */
-      function staleCopy(block) {
-        var host = null, copy = null, all = block.querySelectorAll('[dir="auto"]');
-        for (var i = 0; i < all.length; i++) {
-          if (all[i].classList.contains(COPY_CLASS)) copy = all[i];
-          else if (!host) host = all[i];
-        }
-        if (!host || !copy) return false;
-        // the copy carries the same characters, minus the newlines the line elements
-        // stand in for - so compare with those taken out of both
-        return (host.textContent || "").replace(/\n/g, "") !== (copy.textContent || "");
-      }
-
-      function decidePerLine(block, again) {
-        if (!again && block.getAttribute("data-bidi-lines") === "1") return true;
-
-        // Only ever a message somebody TYPED, and the test for that is exact rather
-        // than structural. This is the one place anything here adds to a page instead
-        // of styling it, so what it may add to has to be named precisely - "the content
-        // div inside an expandable" describes a container the host is free to reuse for
-        // something else.
-        //
-        // dir="auto" is the plainText renderer's own signature, and it appears exactly
-        // once in the whole bundle: on the span a typed message's text goes into. No
-        // span, no copy - whatever else ends up in an expandable is left alone.
-        var host = block.querySelector('[dir="auto"]');
-        if (!host || host.classList.contains(COPY_CLASS)) return false;
-        if (again) {
-          // ours, and only ever ours - the host's span is never removed
-          var old = block.querySelectorAll("." + COPY_CLASS);
-          for (var o = 0; o < old.length; o++) {
-            if (old[o].parentNode) old[o].parentNode.removeChild(old[o]);
-          }
-        }
-        if ((host.textContent || "").indexOf("\n") === -1) {
-          // it was several lines and is now one - nothing of ours belongs here
-          block.removeAttribute("data-bidi-lines");
-          return false;
-        }
-        if (!host.parentNode) return false;
-
-        var pairs = [];          // [clone, original] for anything that can be activated
-        var lines = [[]], kids = Array.prototype.slice.call(host.childNodes);
-        for (var i = 0; i < kids.length; i++) {
-          var n = kids[i];
-          if (n.nodeType === 3) {
-            var parts = String(n.nodeValue).split("\n");
-            for (var j = 0; j < parts.length; j++) {
-              if (j > 0) lines.push([]);
-              if (parts[j] !== "") lines[lines.length - 1].push(document.createTextNode(parts[j]));
-            }
-          } else {
-            var copy = n.cloneNode(true);
-            if (n.nodeType === 1) pairs.push([copy, n]);
-            lines[lines.length - 1].push(copy);
-          }
-        }
-
-        var holder = document.createElement("span");
-        holder.className = COPY_CLASS;
-        holder.setAttribute("dir", "auto");
-        for (var k = 0; k < lines.length; k++) {
-          var row = document.createElement("span");
-          row.className = "smart-rtl-line";
-          // The line breaks are made by these elements being blocks, so they must not
-          // depend on our stylesheet still being present - somebody running the escape
-          // hatch would otherwise see the message collapse into one unreadable run.
-          row.style.display = "block";
-          for (var m = 0; m < lines[k].length; m++) row.appendChild(lines[k][m]);
-          if (rule.containsRtlWord(row.textContent || "")) row.setAttribute("data-bidi-line", "rtl");
-          // An empty block is skipped when a selection is serialised, so a blank line
-          // would vanish from anything the reader copied. A <br> keeps it - measured
-          // against a zero-width space, which survives the copy as an invisible
-          // character in somebody else's paste.
-          if (!lines[k].length) row.appendChild(document.createElement("br"));
-          holder.appendChild(row);
-        }
-
-        // A clone has no handlers. Hand its activation back to the element the host
-        // rendered, which is hidden but still in the page and still theirs.
-        for (var q = 0; q < pairs.length; q++) forwardTo(pairs[q][0], pairs[q][1]);
-
-        // AFTER the host's span, never between two of its nodes. React inserts before
-        // its own next sibling and appends at the end, so a node of ours sitting last
-        // is something it never has to reason about.
-        host.parentNode.appendChild(holder);
-        block.setAttribute("data-bidi-lines", "1");
-        return true;
-      }
-
-      /** Clicking or pressing enter on the copy does what it would have done on theirs. */
-      function forwardTo(copy, original) {
-        try {
-          copy.addEventListener("click", function (e) {
-            e.preventDefault();
-            try { original.click(); } catch (err) {}
-          });
-          copy.addEventListener("keydown", function (e) {
-            if (e.key !== "Enter" && e.key !== " ") return;
-            e.preventDefault();
-            try { original.click(); } catch (err) {}
-          });
-        } catch (e) {}
-      }
-
       function inspect(el) {
         if (!el || !el.isConnected) return;
-
-        // A message that has been split is normally finished with - a sent message does
-        // not change. "Normally" is not good enough here: a surface where somebody can
-        // EDIT a message they already sent exists today in the browser, and the copy
-        // would go on showing what they wrote before.
-        //
-        // This is the only thing that looks at a settled block again, and it is cheap
-        // where it matters: it runs for blocks that turn up in a batch of mutations,
-        // and while an answer streams the mutations are all inside that answer, so no
-        // sent message is ever in the batch.
-        if (el.getAttribute && el.getAttribute("data-bidi-lines") === "1") {
-          try { if (staleCopy(el)) decidePerLine(el, true); } catch (e) { failures++; }
-          return;
-        }
         if (settledBlocks.has(el)) return;
 
         if (el.closest('[data-bidi="rtl"]')) {          // message already decided
@@ -492,33 +376,67 @@
         // second block that would have settled the first. Deciding on sight costs 3
         // frames, with the same single change of direction and no sideways movement.
         // test/jitter.test.js holds both halves of that.
-
-        // a block that holds a whole message decides line by line instead
-        // Splitting is the one thing here that restructures anything, so it is also
-        // the one thing allowed to fail on its own: if it throws, the block still gets
-        // the ordinary whole-block decision below rather than no decision at all.
-        var split = false;
-        if (cfg.perLine) {
-          try { split = el.matches(cfg.perLine) && decidePerLine(el); } catch (e) { failures++; }
-        }
-        if (split) {
-          // Decided line by line, but it is still an RTL message, and the adapter is
-          // told so. It has to be: this is what moves the row's timeline dot to the
-          // side the row reads from, and what reserves the gutter every row in the
-          // conversation then shares. Reserving that gutter narrows every row by its
-          // width, so WHEN it happens matters - here, as somebody's own message
-          // appears, rather than in the middle of the first answer they are reading.
-          if (cfg.onDecision) { try { cfg.onDecision(el, el); } catch (e) {} }
-          settledBlocks.add(el); pending.delete(el);
-          return;
-        }
-
         var box = boxOf(el);
         if (box) {
           box.setAttribute("data-bidi", "rtl");          // <-- the one decision
           if (cfg.onDecision) { try { cfg.onDecision(el, box); } catch (e) {} }
         }
         settledBlocks.add(el); pending.delete(el);
+      }
+
+      /**
+       * A dir="auto" run, decided by the rule rather than by the browser.
+       *
+       * Where the decision is written depends on what the run IS. An inline run - the
+       * usual shape, a <span> holding what somebody typed - has no line of its own, so
+       * the block around it carries the direction; and only when that block holds this
+       * one run and no other, so a decision can never spread past the text it was taken
+       * from. A run that is itself a block carries its own.
+       *
+       * Unlike an answer's decision this one can be taken back: the page can rewrite a
+       * run (an edited message), and a run that no longer holds any RTL goes back to
+       * exactly what the page had. For text that only ever grows, that never happens.
+       */
+      var runState = OWN_DIR_AUTO ? "on - nothing decided yet" : "off";
+      var runMeasured = false;
+
+      function decideRun(run) {
+        if (!run || !run.isConnected || !run.parentElement) return;
+        if (run.closest("pre,code,[contenteditable]")) return;   // never code, never an editor
+        var target = run;
+        if (INLINE[run.tagName]) {
+          target = run.parentElement;
+          if (target === document.body || target === document.documentElement) return;
+          var runs = 0;
+          for (var c = target.firstElementChild; c; c = c.nextElementSibling) {
+            if (c.getAttribute("dir") === "auto") runs++;
+          }
+          if (runs !== 1) return;                       // not ours to speak for
+        }
+        if (rule.containsRtlWord(run.textContent || "")) {
+          if (target.getAttribute("data-bidi-run") === "rtl") return;
+          target.setAttribute("data-bidi-run", "rtl");
+          if (cfg.onDecision) { try { cfg.onDecision(run, target); } catch (e) {} }
+          measureRunOnce(target);
+        } else if (target.hasAttribute("data-bidi-run")) {
+          target.removeAttribute("data-bidi-run");
+        }
+      }
+
+      /** Once, and after the frame - so a decision that the page refuses is reported. */
+      function measureRunOnce(target) {
+        if (runMeasured) return;
+        runMeasured = true;
+        setTimeout(function () {
+          if (stopped) return;
+          try {
+            if (!target.isConnected || target.getAttribute("data-bidi-run") !== "rtl") { runMeasured = false; return; }
+            var cs = getComputedStyle(target);
+            runState = cs.direction === "rtl"
+              ? "on - measured working"
+              : "not working - the direction was set and the page did not take it (" + cs.direction + ")";
+          } catch (e) { failures++; }
+        }, 0);
       }
 
       /* ---------------------------------------------------------------
@@ -540,6 +458,7 @@
          Twelve runs of the same re-mount: none flickered.
       --------------------------------------------------------------- */
       var queue = [], scheduled = false;
+      var watching = blocksOk || OWN_DIR_AUTO;
 
       function drain() {
         scheduled = false;
@@ -550,14 +469,22 @@
         if (stopped) { queue = []; return; }
         var batch = queue; queue = [];
 
-        var blocks = [];
+        var blocks = [], runs = [];
         for (var i = 0; i < batch.length; i++) {
           var n = batch[i];
           if (!n || n.nodeType !== 1 || !n.isConnected) continue;
-          var self = n.closest(BLOCKS);
-          if (self) blocks.push(self);
-          var list = n.querySelectorAll(BLOCKS);
-          for (var j = 0; j < list.length; j++) blocks.push(list[j]);
+          if (blocksOk) {
+            var self = n.closest(BLOCKS);
+            if (self) blocks.push(self);
+            var list = n.querySelectorAll(BLOCKS);
+            for (var j = 0; j < list.length; j++) blocks.push(list[j]);
+          }
+          if (OWN_DIR_AUTO) {
+            var run = n.closest('[dir="auto"]');
+            if (run) runs.push(run);
+            var inner = n.querySelectorAll('[dir="auto"]');
+            for (var q = 0; q < inner.length; q++) runs.push(inner[q]);
+          }
         }
 
         // Quiet means the TEXT has stopped, not the page. See armQuiet.
@@ -568,6 +495,9 @@
         // feature. Blocks are independent of each other and the code should say so.
         for (var k = 0; k < blocks.length; k++) {
           try { inspect(blocks[k]); } catch (e) { failures++; }
+        }
+        for (var m = 0; m < runs.length; m++) {
+          try { decideRun(runs[m]); } catch (e) { failures++; }
         }
       }
 
@@ -617,17 +547,6 @@
         if (!scheduled) { scheduled = true; queueMicrotask(drain); }
       }
 
-      var observer = new MutationObserver(function (records) {
-        for (var i = 0; i < records.length; i++) {
-          var r = records[i];
-          push(r.target);
-          if (r.addedNodes) for (var j = 0; j < r.addedNodes.length; j++) push(r.addedNodes[j]);
-        }
-      });
-      if (blocksOk) {
-        observer.observe(document.documentElement, { childList: true, subtree: true, characterData: true });
-      }
-
       /* ---------------------------------------------------------------
          Which direction the box is in, right now.
 
@@ -640,18 +559,132 @@
          not enumerate attributes it never set, so this cannot collide with it. That
          is the line the removed per-line machinery crossed twice: an attribute is
          ours to set; somebody else's child node is not ours to move, or to mirror.
+
+         Asked on typing AND on any change to the box, because typing is not the only
+         way text gets there. Measured in Claude Code's own bundle: it empties the box
+         itself after a message is sent, and puts text in from code for history,
+         completions and forks - none of which is an input event. Listening only to
+         typing left the box turned right to left and empty after every Urdu message,
+         and left recalled Urdu reading left to right until the next key.
       --------------------------------------------------------------- */
+      var composerState = composer ? "on - waiting for the box to appear" : "off";
+      var shapes = new WeakMap();      // box -> true, or why it is not one we can turn
+      var measuredBoxes = new WeakSet();
+
+      function closestOf(el, list) {
+        for (var i = 0; i < list.length; i++) { var m = el.closest(list[i]); if (m) return m; }
+        return null;
+      }
+      function childOf(parent, list) {
+        for (var i = 0; i < list.length; i++) {
+          for (var c = parent.firstElementChild; c; c = c.nextElementSibling) {
+            if (c.matches(list[i])) return c;
+          }
+        }
+        return null;
+      }
+
+      /** The box, and the layer that holds the text - by name first, then by what they are. */
+      function findComposer(node) {
+        var el = node && node.nodeType === 3 ? node.parentElement : node;
+        if (!el || el.nodeType !== 1 || !el.closest) return null;
+        var box = COMPOSER_BOX ? el.closest(COMPOSER_BOX) : null;
+        var input = box ? childOf(box, INPUTS) : null;
+        if (!input) {
+          var hit = closestOf(el, INPUTS);
+          if (hit && hit.parentElement) { box = hit.parentElement; input = hit; }
+          else if (MIRRORS.length) {
+            // the change was in the layer drawn over the box: its sibling is the box
+            var layer = closestOf(el, MIRRORS);
+            var parent = layer && layer.parentElement;
+            var sib = parent ? childOf(parent, INPUTS) : null;
+            if (sib) { box = parent; input = sib; }
+          }
+        }
+        return input && box && input.parentElement === box ? { box: box, input: input } : null;
+      }
+
+      /**
+       * Can this box be turned without the caret and the text parting company?
+       *
+       * Asked once per box. With a layer drawn over the box you type into, one mark
+       * turns both. With no such layer the box itself must be what people read - if it
+       * is invisible, turning it alone would move the caret and leave the text where it
+       * was, which is worse than doing nothing, so nothing is done.
+       */
+      function shapeOf(box, input) {
+        var known = shapes.get(box);
+        if (known !== undefined) return known;
+        var verdict = true;
+        var over = MIRRORS.length ? childOf(box, MIRRORS) : null;
+        if (!over || over === input) {
+          var c = getComputedStyle(input).color;
+          if (c === "transparent" || /rgba\([^)]*,\s*0\)$/.test(c)) {
+            verdict = "off - the box you type into is invisible, and the layer drawn over it was not found";
+          }
+        }
+        shapes.set(box, verdict);
+        return verdict;
+      }
+
+      /** Once per box, and after the frame: did the page actually take the direction? */
+      function measureComposerOnce(box, input) {
+        if (measuredBoxes.has(box)) return;
+        measuredBoxes.add(box);
+        setTimeout(function () {
+          if (stopped) return;
+          try {
+            if (!box.isConnected || box.getAttribute("data-bidi-input") !== "rtl") { measuredBoxes.delete(box); return; }
+            var read = (MIRRORS.length && childOf(box, MIRRORS)) || input;
+            var cs = getComputedStyle(read);
+            composerState = cs.direction === "rtl" && cs.unicodeBidi !== "plaintext"
+              ? "on - measured working"
+              : "not working - the direction was set and the page did not take it (" +
+                cs.direction + ", " + cs.unicodeBidi + ")";
+          } catch (e) { failures++; }
+        }, 0);
+      }
+
+      /** A textarea's text is its value; any other box's is its content. */
+      function textOf(input) {
+        return input.tagName === "TEXTAREA" ? (input.value || "") : (input.textContent || "");
+      }
+
+      /* The box is asked about on every change to the page - but cheaply. Once a box has
+         been found, only a change INSIDE it is looked at, and that costs one native
+         contains(). The full search, by name and by what the elements are, runs only
+         while no box is known or after the one we knew has left the page. While an
+         answer streams, every change is in the answer, so each one costs a single
+         contains() and nothing more - the reader must never be the one who pays for
+         this being thorough. */
+      var lastBox = null;
+      function composerChange(target) {
+        if (lastBox && lastBox.isConnected) {
+          var el = target && target.nodeType === 3 ? target.parentNode : target;
+          return el && lastBox.contains(el) ? syncComposer(el) : false;
+        }
+        lastBox = null;
+        return syncComposer(target);
+      }
+
+      /** @returns {boolean} whether the node was inside a composer at all */
       function syncComposer(node) {
-        if (!composer) return;
+        if (!composer || stopped) return false;
         try {
-          var probe = composer.probe || (composer.layers && composer.layers[0]);
-          var input = node && node.closest ? node.closest(probe) : null;
-          if (!input) return;
-          var box = input.closest(composer.container) || input.parentElement;
-          if (!box) return;
-          if (rule.containsRtlLetter(input.textContent || "")) box.setAttribute("data-bidi-input", "rtl");
-          else box.removeAttribute("data-bidi-input");
-        } catch (e) {}
+          var found = findComposer(node);
+          if (!found) return false;
+          lastBox = found.box;
+          var shape = shapeOf(found.box, found.input);
+          if (shape !== true) { composerState = shape; return true; }
+          if (composerState.indexOf("on - waiting") === 0) composerState = "on - not measured yet";
+          if (rule.containsRtlLetter(textOf(found.input))) {
+            if (found.box.getAttribute("data-bidi-input") !== "rtl") found.box.setAttribute("data-bidi-input", "rtl");
+            measureComposerOnce(found.box, found.input);
+          } else if (found.box.hasAttribute("data-bidi-input")) {
+            found.box.removeAttribute("data-bidi-input");
+          }
+          return true;
+        } catch (e) { failures++; return true; }
       }
 
       if (composer) {
@@ -662,70 +695,88 @@
         document.addEventListener("focusin", function (e) { syncComposer(e.target); }, true);
       }
 
+      var observer = new MutationObserver(function (records) {
+        var composerSeen = false;
+        for (var i = 0; i < records.length; i++) {
+          var r = records[i];
+          if (watching) {
+            push(r.target);
+            if (r.addedNodes) for (var j = 0; j < r.addedNodes.length; j++) push(r.addedNodes[j]);
+          }
+          // The box is asked once per batch, after every change in it has landed, so it
+          // answers for the text as it now is. Same microtask, so before the paint.
+          if (composer && !composerSeen) composerSeen = composerChange(r.target);
+        }
+      });
+      if (watching || composer) {
+        observer.observe(document.documentElement, { childList: true, subtree: true, characterData: true });
+      }
+
       /* ---------------------------------------------------------------
          Escape hatch. Run __bidiFixOff() in the console to neutralise it live.
+
+         stop() promises the page comes back to what it was, and it can keep that
+         promise cheaply because nothing here ever altered the host's DOM: taking
+         out one stylesheet and our own attributes is the whole of it.
       --------------------------------------------------------------- */
       function dropAttribute(name) {
         var n = document.querySelectorAll("[" + name + "]");
         for (var i = 0; i < n.length; i++) n[i].removeAttribute(name);
       }
 
-      /**
-       * Put a split message back together.
-       *
-       * stop() promises the page comes back to what it was, and for an answer it
-       * always did - nothing there is ever restructured. A typed message is, and
-       * until this existed the escape hatch left it in pieces: our spans still in the
-       * DOM, the newline characters gone with them, and the text somebody copied
-       * missing every line break. The one path a person has when something goes wrong
-       * has to be the one path that cannot make things worse.
-       */
-      /**
-       * Take the copy away and let the host's own span be seen again.
-       *
-       * stop() promises the page comes back to what it was, and now that is nearly
-       * nothing to do: the host's DOM was never altered, so putting it back is
-       * removing one element of ours and one attribute.
-       */
-      function undoPerLine() {
-        var split = document.querySelectorAll('[data-bidi-lines="1"]');
-        for (var i = 0; i < split.length; i++) {
-          split[i].removeAttribute("data-bidi-lines");
-          var copies = split[i].querySelectorAll("." + COPY_CLASS);
-          for (var k = 0; k < copies.length; k++) {
-            if (copies[k].parentNode) copies[k].parentNode.removeChild(copies[k]);
-          }
-        }
-      }
-
       function stop() {
         stopped = true;
         try { observer.disconnect(); } catch (e) {}
-        try { undoPerLine(); } catch (e) {}
         if (quietTimer) clearTimeout(quietTimer);
         if (style.parentNode) style.parentNode.removeChild(style);
+        if (adopted) {
+          try {
+            document.adoptedStyleSheets = document.adoptedStyleSheets.filter(function (s) { return s !== adopted; });
+          } catch (e) {}
+        }
         dropAttribute("data-bidi");
         dropAttribute("data-bidi-input");
-        dropAttribute("data-bidi-line");
-        dropAttribute("data-bidi-lines");
+        dropAttribute("data-bidi-run");
         if (cfg.onCleanup) { try { cfg.onCleanup(); } catch (e) {} }
         return "off";
       }
       window.__bidiFixOff = stop;
 
-      if (blocksOk) push(document.body || document.documentElement);
+      var blocksState = !BLOCKS ? "off - not asked for"
+                      : blocksOk ? "watching" : "off: the block selector was refused";
+
+      /**
+       * Stand the block decisions down, and nothing else.
+       *
+       * For a page that turns out to decide its own blocks correctly - measured by the
+       * adapter, which is the only one that knows what to measure. Every decision of
+       * that kind comes back out and no more are taken, while the box you type into and
+       * the dir="auto" runs carry on untouched: they answer different questions, and
+       * the host fixing one of them says nothing about the others.
+       */
+      function standDownBlocks(why) {
+        if (!blocksOk) return;
+        blocksOk = false;
+        pending.clear();
+        if (quietTimer) clearTimeout(quietTimer);
+        dropAttribute("data-bidi");
+        blocksState = "stood down - " + (why || "the page decides its own blocks now");
+      }
+
+      if (watching) push(document.body || document.documentElement);
 
       function status() {
         return {
-          blocks: blocksOk ? "watching" : "off: the block selector was refused",
+          blocks: blocksState,
           boxHint: BOX_HINT ? "on" : "off",
-          perLine: cfg.perLine ? "on" : "off",
-          composer: composer ? "on" : "off",
+          dirAuto: runState,
+          composer: composerState,
+          sheet: sheetState,
           contained: failures            // faults that were caught and did not spread
         };
       }
 
-      return { stop: stop, refresh: push, status: status };
+      return { stop: stop, standDownBlocks: standDownBlocks, refresh: push, status: status };
     } catch (e) {
       return null;   // never break the page we are a guest on
     }

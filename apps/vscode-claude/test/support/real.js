@@ -29,8 +29,17 @@ const { chromium } = require("playwright");
 
 const PAYLOAD = path.resolve(__dirname, "../../dist/payload.js");
 
-/** The newest installed Claude Code that actually has a webview. */
+/**
+ * The newest installed Claude Code that actually has a webview - or, when
+ * SMARTRTL_CLAUDE_DIR names one, that one: the daily watch downloads each new release
+ * from the Marketplace and points every real-stylesheet and real-bundle test at it.
+ */
 function findWebview() {
+  const pinned = process.env.SMARTRTL_CLAUDE_DIR;
+  if (pinned) {
+    const css = path.join(pinned, "webview", "index.css");
+    return fs.existsSync(css) ? { name: "pinned:" + path.basename(pinned), css } : null;
+  }
   const roots = [
     path.join(os.homedir(), ".vscode", "extensions"),
     path.join(os.homedir(), ".vscode-insiders", "extensions")
@@ -76,6 +85,8 @@ function classNames(css) {
     turn: one("turn_"),
     userMessageContainer: one("userMessageContainer_"),
     userMessage: one("userMessage_"),
+    screenReaderTurnHeading: one("screenReaderTurnHeading_"),
+    visuallyHidden: one("visuallyHidden_"),
     expandable,
     contentWrapper: hash ? "contentWrapper_" + hash : null,
     content: hash ? "content_" + hash : null,
@@ -210,13 +221,27 @@ const composer = () => `
 
 module.exports = { installed, cls, open, answer, conversation, composer, working, matchedRules };
 
+/** The heading Claude Code hides above a sent message: EJ0 in its bundle. */
+const turnHeading = (text) => {
+  const flat = String(text).replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
+  if (!flat) return "Your message";
+  return "You: " + flat.slice(0, 120) + (flat.length > 120 ? "…" : "");
+};
+
 /**
  * One user message, nested and named the way the extension nests and names it, with
  * the toggling its own component does. A message that heads a turn is pinned, and
  * collapses at 60px until somebody opens it.
+ *
+ * The row is `message userMessageContainer stickyHeader`, and the first thing in it is
+ * a visually hidden h3 carrying the message's own text - read out of the bundle, not
+ * guessed. An earlier version of this model left the heading out and put a
+ * timelineMessage class on the row, which only a diagnostics row has; with the heading
+ * missing, the model could not show that the heading decided every message first.
  */
 const userMessage = (text, { expanded = false } = {}) => `
-<div class="${cls.message} ${cls.stickyHeader} ${cls.timelineMessage}">
+<div class="${cls.message} ${cls.userMessageContainer} ${cls.stickyHeader}">
+  <h3 class="${cls.visuallyHidden} ${cls.screenReaderTurnHeading}">${turnHeading(text)}</h3>
   <div class="${cls.userMessageContainer}"><div class="${cls.userMessage}">
     <div class="${cls.expandable}">
       <div class="${cls.contentWrapper}">

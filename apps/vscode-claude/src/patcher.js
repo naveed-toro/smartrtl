@@ -26,7 +26,7 @@ const path = require("node:path");
 const vscode = require("vscode");
 
 const fmt = require("./patch-format.js");
-const { BEGIN, stripPatch, readExpiry, stampExpiry } = fmt;
+const { BEGIN, stripPatch, readExpiry, stampExpiry, writeWhole } = fmt;
 
 const TARGET_ID = "anthropic.claude-code";
 const REL_TARGET = path.join("webview", "index.js");
@@ -105,13 +105,13 @@ function apply(extensionPath) {
       if (readExpiry(current) - now > fmt.REFRESH_BELOW_MS) {
         return { state: "already-current", install };
       }
-      fs.writeFileSync(install.target, stripPatch(current) + "\n" + stampExpiry(payload, now) + "\n", "utf8");
+      writeWhole(fs, install.target, stripPatch(current) + "\n" + stampExpiry(payload, now) + "\n");
       return { state: "restamped", install };
     }
   }
 
   const clean = kept || stripPatch(current);
-  fs.writeFileSync(install.target, clean + "\n" + stampExpiry(payload, now) + "\n", "utf8");
+  writeWhole(fs, install.target, clean + "\n" + stampExpiry(payload, now) + "\n");
   return { state: "applied", install };
 }
 
@@ -126,7 +126,7 @@ function remove() {
   const kept = consumeLegacyBackup(install);
   if (!current.includes(BEGIN)) return { state: "already-clean", install };
 
-  fs.writeFileSync(install.target, kept || stripPatch(current), "utf8");
+  writeWhole(fs, install.target, kept || stripPatch(current));
   return { state: "removed", install };
 }
 
@@ -178,16 +178,30 @@ function readTail(file) {
  */
 function state() {
   const install = findClaudeCode();
-  if (!install) return { installed: false, present: false, live: false, expiresAt: 0 };
+  // Not found can mean two different things, and they are told apart here: Claude Code
+  // is not installed, or it is and the file its panel loads from is not where it was.
+  if (!install) return { installed: claudeCodeInstalled(), recognized: false, present: false, live: false, expiresAt: 0 };
 
   let tail;
   try { tail = readTail(install.target); }
-  catch (e) { return { installed: true, present: false, live: false, expiresAt: 0 }; }
+  catch (e) { return { installed: true, recognized: true, present: false, live: false, expiresAt: 0 }; }
 
   const present = tail.includes(BEGIN);
   const expiresAt = present ? readExpiry(tail) : 0;
-  return { installed: true, present, expiresAt,
+  return { installed: true, recognized: true, present, expiresAt,
            live: present && (!expiresAt || Date.now() < expiresAt) };
+}
+
+/**
+ * Is Claude Code installed at all, whether or not its panel is where we look for it?
+ *
+ * findClaudeCode() needs both and answers null for either, which put "Claude Code is
+ * not installed" in front of somebody looking straight at it on the day an update moved
+ * its panel's file. An update changing something this build does not know about is the
+ * true answer, and a different one.
+ */
+function claudeCodeInstalled() {
+  try { return !!vscode.extensions.getExtension(TARGET_ID); } catch (e) { return false; }
 }
 
 /** Cheap enough to call on every activation. Says nothing about whether it still runs. */
@@ -195,4 +209,4 @@ function isPatched() {
   return state().present;
 }
 
-module.exports = { findClaudeCode, apply, remove, isPatched, state, stripPatch, TARGET_ID, BEGIN };
+module.exports = { findClaudeCode, claudeCodeInstalled, apply, remove, isPatched, state, stripPatch, TARGET_ID, BEGIN };

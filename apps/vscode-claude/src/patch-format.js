@@ -72,4 +72,34 @@ function stampExpiry(payload, now) {
   return payload.replace(STAMP, "var EXPIRES_AT = " + (now + WINDOW_MS) + ";");
 }
 
-module.exports = { BEGIN, MARK, WINDOW_MS, REFRESH_BELOW_MS, STAMP_EVERY_MS, stripPatch, readExpiry, stampExpiry };
+/**
+ * Write somebody else's file so that nobody ever reads half of it.
+ *
+ * Claude Code's bundle is about five megabytes, and it is read by every panel that
+ * loads. Written in place, there is a moment when it is truncated and only partly
+ * rewritten - and a panel loading in that moment (a second window opening, a reload)
+ * gets a broken bundle: not our fix missing, Claude Code itself failing to start. Rare,
+ * and the most expensive thing this extension could ever do.
+ *
+ * So the new content goes into a file beside it, and is then renamed over the old one,
+ * which the file system does in one step: a reader sees the old file or the new one,
+ * never a part of either. If the rename is refused - Windows does that while another
+ * process holds the file open - it falls back to writing in place, which is exactly
+ * what happened before, so the fallback is never worse than the past. The file beside
+ * it is always cleaned up.
+ */
+const TMP_SUFFIX = ".smartrtl-tmp";
+function writeWhole(fs, file, content) {
+  const tmp = file + TMP_SUFFIX;
+  try {
+    fs.writeFileSync(tmp, content, "utf8");
+    fs.renameSync(tmp, file);
+  } catch (e) {
+    fs.writeFileSync(file, content, "utf8");
+  } finally {
+    try { if (fs.existsSync(tmp)) fs.unlinkSync(tmp); } catch (e) {}
+  }
+}
+
+module.exports = { BEGIN, MARK, WINDOW_MS, REFRESH_BELOW_MS, STAMP_EVERY_MS, TMP_SUFFIX,
+                   stripPatch, readExpiry, stampExpiry, writeWhole };

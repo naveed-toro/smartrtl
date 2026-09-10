@@ -94,25 +94,23 @@ test("the edge the reader's eye returns to is moved exactly once", { skip }, asy
   assert.equal(fixed, 1, "and the fix may move it once, to reserve the gutter");
 });
 
-test("a user message on the real stylesheet is split line by line", { skip }, async () => {
-  const c = real.cls;
+test("a sent message on the real stylesheet takes one direction, and nothing is built", { skip }, async () => {
+  // Shaped the way the bundle renders it, hidden heading and all - the heading is what
+  // a hand-drawn model left out for weeks, and with it left out the model could not
+  // show that the heading decided every message first.
   const text = ["npm install کے بعد پروجیکٹ چلائیں", "Run the build and check the output", "یہ آخری سطر ہے"].join("\n");
-  const message = `
-<div class="${c.message} ${c.stickyHeader} ${c.timelineMessage}"><div class="${c.userMessageContainer}"><div class="${c.userMessage}">
-  <div class="${c.expandable}"><div class="${c.contentWrapper}">
-    <div class="${c.content}"><span dir="auto">${text}</span></div>
-  </div></div>
-</div></div></div>`;
-
-  const { page, close } = await real.open(real.conversation(message));
+  const html = real.conversation(real.userMessage(text, { expanded: true }));
+  const off = await real.open(html, { fix: false });
+  const on = await real.open(html);
   try {
-    const lines = await page.$$eval(".smart-rtl-line", (els) =>
-      els.map((el) => [getComputedStyle(el).direction, (el.textContent || "").slice(0, 12)]));
-    assert.equal(lines.length, 3, "three lines, three elements");
-    assert.equal(lines[0][0], "rtl", lines[0][1]);
-    assert.equal(lines[1][0], "ltr", lines[1][1]);
-    assert.equal(lines[2][0], "rtl", lines[2][1]);
-  } finally { await close(); }
+    const look = (p) => p.$eval("." + real.cls.content, (el) => ({
+      dir: getComputedStyle(el).direction, html: el.innerHTML
+    }));
+    const a = await look(off.page), b = await look(on.page);
+    assert.equal(a.dir, "ltr", "untouched, the message is one left-to-right run - the bug");
+    assert.equal(b.dir, "rtl", "with the fix it reads right to left");
+    assert.equal(b.html, a.html, "and not one element of ours is inside it");
+  } finally { await off.close(); await on.close(); }
 });
 
 /* ------------------------------------------------------------------------- *
@@ -259,7 +257,7 @@ test("the dot goes with its message, in the frame the message turns", { skip }, 
 
 const LONG = Array.from({ length: 30 }, (_, i) => `سوال کی سطر نمبر ${i + 1} یہاں لکھی ہے`).join("\n");
 
-test("a sent message is decided line by line, by the formula", { skip }, async () => {
+test("a sent message is decided as one, by the formula, and copies back exactly", { skip }, async () => {
   const lines = [
     "npm install کے بعد پروجیکٹ چلائیں",
     "Run the build and check the output",
@@ -270,18 +268,19 @@ test("a sent message is decided line by line, by the formula", { skip }, async (
   const { page, close } = await real.open(
     real.conversation(real.userMessage(lines.join("\n"), { expanded: true })));
   try {
-    const seen = await page.$$eval(".smart-rtl-line",
-      (els) => els.map((e) => getComputedStyle(e).direction));
-    assert.deepEqual(seen, ["rtl", "ltr", "rtl", "ltr", "rtl"],
-      "every line with Urdu in it reads right to left; the two without are left alone");
+    const dir = await page.$eval("." + real.cls.content, (el) => getComputedStyle(el).direction);
+    assert.equal(dir, "rtl", "a message with Urdu in it reads right to left, the whole of it");
 
-    const copied = await page.evaluate(() => {
-      const body = document.querySelector('[class*="content_"]');
-      const r = document.createRange(); r.selectNodeContents(body);
+    const copied = await page.evaluate((sel) => {
+      const r = document.createRange(); r.selectNodeContents(document.querySelector(sel));
       const s = getSelection(); s.removeAllRanges(); s.addRange(r);
       return s.toString();
-    });
+    }, "." + real.cls.content);
     assert.equal(copied, lines.join("\n"), "and copying it gives back exactly what was sent");
+
+    const s = await page.evaluate(() => window.__bidiStatus());
+    assert.equal(s.sentMessages, "on - measured working",
+      "and the status reports what was measured, not what was switched on");
   } finally { await close(); }
 });
 

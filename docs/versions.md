@@ -1,4 +1,4 @@
-# The forty-six builds, and what each one actually contained
+# The forty-seven builds, and what each one actually contained
 
 Compiled by opening every `.vsix` and reading what is inside it, not from memory. The
 second table was rebuilt the same way after the fact, which is why some of its rows say
@@ -141,30 +141,35 @@ and six tests cover it - the first of which is simply that it loads.
 Read out of the packaged `.vsix` the same way, months later. `·` means the build carried
 it; a blank means it did not.
 
-| | 0.1.0-4 | 0.1.5 | 0.1.6-7 | 0.2.0 | 0.3.0 | 0.3.1 | 0.3.2 | 0.3.3 | 0.3.4 | 0.4.0 | 0.4.1 | 0.4.2 | 0.4.3 | 0.4.4 | 0.4.5 | 0.4.6 | 0.4.7 | 0.4.8 | 0.4.9 | 0.4.10 | 0.4.11 | 0.4.12 | 0.4.13 | 0.4.14 | 0.4.15 | 0.4.16 | 0.4.17 | 0.4.18 | 0.4.19 | 0.4.20 | 0.4.21 | 0.4.22 |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| answers read right-to-left | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| your own messages read right-to-left | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| a sent message decided line by line | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| ... **as a copy, moving nothing of theirs** | | | | | | | | | | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| the composer takes one direction | · | · | · | · | · | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| the composer decided **per line** | | | | | · | | | · | | | | | | | | | | | | | | | | | | | | | | | | |
-| ... by `unicode-bidi: plaintext` | | | | | | · | · | | | | | | | | | | | | | | | | | | | | | | | | | |
-| ... with a third, "mixed" state | | | | | | | · | | | | | | | | | | | | | | | | | | | | | | | | | |
-| a clone of React's mirror | | | | | | | | · | | | | | | | | | | | | | | | | | | | | | | | | |
-| its own undo stack | | | | | · | | | · | | | | | | | | | | | | | | | | | | | | | | | | |
-| the timeline dot | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| an expanded message unpinned | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| the view follows the message | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| **closing gives back the reader's line** | | | | | | | | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| the block expires on its own | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| **a fault stops where it happens** | | | | | | | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| **a fuse box, and `__bidiStatus()`** | | | | | | | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| **stands down if Claude Code fixes it** | | | | | | | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| **crashed the panel** | | | | | **✗** | | | | | | | | | | | | | | | | | | | | | | | | | | | |
-| **typed blank spaces** | | | | | **✗** | | | | | | | | | | | | | | | | | | | | | | | | | | | |
-| **every keystroke one late** | | | | | | | | **✗** | | | | | | | | | | | | | | | | | | | | | | | | |
-| payload, bytes | 28,975 | 30,998 | 31,371 | 35,485 | 59,047 | 51,513 | 54,185 | 71,979 | 51,754 | 66,147 | 69,798 | 70,554 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 |
+| | 0.1.0-4 | 0.1.5 | 0.1.6-7 | 0.2.0 | 0.3.0 | 0.3.1 | 0.3.2 | 0.3.3 | 0.3.4 | 0.4.0 | 0.4.1 | 0.4.2 | 0.4.3 | 0.4.4 | 0.4.5 | 0.4.6 | 0.4.7 | 0.4.8 | 0.4.9 | 0.4.10 | 0.4.11 | 0.4.12 | 0.4.13 | 0.4.14 | 0.4.15 | 0.4.16 | 0.4.17 | 0.4.18 | 0.4.19 | 0.4.20 | 0.4.21 | 0.4.22 | 0.5.0 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| answers read right-to-left | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| your own messages read right-to-left | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| a sent message decided line by line | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | |
+| ... **as a copy, moving nothing of theirs** | | | | | | | | | | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | |
+| the composer takes one direction | · | · | · | · | · | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| the composer decided **per line** | | | | | · | | | · | | | | | | | | | | | | | | | | | | | | | | | | | |
+| ... by `unicode-bidi: plaintext` | | | | | | · | · | | | | | | | | | | | | | | | | | | | | | | | | | | |
+| ... with a third, "mixed" state | | | | | | | · | | | | | | | | | | | | | | | | | | | | | | | | | | |
+| a clone of React's mirror | | | | | | | | · | | | | | | | | | | | | | | | | | | | | | | | | | |
+| its own undo stack | | | | | · | | | · | | | | | | | | | | | | | | | | | | | | | | | | | |
+| **a sent message decided as one, found twice over** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · |
+| **the composer sets `unicode-bidi` too** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · |
+| **the composer found by what it is, not only its name** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · |
+| **text put in the box from code turns it too** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · |
+| **the status reports what was measured** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · |
+| the timeline dot | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| an expanded message unpinned | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| the view follows the message | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| **closing gives back the reader's line** | | | | | | | | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| the block expires on its own | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| **a fault stops where it happens** | | | | | | | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| **a fuse box, and `__bidiStatus()`** | | | | | | | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| **stands down if Claude Code fixes it** | | | | | | | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| **crashed the panel** | | | | | **✗** | | | | | | | | | | | | | | | | | | | | | | | | | | | | |
+| **typed blank spaces** | | | | | **✗** | | | | | | | | | | | | | | | | | | | | | | | | | | | | |
+| **every keystroke one late** | | | | | | | | **✗** | | | | | | | | | | | | | | | | | | | | | | | | | |
+| payload, bytes | 28,975 | 30,998 | 31,371 | 35,485 | 59,047 | 51,513 | 54,185 | 71,979 | 51,754 | 66,147 | 69,798 | 70,554 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 80,092 |
 
 The byte count is worth reading as a line of its own. It climbs while the composer is
 being fought over — 35K to 59K to 72K — and comes back down to 51K when that was given
@@ -208,7 +213,10 @@ it: paste a command, press shift+enter, write Urdu under it, and the command was
 round with the Urdu. Its lines are now split into elements of their own, and each decides
 by the formula.
 
-- [x] an English line inside an Urdu message is left alone **(live)**
+- [ ] an English line inside an Urdu message is left alone **(live - but only by luck, and
+      unticked in 0.5.0. Claude Code hides a heading above every sent message carrying its
+      first 120 characters; with an Urdu word in them, that heading decided the whole
+      message before the split was ever asked. See 0.5.0, and decisions.md section 34)**
 - [x] copying the message back gives the original text, newlines included **(lab)**
 - [x] a mention chip is moved, not rebuilt, so it keeps what the host attached **(lab)**
 
@@ -753,6 +761,72 @@ not answer to.
 - [ ] a week of ordinary use **(unseen - this is the one to try)**
 
 Payload untouched for the twentieth build running: 75,495.
+
+### 0.5.0 — the limits accepted, and built for the next update
+
+Claude Code 2.1.267 broke the box you type in without a single error: it added
+`unicode-bidi: plaintext` to both of its layers, and a rule that set only `direction`
+stopped doing anything. Looking into that found something older. The line-by-line split
+of a sent message had never run in the real panel at all: Claude Code hides an `h3` above
+every sent message carrying the same text, the heading is a block, it comes first, and it
+decided the whole message before the split was asked. It was there in 2.1.247, before this
+project began.
+
+So this build stops fighting both limits, and is built instead for the next update:
+
+- [x] the composer sets `direction`, `unicode-bidi` and `text-align`, all `!important` -
+      measured right on 2.1.247, 2.1.263, 2.1.266 and 2.1.267 **(lab)**
+- [x] both composer layers are found by name AND by what they are - `contenteditable`
+      with `role=textbox`, and `aria-hidden` - so a restyle that renames classes leaves
+      it working **(lab)**
+- [x] nothing turns unless both layers are there: an invisible box with no layer over it is
+      left alone, rather than moving the caret away from the text **(lab)**
+- [x] text Claude Code puts in the box from code - clearing it after a send, history,
+      completions - turns it too. Before, an emptied box stayed right to left **(lab)**
+- [x] a sent message takes one direction from what it says, found by class name and by the
+      `dir="auto"` its text is handed to - each tested with the other taken away **(lab)**
+- [x] the copy-beside-the-message machinery is gone: nothing in this extension builds
+      elements in Claude Code's page any more **(code)**
+- [x] `__bidiStatus()` reports what was measured - `on - measured working` - instead of
+      what a lamp was told when it was switched on **(lab)**
+- [x] the test pages carry Claude Code's hidden heading and its new `plaintext`, the two
+      things a hand-drawn model had left out **(lab)**
+- [x] Claude Code fixing its answers stands down the answers' part and nothing else. It
+      used to stop everything - so fixing answers would have switched off the box you type
+      in and sent messages too, and if it was fixed before this ever started, none of it
+      would have started at all **(lab)**
+- [x] a page that refuses a `<style>` added from script still gets the rules: the
+      stylesheet falls back to `adoptedStyleSheets`, which a `style-src` without
+      `'unsafe-inline'` does not block - measured - and the status says which way was
+      used **(lab)**
+- [x] **found by installing it:** installed over a working 0.4.22, it said "fixed" and
+      offered no reload - while the panel already open went on running 0.4.22 from
+      memory, which is broken on 2.1.267. The first real try looked exactly like 0.5.0
+      failing. A new block written into the file now always asks for a reload
+      **(live, then lab)**
+- [x] a test boots Claude Code's own webview bundle - its React, its CSS, its CSP - with
+      this payload appended, and types into the composer React renders: the box turns,
+      and goes back when Claude Code empties it itself after a send **(lab, on the real app)**
+- [x] typing is timed in that same app with the fix and without it, taken in turns: about a
+      fifth of a millisecond a keystroke - a frame is sixteen **(lab, on the real app)**
+- [x] the box you type in is found a third way, by the label a screen reader announces -
+      "Message input" in every build from 2.1.247 to 2.1.267 **(lab)**
+- [x] once the box is found, a change elsewhere on the page costs one native `contains()`,
+      so a streaming answer never pays for the box being watched **(lab)**
+- [x] Claude Code's bundle is written beside itself and renamed over, never half-written
+      where a loading panel could read it - so this can never be the thing that breaks
+      Claude Code **(lab)**
+- [x] if an update moves the file Claude Code's panel loads from, it says so - "Claude Code
+      has changed" - instead of telling somebody looking at it that it is not installed **(lab)**
+- [x] a daily watch, on GitHub and nowhere near anybody's machine, downloads each new Claude
+      Code and puts this build to it: the running app, its stylesheet, and every assumption
+      in one-line form. Run locally the way GitHub runs it, against 2.1.267: 27 of 27 **(lab)**
+- [ ] typed into and read in the real panel **(unseen - this is the one to try)**
+
+Given up on purpose: a message that mixes two languages takes one direction as a whole,
+while it is typed and after it is sent.
+
+Payload: 80,092 bytes - 4,597 more than 0.4.22, for the per-part stand-down, a second road for the stylesheet and a third way to the box you type in, with the per-line machinery taken out.
 
 ---
 

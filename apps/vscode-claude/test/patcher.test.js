@@ -79,6 +79,20 @@ test("an older build's patch and its 5MB copy are both taken over cleanly", () =
   assert.equal(read(target), ORIGINAL, "and the original still comes back exactly");
 });
 
+test("the bundle is replaced whole, and nothing is left beside it", () => {
+  // Written in place, a five-megabyte file is half-written for a moment, and a panel that
+  // loads in that moment gets a broken Claude Code. So it is written beside itself and
+  // renamed over the original, which a reader sees as one step - and the file beside it
+  // must never be left behind in somebody else's folder.
+  const target = fakeClaudeCode();
+  patcher.apply(EXT);
+  patcher.remove();
+  patcher.apply(EXT);
+  const litter = fs.readdirSync(path.dirname(target)).filter((f) => f !== "index.js");
+  assert.deepEqual(litter, [], "something of ours was left in Claude Code's folder");
+  assert.equal((read(target).match(/patch BEGIN/g) || []).length, 1);
+});
+
 test("with no Claude Code installed it reports that, rather than throwing", () => {
   vscode.__setClaudeCode(null);
   assert.equal(patcher.apply(EXT).state, "no-target");

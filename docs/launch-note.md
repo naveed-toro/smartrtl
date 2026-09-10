@@ -52,8 +52,8 @@ without complaint: **the same experience, in either direction.**
 - **answers** — one decision per message, taken from the first finished block that
   carries an RTL word, never revised. Applied through a single CSS rule, so paragraphs
   written after it are born correct
-- **your own sent messages** — decided line by line, so an English line inside an Urdu
-  message is not dragged round with it
+- **your own sent messages** — one direction for the whole message, from what it says:
+  any Urdu in it and it reads right to left
 - **the box you type in** — one direction, live, from any RTL letter in it
 - **the timeline dot** — moves to the side its own message reads from
 
@@ -63,18 +63,21 @@ stylesheet.
 
 ### What it does not do, said before anybody finds out
 
-**A draft that mixes two languages goes right to left as a whole while it is being
-typed.** An English line inside an Urdu draft is carried along with it until the message
-is sent, at which point it reads correctly.
+**A message that mixes two languages takes one direction as a whole** — while it is being
+typed, and after it is sent. An English line inside an Urdu message is carried along with
+it.
 
-This is a limit, not an oversight, and it was paid for three times: per-line direction in
-the composer needs an element per line, the only place to put one is inside a layer React
-owns, and every way of doing that either crashed the panel, re-decided lines that were
-already on the screen, or put every keystroke on the screen one keystroke late. Measured
-at eighty lines it cost 18ms per character — more than a whole frame.
+This is a limit, not an oversight, and it was paid for more than once: per-line direction
+in the composer needs an element per line, the only place to put one is inside a layer
+React owns, and every way of doing that either crashed the panel, re-decided lines that
+were already on the screen, or put every keystroke on the screen one keystroke late.
+Measured at eighty lines it cost 18ms per character — more than a whole frame. A sent
+message was decided line by line for a while, from a copy built beside Claude Code's own;
+in the real panel that copy was never once made, and it was the only part of this that
+built anything in somebody else's page. It is gone.
 
-**Typing is what a box is for.** So the composer runs no code of ours at all while
-somebody types, and the limit above is what that costs.
+**Typing is what a box is for.** While somebody types, the one thing this does is set or
+clear a single attribute — and the limit above is what that costs.
 
 ---
 
@@ -182,11 +185,15 @@ worth stating:
   correctly by itself, or stops pinning turn headers, the part of this that existed for
   that goes quiet — measured by laying out the exact sentence the fault is about and
   looking at where the browser put it, not by reading their stylesheet
-- **it never runs while you type.** Not "it is fast": it does not run
+- **while you type, it sets one attribute and nothing else.** Nothing of ours goes into
+  the box, and nothing in it is rebuilt
+- **it reports what it measured.** A part that set a direction and found the page did not
+  take it says so, instead of saying "on"
 
 The reasoning, and every formula and fix that was tried and rejected first, is in
-[decisions.md](decisions.md) — thirty-three sections, including the wrong turns, the two
-crashes, and the measurements that came out the other way from what was expected.
+[decisions.md](decisions.md) — thirty-four sections, including the wrong turns, the two
+crashes, the measurements that came out the other way from what was expected, and the
+limits that were accepted in the end.
 
 ---
 

@@ -143,9 +143,8 @@ test("a user message and an answer in the same turn do not interfere", async () 
     userMessage("npm install کے بعد کیا کرنا ہے؟\nAnd what about the build step?") +
     message("<p>پہلے dependencies انسٹال ہوں گی۔</p><p>Then run the build.</p>"));
   try {
-    const lines = await page.$$eval(".smart-rtl-line", (els) =>
-      els.map((el) => getComputedStyle(el).direction));
-    assert.deepEqual(lines, ["rtl", "ltr"], "the question is split line by line");
+    const question = await page.$eval(".content_x", (el) => getComputedStyle(el).direction);
+    assert.equal(question, "rtl", "the question takes one direction, from the Urdu in it");
 
     const answer = await directions(page, ".root p");
     assert.deepEqual(answer.map(([d]) => d), ["rtl", "ltr"],
@@ -175,7 +174,7 @@ test("the escape hatch puts the page back exactly as it found it", async () => {
       text: el.textContent,
       height: Math.round(el.getBoundingClientRect().height),
       ours: document.querySelectorAll(
-        "[data-bidi],[data-bidi-row],[data-bidi-line],[data-bidi-lines],.smart-rtl-line," +
+        "[data-bidi],[data-bidi-row],[data-bidi-run],[data-bidi-input]," +
         "#smart-rtl-direction,#smart-rtl-timeline").length
     };
   };

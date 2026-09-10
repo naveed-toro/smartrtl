@@ -129,7 +129,11 @@ test("what the documents promise the payload contains, it contains", () => {
     // and the three the documents say are NOT there any more, each of which shipped once
     "smart-rtl-input-line": false,
     "smart-rtl-mirror": false,
-    "undoStack": false
+    "undoStack": false,
+    // and the sent-message copy, withdrawn in 0.5.0: it was the last thing here that
+    // built elements in somebody else's page, and in the real panel it never ran
+    "smart-rtl-copy": false,
+    "decidePerLine": false
   };
   for (const [marker, shouldBe] of Object.entries(promised)) {
     assert.equal(payload.includes(marker), shouldBe,
@@ -140,7 +144,7 @@ test("what the documents promise the payload contains, it contains", () => {
 test("the adapter keys the roadmap lists are the ones the engine reads", () => {
   const roadmap = read("docs/roadmap.md");
   const engine = read("packages/dom/src/engine.js");
-  for (const key of ["blocks", "boxSelector", "boundary", "perLine", "composer",
+  for (const key of ["blocks", "boxSelector", "boundary", "ownDirAuto", "composer",
                      "extraCss", "onDecision", "onCleanup", "quietMs", "maxBox"]) {
     assert.ok(roadmap.includes("`" + key + "`"), "the roadmap does not list " + key);
     assert.ok(new RegExp("(cfg|config)\\." + key + "\\b").test(engine),

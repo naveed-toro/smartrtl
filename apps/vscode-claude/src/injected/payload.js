@@ -41,6 +41,10 @@
  *     and the box now gets ONE direction and nothing of ours inside it.
  *   - a user message is wrapped in an expandable container that collapses at 60px and,
  *     once expanded, carries no height cap at all.
+ *   - above every user message sits a visually hidden h3 carrying the same text, for
+ *     screen readers. It is a block, so it is decided like one - and it comes first.
+ *     It decides the message the way the message itself would, so it is left alone;
+ *     what it put an end to was deciding a sent message line by line.
  *
  * Never touches code blocks, and never changes any text.
  *
@@ -72,9 +76,6 @@
     var MIRROR_TIMELINE = true;   // put a message's dot on the side it reads from
     var MIRROR_INPUT = true;      // flip the box you type in
     var UNPIN_EXPANDED = true;    // let an expanded message scroll like ordinary content
-    var SPLIT_SENT_MESSAGES = true;  // decide a SENT message line by line. The one thing
-                                     // here that restructures somebody else's DOM - one
-                                     // line to switch off, and it goes off alone.
 
     /* ------------------------------------------------------------------
        OPTIONAL: put each message's timeline dot on the side that message reads from.
@@ -372,7 +373,17 @@
     window.__bidiStatus = function () {
       var out = {};
       for (var k in LAMPS) if (Object.prototype.hasOwnProperty.call(LAMPS, k)) out[k] = LAMPS[k];
-      try { if (running && running.status) out.engine = running.status(); } catch (e) {}
+      try {
+        if (running && running.status) {
+          out.engine = running.status();
+          // What the engine MEASURED outranks what a lamp was told when it was switched
+          // on. A lamp is asked before the thing it lights exists; the engine looks at
+          // the page afterwards and sees whether the direction was actually taken. In
+          // 2.1.267 the composer's lamp said "on" over a box that no longer turned.
+          if (out.composer && out.composer.indexOf("on") === 0 && out.engine.composer) out.composer = out.engine.composer;
+          if (out.sentMessages && out.sentMessages.indexOf("on") === 0 && out.engine.dirAuto) out.sentMessages = out.engine.dirAuto;
+        }
+      } catch (e) {}
       return out;
     };
 
@@ -467,8 +478,8 @@
      * At start-up the answer is almost always "no markdown root yet", so the lamp is
      * switched on and the question left open. The first time a message appears it is
      * settled once and for all - and if the answer is that somebody has fixed this,
-     * everything of ours comes straight back out through the same escape hatch a
-     * person would use.
+     * the answers' part comes straight back out, and only that part. The box you type
+     * in and sent messages are separate questions, and stay on.
      */
     function settleWhetherNeeded() {
       var done = false, asking = false, attempts = 0;
@@ -496,7 +507,15 @@
         clearTimeout(giveUp);
         if (still) return;                              // the fault is here; carry on
         LAMPS.direction = "not needed - Claude Code does this itself now";
-        try { if (running && running.stop) running.stop(); } catch (e) {}
+        // Only the part that exists for THIS fault stands down. It used to be
+        // running.stop(), which took the box you type in and sent messages with it - so
+        // Claude Code fixing its answers would have switched off two things it had not
+        // touched. One lamp at a time holds in this direction too.
+        try {
+          if (running && running.standDownBlocks) {
+            running.standDownBlocks("Claude Code reads a mixed line correctly by itself now");
+          }
+        } catch (e) {}
       }
 
       var watcher = new MutationObserver(ask);
@@ -524,15 +543,28 @@
     /* ------------------------------------------------------------------
        Hand the surface to the engine.
 
+       Two of the things handed over are described twice, on purpose: by the hashed
+       class names this build of Claude Code happens to use, and by what the elements
+       ARE. The names come from a stylesheet and change whenever somebody restyles.
+       What an element is for does not: the box you type into is contenteditable with
+       role=textbox, the layer drawn over it is aria-hidden, and a typed message is
+       handed to dir="auto". Either description is enough on its own, so a rename
+       leaves the other one standing.
+
+       Checked across five builds, 2.1.247 to 2.1.267, before it was relied on: the
+       names never changed, the roles never changed, and dir="auto" occurs exactly
+       once in the whole bundle - on the span a typed message's text goes into.
+
        The composer is two stacked layers: an invisible contenteditable you type
-       into and a mirror that shows the text. Both are named here, and the engine
-       flips them together from the container they share, so the caret can never end
-       up on one side while the glyph sits on the other. Flipping is all that is done
-       to them - no element of ours goes into either.
+       into and a mirror that shows the text. The engine turns both from the element
+       they share, so the caret can never end up on one side while the glyph sits on
+       the other, and turns nothing at all if it cannot find both. Turning is all
+       that is done to them - no element of ours goes into either.
 
        A user message's text is not a block - it is a bare span - so the body div
-       that holds it is named as one. Without this the engine cannot see a user
-       message at all, however much RTL is in it.
+       that holds it is named as one. ownDirAuto reaches the same text without any
+       name: dir="auto" is the browser's first-strong-character guess, which is the
+       very rule this project replaces, and the engine decides such a run itself.
 
        boxSelector names the smallest thing that counts as "one message". An answer
        has a markdown root; a user message does not, so its content wrapper is named
@@ -553,28 +585,39 @@
 
     var composer = MIRROR_INPUT ? lamp("composer", function () {
       // The composer is rendered long after this runs, so "not there yet" is not
-      // "not there". Its listeners sit on the document, which is why that is fine.
+      // "not there". What it actually did is measured by the engine the first time it
+      // turns the box, and __bidiStatus() reports that instead of this.
       return true;
     }) : false;
 
-    var split = SPLIT_SENT_MESSAGES ? lamp("splitSentMessages", function () {
-      // The ONE thing here that restructures something somebody else rendered, and
-      // named on its own so it can be switched off on its own - and so that anybody
-      // reading this list knows which lamp to suspect first.
+    var sent = lamp("sentMessages", function () {
+      // One direction for the whole of a sent message, from what it says. Until 0.5.0
+      // it was decided line by line, from a copy of the message built beside Claude
+      // Code's own - and in the real panel that copy was never once made: a hidden
+      // heading carrying the same text decided the message first. decisions.md, 34.
       return true;
-    }) : lamp("splitSentMessages", function () { return "off - switched off in this build"; });
+    });
 
-    if (needed) {
+    // The engine starts whether or not the answers need us. It used to start only when
+    // they did - so a Claude Code that had fixed its answers would have started with the
+    // box you type in and sent messages switched off as well, parts that were never
+    // asked about. Answers that do not need us get `blocks: false`, and nothing else.
+    {
       running = SmartRTLDom.start(SmartRTL, {
-        blocks: SmartRTLDom.DEFAULT_BLOCKS + ',' + EXP_BOX + ' ' + BODY,
+        blocks: needed ? SmartRTLDom.DEFAULT_BLOCKS + ',' + EXP_BOX + ' ' + BODY : false,
         boxSelector: '[class*="root"],' + WRAP,
+        ownDirAuto: !!sent,
         composer: composer ? {
-          container: IN_BOX, layers: [IN_TXT, IN_MIR], probe: IN_TXT
-          // No per-line here, and that is a decision rather than a gap. A line of a
-          // draft is a newline character inside one text node, so an element per line
-          // has to be made - and the only place to put one is inside the mirror,
-          // which is React's. Both ways of doing that were built, shipped and typed
-          // into:
+          container: IN_BOX,
+          // by name, by role, and by the label a screen reader announces - which has read
+          // "Message input" in every build from 2.1.247 to 2.1.267
+          input: [IN_TXT, '[contenteditable][role="textbox"]', '[aria-label="Message input"]'],
+          mirror: [IN_MIR, '[aria-hidden="true"]']
+          // One direction for the whole box, and that is a decision rather than a gap.
+          // A line of a draft is a newline character inside one text node, so an
+          // element per line has to be made - and the only place to put one is inside
+          // the mirror, which is React's. Both ways of doing that were built, shipped
+          // and typed into:
           //
           //   0.3.0  made the elements in React's mirror. It threw React's own nodes
           //          away, the mirror stopped updating - the box typed blank spaces -
@@ -585,14 +628,9 @@
           //
           // Typing is what this box is for. So the composer takes one direction for
           // the whole of it, live, from any RTL letter - and a draft that mixes
-          // languages goes right to left as a whole. Per line is kept for the message
-          // once it is SENT, where the lines are real elements and nobody is typing.
+          // languages goes right to left as a whole. A sent message does the same.
         } : null,
         boundary: '[class*="message_"]',
-        // A user message is one element with newlines in it, so one decision would
-        // govern every line of it. Split it: somebody writing Urdu and English a line
-        // at a time is the whole reason this exists.
-        perLine: split ? EXP_BOX + ' ' + BODY : null,
         extraCss: unpin ? UNPIN_CSS : "",
         onDecision: function (block) {
           lamp("timelineDot", function () {
@@ -606,7 +644,8 @@
       if (!running) {
         LAMPS.direction = "off - something is already running";
       } else {
-        settleWhetherNeeded();
+        // the question only means anything while the answers' part is on
+        if (needed) settleWhetherNeeded();
         // The escape hatch should be honest about itself too: after it has been used,
         // the status must not still be claiming that everything is on.
         var release = window.__bidiFixOff;

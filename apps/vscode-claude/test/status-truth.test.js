@@ -119,6 +119,21 @@ test("the winding cannot be slower than the running out", () => {
     "and a missed wind must not be able to reach the expiry");
 });
 
+test("Claude Code there but changed is told as that - not 'not installed', not 'off'", () => {
+  // An update can move the file Claude Code's panel loads from. Until 0.5.0 that read as
+  // "Claude Code is not installed", to somebody looking straight at it.
+  const moved = whyItSays({ installed: true, recognized: false, present: false, live: false });
+  const noClaude = whyItSays({ installed: false, present: false, live: false });
+  const off = whyItSays({ installed: true, recognized: true, present: false, live: false });
+  assert.notEqual(moved, noClaude);
+  assert.notEqual(moved, off);
+  assert.doesNotMatch(moved, /not installed/);
+  assert.doesNotMatch(moved, /Turn/, "there is no switch that would help, so none is offered");
+  for (const line of moved.split(String.fromCharCode(10)).filter((l) => l.trim())) {
+    assert.ok(line.length <= 40 && !/[.!,]/.test(line), "a label, not a sentence: " + line);
+  }
+});
+
 test("the tooltip is labels, one idea to a line", () => {
   // A tooltip is read by somebody whose hand is already on the mouse. Anything that has
   // to be parsed as a sentence has missed its moment - so this holds every line to a

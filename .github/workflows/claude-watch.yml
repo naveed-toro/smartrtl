@@ -1,0 +1,56 @@
+# The daily watch.
+#
+# Claude Code ships several times a week, and every release can change something this
+# fix stands on. Nothing of this runs on anybody's machine: once a day, GitHub downloads
+# the newest Claude Code from the Marketplace and puts this build to it - its own
+# stylesheet, its own running bundle, and the assumptions this fix makes about it. If
+# anything fails, GitHub emails the repository's owner the same day, naming the release.
+
+name: Claude Code watch
+
+on:
+  schedule:
+    - cron: "17 5 * * *"      # every day
+  workflow_dispatch:          # and whenever somebody presses the button
+  push:
+    branches: [main]
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/vscode-claude
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install the test browser, and a font that has Urdu in it
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+          sudo apt-get install -y fonts-noto-core
+
+      # The Marketplace has no "latest" download address for a platform-specific extension
+      # (it answers 404), so the newest linux-x64 version is asked for first, by name.
+      - name: Download the newest Claude Code from the Marketplace
+        run: |
+          VERSION=$(curl -sS --compressed -X POST \
+            "https://marketplace.visualstudio.com/_apis/public/gallery/extensionquery" \
+            -H "Content-Type: application/json" -H "Accept: application/json;api-version=3.0-preview.1" \
+            -d '{"filters":[{"criteria":[{"filterType":7,"value":"anthropic.claude-code"}],"pageSize":1}],"flags":1}' \
+            | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{const v=JSON.parse(d).results[0].extensions[0].versions.find(x=>x.targetPlatform==="linux-x64");if(!v)process.exit(1);console.log(v.version)})')
+          echo "Claude Code $VERSION" >> "$GITHUB_STEP_SUMMARY"
+          curl -sSL --compressed --fail -o /tmp/claude.vsix \
+            "https://marketplace.visualstudio.com/_apis/public/gallery/publishers/anthropic/vsextensions/claude-code/$VERSION/vspackage?targetPlatform=linux-x64"
+          mkdir -p /tmp/claude && unzip -q /tmp/claude.vsix -d /tmp/claude
+
+      - run: npm run build
+
+      - name: Put this build to the newest Claude Code
+        env:
+          SMARTRTL_CLAUDE_DIR: /tmp/claude/extension
+        run: node --test test/claude-shape.test.js test/real-bundle.test.js test/real-webview.test.js

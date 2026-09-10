@@ -22,9 +22,8 @@
  *          exist yet when the payload runs.
  *
  * A box that types a letter behind is worse than a box that reads the wrong way
- * round. The per-line rule is kept where it costs nothing and cannot be felt - the
- * message once it is SENT, in perline.test.js, where the lines are real elements in
- * a page nobody is typing into.
+ * round. A message once it is SENT takes one direction the same way - see
+ * sent-message.test.js, and decisions.md section 34 for why it is no longer per line.
  *
  * What that leaves, said plainly: a draft mixing Urdu and English goes right to left
  * as a whole. That is the platform's limit, accepted rather than fought.
@@ -274,6 +273,108 @@ test("the escape hatch leaves the box exactly as it found it", async () => {
     assert.equal(after.text, "Hello ہیلو");
     assert.equal(after.attr, false);
     assert.equal(after.direction, "ltr");
+  } finally { await close(); }
+});
+
+/* ---------------------------------------------------------------------------- *
+ * Text that arrives without anybody typing it.
+ *
+ * Read out of Claude Code's own bundle: it empties the box itself after a message is
+ * sent, and puts text in from code for history, completions and forks -
+ * `b1.current.textContent = ...` - none of which fires an input event. Listening only
+ * to typing left the box right to left and empty after every Urdu message, and left
+ * recalled Urdu reading left to right until the next key.
+ * ---------------------------------------------------------------------------- */
+
+const setByCode = (page, text) => page.evaluate((t) => {
+  document.querySelector(".messageInput_x").textContent = t;     // what the host does
+  document.querySelector(".mentionMirror_x").textContent = t;    // and what React redraws
+}, text);
+
+test("text the host puts in from code turns the box, with nobody typing", async () => {
+  const { page, close } = await open(BOX);
+  try {
+    await type(page, ["Hello"]);
+    await setByCode(page, "npm install کے بعد چلائیں");
+    await page.waitForTimeout(60);
+    assert.equal(await page.$eval(".messageInputContainer_x",
+      (el) => el.getAttribute("data-bidi-input")), "rtl");
+    assert.deepEqual(await lineReads(page, ".messageInput_x"), ["rtl"]);
+  } finally { await close(); }
+});
+
+test("and the box the host empties after an Urdu message is sent goes back", async () => {
+  const { page, close } = await open(BOX);
+  try {
+    await type(page, ["اسلام علیکم"]);
+    await setByCode(page, "");
+    await page.waitForTimeout(60);
+    assert.equal(await page.$eval(".messageInputContainer_x",
+      (el) => el.hasAttribute("data-bidi-input")), false,
+      "an empty box must not stay turned for the next thing somebody types");
+  } finally { await close(); }
+});
+
+/* ---------------------------------------------------------------------------- *
+ * The box found by what it IS, not only by what it is called.
+ *
+ * Class names come from a stylesheet and change whenever somebody restyles. What the
+ * two layers are for does not: the box you type into is contenteditable with
+ * role=textbox, and the layer drawn over it is aria-hidden. Either description finds
+ * them. Neither may turn one layer without the other.
+ * ---------------------------------------------------------------------------- */
+
+test("with every class renamed, the box is still found by what it is", async () => {
+  const RENAMED = [
+    '<div class="composerBox_y">',
+    '  <div class="overlay_y" aria-hidden="true"></div>',
+    '  <div class="field_y" contenteditable="plaintext-only" role="textbox"></div>',
+    '</div>',
+    '<script>',
+    '  document.querySelector(".field_y").addEventListener("input", function () {',
+    '    document.querySelector(".overlay_y").textContent = document.querySelector(".field_y").textContent;',
+    '  });',
+    '</script>'
+  ].join("\n");
+  const { page, close } = await open(RENAMED);
+  try {
+    await page.click(".field_y");
+    await page.keyboard.type("Hello ہیلو", { delay: 3 });
+    await page.waitForTimeout(100);
+    const seen = await page.evaluate(() => ({
+      marked: document.querySelector(".composerBox_y").getAttribute("data-bidi-input"),
+      field: getComputedStyle(document.querySelector(".field_y")).direction,
+      overlay: getComputedStyle(document.querySelector(".overlay_y")).direction
+    }));
+    assert.equal(seen.marked, "rtl");
+    assert.equal(seen.field, "rtl", "the box holding the caret");
+    assert.equal(seen.overlay, "rtl", "and the layer that is read, together");
+  } finally { await close(); }
+});
+
+test("an invisible box with nothing drawn over it is not turned alone", async () => {
+  // Turning the box you type into while the text people read stays put would put the
+  // caret on one side of the panel and the letters on the other. Worse than nothing.
+  const ALONE = '<div class="messageInputContainer_x">' +
+                '<div class="messageInput_x" contenteditable="plaintext-only"></div></div>';
+  const { page, close } = await open(ALONE);
+  try {
+    await page.click(".messageInput_x");
+    await page.keyboard.type("اسلام علیکم", { delay: 3 });
+    await page.waitForTimeout(100);
+    assert.equal(await page.$eval(".messageInputContainer_x",
+      (el) => el.hasAttribute("data-bidi-input")), false);
+    assert.match((await page.evaluate(() => window.__bidiStatus())).composer, /^off - /,
+      "and the status says why, rather than claiming to be on");
+  } finally { await close(); }
+});
+
+test("the status says the box was measured working, not merely switched on", async () => {
+  const { page, close } = await open(BOX);
+  try {
+    await type(page, ["Hello ہیلو"]);
+    await page.waitForTimeout(100);
+    assert.equal((await page.evaluate(() => window.__bidiStatus())).composer, "on - measured working");
   } finally { await close(); }
 });
 

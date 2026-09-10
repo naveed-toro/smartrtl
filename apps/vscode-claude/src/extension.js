@@ -42,6 +42,13 @@ const MARKER = ".smartrtl-installed";  // lives in our own folder, so it dies wi
    with what is true: "not installed" on its own leaves somebody asking "and?". */
 const NO_CLAUDE_CODE = "Claude Code is not installed, so there is nothing to fix.";
 
+/* And the case that used to be told the same thing: Claude Code IS installed, but the
+   file its panel loads from is not where it has always been. Saying "not installed" to
+   somebody looking at Claude Code sends them looking for a fault on their own machine.
+   What is true is that an update changed something this build does not know about. */
+const UNRECOGNIZED = "Claude Code has changed how its panel loads, so the fix cannot reach it until SmartRTL is updated.";
+const noTarget = () => (patcher.claudeCodeInstalled() ? UNRECOGNIZED : NO_CLAUDE_CODE);
+
 /* How often the winding is CONSIDERED. Cheap on purpose - almost every one of these
    is a comparison of two numbers in memory and nothing more. What it guards is
    fmt.STAMP_EVERY_MS, which is the interval that actually reaches the disk. */
@@ -172,17 +179,21 @@ function refresh() {
   const on = st.live;
   // Three marks, not two. "Off" is a state somebody chose; with no Claude Code in the
   // editor there is nothing to have chosen, and saying "off" there sends a person
-  // looking for a switch they turned. It gets its own mark and no on/off word at all.
-  status.text = !st.installed ? "$(warning) RTL"
-              : on            ? "$(check) RTL on"
-                              : "$(circle-slash) RTL off";
+  // looking for a switch they turned. It gets its own mark and no on/off word at all -
+  // and so does the day an update moves Claude Code's panel somewhere this build does
+  // not know, which is nobody's switch either.
+  const unreachable = !st.installed || st.recognized === false;
+  status.text = unreachable ? "$(warning) RTL"
+              : on          ? "$(check) RTL on"
+                            : "$(circle-slash) RTL off";
   status.accessibilityInformation = {
-    label: !st.installed ? "Claude Code is not installed"
-         : on            ? "Right-to-left fix is on"
-                         : "Right-to-left fix is off"
+    label: !st.installed              ? "Claude Code is not installed"
+         : st.recognized === false    ? "Claude Code has changed, and the fix cannot reach it"
+         : on                         ? "Right-to-left fix is on"
+                                      : "Right-to-left fix is off"
   };
   status.tooltip = new vscode.MarkdownString(whyItSays(st));
-  status.command = on ? "smartrtl.turnOff" : "smartrtl.turnOn";
+  status.command = unreachable ? "smartrtl.status" : on ? "smartrtl.turnOff" : "smartrtl.turnOn";
   status.show();
 }
 
@@ -209,6 +220,9 @@ function whyItSays(st) {
     return "Turn off the right-to-left fix\n\nUninstalling does not turn it off";
   }
   if (!st.installed) return "Claude Code is not installed";
+  // installed, and an update moved its panel somewhere this build does not know: no
+  // switch would help, so none is offered - just what happened, and what fixes it
+  if (st.recognized === false) return "Claude Code has changed\n\nThe fix is waiting for an update";
   return "Turn on the right-to-left fix";
 }
 
@@ -221,7 +235,7 @@ function turnOn(ctx) {
   ctx.globalState.update(OFF_AT_KEY, undefined);
   const result = patcher.apply(ctx.extensionPath);
   refresh();
-  if (result.state === "no-target") { vscode.window.showWarningMessage(NO_CLAUDE_CODE); return; }
+  if (result.state === "no-target") { vscode.window.showWarningMessage(noTarget()); return; }
 
   // One answer, because it is true however much or little apply() had to do: the fix is
   // in place now. There used to be a second one here - "already on" - for the case where
@@ -237,7 +251,7 @@ function turnOff(ctx) {
   ctx.globalState.update(OFF_AT_KEY, version(ctx));
   const result = patcher.remove();
   refresh();
-  if (result.state === "no-target") { vscode.window.showWarningMessage(NO_CLAUDE_CODE); return; }
+  if (result.state === "no-target") { vscode.window.showWarningMessage(noTarget()); return; }
 
   // Same again: true whether there was a block to take out or not, and the "already off"
   // branch that used to be here could not be reached either.
@@ -286,7 +300,18 @@ function syncQuietly(ctx, why) {
   // so without it somebody who has just installed three things is told that something,
   // somewhere, is fixed.
   const v = result.install ? result.install.version : "";
-  if (!before.live) {
+  // Two reasons to ask for a reload, and 0.5.0 was installed with only the first:
+  //
+  //   nothing was running      - the fix was not live a moment ago
+  //   a DIFFERENT fix was      - apply() wrote a new block over an older one. The panel
+  //                              already on screen read the file when it loaded, so it is
+  //                              still running the older block from memory, and will until
+  //                              it reloads.
+  //
+  // The second is every upgrade of this extension. Asking only "was it live" answered yes
+  // - the OLD one was - and the person was told it was fixed, with no reload offered,
+  // while the panel in front of them went on running the build it replaced.
+  if (!before.live || result.state === "applied") {
     offerReload(why === "extensions-changed"
       ? `Claude Code updated to ${v}. Right-to-left text is fixed again. Reload to see it.`
       : `Right-to-left text in Claude Code ${v} is fixed. Reload to see it.`);
@@ -310,7 +335,7 @@ function activate(context) {
     vscode.commands.registerCommand("smartrtl.status", () => {
       const install = patcher.findClaudeCode();
       if (!install) {
-        vscode.window.showWarningMessage(NO_CLAUDE_CODE);
+        vscode.window.showWarningMessage(noTarget());
         return;
       }
       // A report, not a notice. Nobody runs "Show status" by accident, so the answer can

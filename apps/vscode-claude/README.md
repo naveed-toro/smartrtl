@@ -76,30 +76,34 @@ nothing else.
 - **the composer** - the box you type in is two stacked layers, an invisible
   contenteditable over a visible mirror; one flag on the container they share turns both,
   so the caret can never sit on one side while the glyph sits on the other. Nothing of
-  ours goes inside either layer, and no code of ours runs while you type
-- **your own messages, line by line** - a sent message is one element with newlines in
-  it, so one decision would govern all of it: paste a command, press shift+enter, write
-  Urdu underneath, and the command is dragged round with the Urdu. Its lines are split
-  into elements of their own and each is decided by the formula
+  ours goes inside either layer: while you type, the one thing that happens is that flag
+  being set or cleared. Both layers are found by name and by what they are
+  (`contenteditable`, `role=textbox`, `aria-hidden`), so a restyle that renames Claude
+  Code's classes leaves it working
+- **your own messages, as a whole** - a sent message takes one direction from what it
+  says. It is found twice over: by Claude Code's class names, and by the `dir="auto"` its
+  text is handed to - either one is enough. Nothing is built inside it
 - **the timeline dot** - moves to the side its own message reads from
 
 Each of those, and the formulas and fixes that were tried and rejected first, is written
-up in [docs/decisions.md](https://github.com/naveed-toro/smartrtl/blob/main/docs/decisions.md) - thirty-three sections, including
+up in [docs/decisions.md](https://github.com/naveed-toro/smartrtl/blob/main/docs/decisions.md) - thirty-four sections, including
 three attempts at per-line direction in the composer that were built, shipped and then
-withdrawn, and the measurements that ended each one.
+withdrawn, the measurements that ended each one, and the limits that were finally
+accepted so that a Claude Code update is the least likely thing to break it.
 
 ### What it gives up, before anybody finds out
 
-**A draft that mixes two languages goes right to left as a whole while it is being
-typed.** The English line inside it is carried along until the message is sent, at which
-point it reads correctly.
+**A message that mixes two languages takes one direction as a whole** - while it is
+typed, and once it is sent. The English line inside an Urdu message goes with it.
 
-Per-line direction in the composer needs an element per line, and the only place to put
-one is inside a layer React owns. Every way of doing that either crashed the panel, or
+Per-line direction needs an element per line, and the only place to put one is inside a
+layer React owns. Every way of doing that in the composer either crashed the panel, or
 re-decided lines already on the screen, or put every keystroke on the screen one
 keystroke late - measured at 18ms of work per character on an eighty-line draft, more
-than a whole frame. Typing is what a box is for, so nothing of ours runs while anybody
-types.
+than a whole frame. For a sent message it meant building a copy of the message beside
+Claude Code's own, and in the real panel that copy never once ran. Both are given up on
+purpose: what is left sets attributes and nothing else, which is the shape that survives
+an update.
 
 ## The other fix: long messages you cannot close
 
@@ -159,6 +163,15 @@ that broke an earlier version.
 - `real-webview.test.js` - every question above, put to Claude Code's own stylesheet with
   its own class names read out of it at run time, so an update cannot leave a green suite
   measuring a page nobody has
+- `real-bundle.test.js` - no copy at all: Claude Code's own webview bundle, running, with
+  the payload appended the way the patcher appends it, and the composer React renders
+  typed into - including how quickly, with the fix and without it
+- `claude-shape.test.js` - every assumption this fix makes about Claude Code, one line each,
+  so the day an update breaks something starts with which one
+
+Those three, plus `real-webview.test.js`, run every day on GitHub against the newest
+Claude Code on the Marketplace - `.github/workflows/claude-watch.yml` - and nowhere near
+anybody's editor.
 - `docs.test.js` - the documents get the same treatment as the code: every link, every
   file name, every count and every promise made about what the payload contains, put back
   to the thing it is about. A document that has gone stale reads exactly like one that has
@@ -179,11 +192,17 @@ __bidiStatus()      // in the webview console: Developer: Open Webview Developer
 ```
 { direction: "on",
   unpinExpandedMessage: "on",
-  composer: "on",
-  splitSentMessages: "on",
+  composer: "on - measured working",
+  sentMessages: "on - measured working",
   keepTheViewOnTheMessage: "on",
-  engine: { blocks: "watching", perLine: "on", contained: 0 } }
+  engine: { blocks: "watching", dirAuto: "on - measured working",
+            composer: "on - measured working", contained: 0 } }
 ```
+
+`measured working` means the direction was set AND read back off the page afterwards. A
+part that set it and found the page did not take it says `not working`, and why - which
+is exactly what a Claude Code update changing a rule underneath it looks like. That is
+how 2.1.267 broke the box you type in: silently, while this still said `on`.
 
 **Is it possible?** If a class name is renamed or a component restyled, the part that
 depended on it goes off *on its own* and says so. Nothing else notices, and a block that
@@ -198,8 +217,13 @@ the answer. A stylesheet can be renamed, moved or overridden; where the text end
 cannot. The unpinning rule asks the live element whether a turn header is still
 `position: sticky`, and stands down if it is not.
 
-If the whole of it ever stands down, everything comes out through the same path a person
-would use - and `__bidiFixOff()` in that console is that path, live, at any time.
+What stands down is only the part the fix was for. If Claude Code starts reading its
+answers correctly by itself, the answers' part comes out and nothing else does: the box
+you type in and your sent messages are separate questions, and stay on. And the rules
+themselves do not depend on one road into the page - if the webview ever refuses a style
+element, they arrive as a constructed stylesheet instead, and `__bidiStatus()` says which.
+
+`__bidiFixOff()` in that console takes all of it out, live, at any time.
 
 ## Limits
 

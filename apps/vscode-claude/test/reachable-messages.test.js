@@ -106,7 +106,13 @@ const STATES = [
   ["Claude Code there, fix on", () => { claudeDir = dir; bundle(); patcher.apply(APP); }, true],
   ["Claude Code there, fix off", () => { claudeDir = dir; bundle(); }, false],
   ["a block whose stamp has run out", () => { claudeDir = dir; bundle(); patcher.apply(APP); age(Date.now() - 1000); }, true],
-  ["no Claude Code at all", () => { claudeDir = null; }, true]
+  ["no Claude Code at all", () => { claudeDir = null; }, true],
+  // installed, but an update moved the file its panel loads from - which used to be
+  // reported as "not installed" to somebody looking straight at Claude Code
+  ["Claude Code there, but its panel file moved", () => {
+    claudeDir = path.join(root, "anthropic.claude-code-moved");
+    fs.mkdirSync(claudeDir, { recursive: true });
+  }, true]
 ];
 
 function everythingAnybodyCanBeShown() {
@@ -244,6 +250,24 @@ test("the marker that tells a re-install from a restart must never ship", () => 
     ".vscodeignore does not exclude the marker, so it will be packaged");
   assert.ok(!fs.existsSync(path.join(APP, ".smartrtl-installed")),
     "a marker has been left in the extension folder - something ran activate() against it");
+});
+
+test("an update over an older build that was working still asks for a reload", () => {
+  // Found by installing 0.5.0 over 0.4.22 in a real window. The older block was live, so
+  // "was it running a moment ago" said yes and nobody was asked to reload - while the
+  // panel on screen went on running 0.4.22 from memory, which is exactly the build 0.5.0
+  // was written to replace. A new block in the file means every open panel is stale.
+  claudeDir = dir; claudeVersion = "2.1.263";
+  fs.writeFileSync(target, "//claude code bundle\n" + patcher.BEGIN +
+    "\n/* an older build's block */ var EXPIRES_AT = " + (Date.now() + 864e5) + ";\n", "utf8");
+  assert.equal(patcher.state().live, true, "the older block is live, as it is after any earlier install");
+  store["smartrtl.on"] = true;
+  store["smartrtl.hasRun"] = true;
+  try { fs.unlinkSync(path.join(home, ".smartrtl-installed")); } catch (e) {}
+  shown = [];
+  ext.activate(ctx);
+  assert.ok(shown.some((m) => /Reload to see it/.test(m)),
+    "the new build went into the file and nobody was asked to reload: " + JSON.stringify(shown));
 });
 
 test.after(() => {

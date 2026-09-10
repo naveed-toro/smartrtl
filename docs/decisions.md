@@ -10,7 +10,7 @@ search for, in several languages.
 
 ## What is in here
 
-Thirty-three sections, in the order they were written, which is the order the faults were
+Thirty-four sections, in the order they were written, which is the order the faults were
 found. The ones worth reading first are marked.
 
  1. [The root cause](#1-the-root-cause)
@@ -46,10 +46,12 @@ found. The ones worth reading first are marked.
 31. [The status bar was telling the truth about the wrong thing](#31-the-status-bar-was-telling-the-truth-about-the-wrong-thing) ←
 32. [Every message, read out loud one at a time](#32-every-message-read-out-loud-one-at-a-time) ←
 33. [Installing it said nothing, and the reason was a file we shipped by mistake](#33-installing-it-said-nothing-and-the-reason-was-a-file-we-shipped-by-mistake) ←
+34. [Accepting the limits: one direction for the box you type in, and one for a sent message](#34-accepting-the-limits-one-direction-for-the-box-you-type-in-and-one-for-a-sent-message) ←
 
 ← 6 and 7 are the rule and the design it forced. 13 is what the first live run found.
 25 and 27 are the composer crash and the decision to stop; 28 is what that would have
-cost; 29 is how the whole thing is wired so one fault cannot spread.
+cost; 29 is how the whole thing is wired so one fault cannot spread. 34 is where the
+project stopped trying to beat every limit and started building for the next update.
 
 ---
 
@@ -1493,7 +1495,8 @@ test that says so, so changing it has to change the test and give a reason.
 
 The rule still applies in full where it costs nothing and cannot be felt: the message
 once it is **sent**, where the lines are real elements in a page nobody is typing into.
-That is `perline.test.js`, and it has worked since 0.2.0.
+That was the belief, and the per-line tests said it had held since 0.2.0. Section 34 is
+what the real panel said instead.
 
 ### The gap in the harness, for the third time
 
@@ -2157,3 +2160,180 @@ it. That is now the habit: **check the thing that ships, not the thing it was bu
 
 - the five links are absolute
 - a test refuses any link in that readme that climbs out of its own folder
+
+---
+
+## 34. Accepting the limits: one direction for the box you type in, and one for a sent message
+
+Claude Code 2.1.267 broke the box you type in, and nothing here noticed. Looking into why
+found something older and worse: the line-by-line split of a sent message, shipped since
+0.2.0 and written up in sections 21 and 24, had never run in the real panel at all.
+
+Both are the same failure. And the answer to both was not a cleverer fix. It was to stop
+insisting that the formula reach everywhere, and to build what remains so that the next
+update is the least likely thing to break it.
+
+### What 2.1.267 did
+
+One property, added to three rules: `unicode-bidi: plaintext` on the box you type into,
+on the mirror drawn over it, and on the placeholder. On 2.1.247 to 2.1.266 none of the
+three had it. Measured on each build's own stylesheet:
+
+| the draft | 267, no fix | 267, the rule as shipped | `direction` only, `!important` | all three, `!important` |
+|---|---|---|---|---|
+| `Hello ہیلو` | ltr | ltr | ltr | **rtl** |
+| `npm install کے بعد` | ltr | ltr | ltr | **rtl** |
+| an English-only draft | untouched | untouched | untouched | **untouched, 0px moved** |
+
+Section 25 had already measured why: `direction` on an element that is `unicode-bidi:
+plaintext` changes nothing at all. The rule had set `direction` and `text-align` and
+trusted the page never to set `unicode-bidi`. The page set it.
+
+Nothing noticed, for three reasons, and each is a thing to fix rather than regret. The
+copied test page did not have the new property, so every composer test on it stayed
+green. The real-stylesheet tests did catch it, but only when somebody ran them. And
+`__bidiStatus()` went on saying `composer: "on"`, because the lamp only ever asked
+whether the box could be found, never whether it had turned.
+
+### What looking at it found: the sent message was never split
+
+Claude Code puts a heading above every message somebody sends, for screen readers:
+
+```js
+j && D("h3", { className: `${w_.visuallyHidden} ${X5.screenReaderTurnHeading}`, children: EJ0(B) })
+// EJ0: "You: " + the message on one line, cut at 120 characters
+```
+
+An `h3` is a block. It comes before the message. So the engine met it first, found an Urdu
+word in it, and put the decision on the whole row - after which the message's own body
+arrived inside an already-decided row, took the "already decided" path, and the split was
+never asked for. Measured on the real stylesheet:
+
+| | lines split | decided on | every line |
+|---|---|---|---|
+| the model, without the heading | 3 | nothing | rtl, ltr, rtl |
+| the real shape, with it | **0** | **the whole row** | all rtl |
+
+The heading was in 2.1.247, before this project began. The one live tick the split ever
+got - versions.md, 0.2.0 - can only have been luck: the heading holds the first 120
+characters, and a message whose first 120 held no Urdu word would have been split. Every
+ordinary Urdu message took one direction as a whole, which is exactly what the person
+using it reported, and what three rounds of explanation got wrong before the heading was
+found.
+
+The model had no heading because it was drawn by hand from what somebody expected a
+message to look like. This is the fourth time in this file that the model was easier than
+the thing.
+
+### The decision
+
+The formula does not have to reach everywhere. Where it runs, it must not stop when the
+host updates. Of the four places text appears, two had been bought at a price that kept
+being paid:
+
+- **the box you type in** takes one direction, from any RTL letter in it - as it has since
+  0.3.4 - and is now made to survive
+- **a sent message** takes one direction, from what it says, as a whole. The line-by-line
+  machinery is deleted: it was the only code here that built elements in somebody else's
+  page, it could corrupt text rather than merely direction if it went wrong, and it had
+  never run where it mattered
+- **answers, streaming and finished**, are left exactly as they are. They are where the
+  formula runs in full, and they have never broken - on all five builds measured. Their
+  rules already set `direction` and `unicode-bidi` together, with `!important`, which is
+  precisely why
+
+### How the two are made to survive
+
+Eight things. The first six are each an answer to something that actually happened; the
+last two to something that has not happened yet and would have taken everything with it.
+
+**Every property relied on is set here, not trusted.** `direction`, `unicode-bidi` and
+`text-align`, all `!important`, on the composer's layers and on a sent message. Whatever
+the page adds under them, these win.
+
+**The host is described twice.** Once by its class names, and once by what its elements
+are for - which a restyle does not change:
+
+| | by name | by what it is |
+|---|---|---|
+| the box you type into | `messageInput_` | `contenteditable` with `role=textbox` |
+| the layer drawn over it | `mentionMirror_` | `aria-hidden="true"` |
+| a sent message | the content div inside `expandableContainer_` | the run handed to `dir="auto"` |
+
+Checked across five builds before it was relied on: the names never changed, the roles
+never changed, and `dir="auto"` occurs exactly once in each bundle - on the span a typed
+message's text goes into. Each description is tested with the other taken away, and either
+one alone turns the text. `dir="auto"` is also the most honest hook there is: it is the
+browser's first-strong-character guess, applied by the page to text it did not want to
+decide, which is the one rule this project exists to replace.
+
+**Nothing of ours goes into their DOM.** With the copy gone, every part of this extension
+is an attribute on an element the host rendered, plus one stylesheet. There is nothing
+left for the host to trip over.
+
+**Text that arrives without anybody typing it.** Read out of the bundle: Claude Code
+empties the box itself after a send, and puts text in from code for history, completions
+and forks - `b1.current.textContent = ...` - with no input event. The box is now also
+asked on any change to it, in the same microtask, so before the paint. Measured: an
+emptied box goes back to left to right, recalled Urdu turns, and no keystroke is late.
+
+**Refuse to turn half of it.** If the layer drawn over the box cannot be found and the box
+itself is invisible, nothing is turned: moving the caret while the text people read stays
+put is worse than doing nothing. The status says why.
+
+**Report what was measured.** Each part reads the page back once, after the first time it
+acts, and `__bidiStatus()` shows the result - `on - measured working`, or `not working`
+and the computed values that prove it. 2.1.267 would have shown that on the first Urdu
+letter typed.
+
+**One lamp at a time, in the other direction too.** If Claude Code starts reading its
+answers correctly, the part that existed for that stands down. Until now that meant
+`stop()` - everything, including the box you type in and sent messages, which that fix
+says nothing about. And if the answers were already fixed when the panel loaded, the
+engine never started, so neither did they. Now the answers' part stands down alone, and
+the engine starts whether or not the answers need it.
+
+**No single road into the page.** Every part of this rides on one stylesheet, and the
+stylesheet on `'unsafe-inline'` in the webview's `style-src`, which Claude Code grants
+today. Measured: without that word a `<style>` added from script is refused, while a
+constructed stylesheet handed to `document.adoptedStyleSheets` still applies. So the
+engine checks that its rules actually arrived, takes the second road if they did not, and
+the status says which road was used.
+
+### Knowing the day it breaks
+
+None of the above makes it unbreakable. Claude Code will one day replace the box you type
+in with something else, and on that day the best any of this can do is stop cleanly and
+say so. What decides how much that costs is how long it goes unnoticed - and until now the
+answer was "until the person using it sees it", which is how 2.1.267 was found.
+
+So every day, on GitHub and nowhere near anybody's machine, the newest Claude Code is
+downloaded from the Marketplace and this build is put to it: Claude Code's own webview
+bundle running with the payload in it and the real composer typed into, its own stylesheet
+under every question the older tests ask, and a one-line check of each assumption above.
+A failure is an email the same day, naming the release. Nothing of it runs where anybody
+types, which was the condition it was chosen under: a fix that feels like Claude Code's own
+cannot also be the thing that makes the editor feel slow.
+
+It also caught a false alarm of its own before it ever ran: the typing-speed check, run
+beside every other test at once, read the fix as tripling the time. Measured quietly the
+same two were 144ms and 131ms for sixty-three keystrokes. It now takes both in turns and
+compares medians, because a watch that cries wolf is a watch somebody stops reading.
+
+### What it costs, said plainly
+
+- a message that mixes two languages takes one direction as a whole - while it is typed,
+  and once it is sent. An English line inside an Urdu message goes with it
+- a sent message sits against the left of its bubble, where Claude Code's layout puts it;
+  moving it moves the buttons that live in the same container
+- the composer is asked on every change to it, not only on typing. Measured: the same
+  single attribute as before, and no keystroke late
+
+### The rule this leaves
+
+> Set every property you depend on. Describe the host by what its elements are, not only by
+> what they are called. And ask the page afterwards whether it listened.
+
+The first would have kept 2.1.267 from breaking anything. The second is what lets a
+restyle pass. The third is what turns the next surprise from a report weeks later into a
+line in the status on the day it happens.

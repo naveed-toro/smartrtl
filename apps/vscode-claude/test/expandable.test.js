@@ -137,9 +137,10 @@ test("nothing is capped - the message opens to its full length", async () => {
   const on = await open(turn(userMessage(LONG)), { height: 700 });
   try {
     const h = (p) => p.$eval(".content_x", (el) => Math.round(el.getBoundingClientRect().height));
-    // not "identical to the pixel" - splitting a message into per-line elements can
-    // change its height by a hair. What must hold is that nothing caps it.
-    assert.ok(await h(on.page) >= await h(off.page), "the expanded body must not be capped");
+    // Identical to the pixel. This was loosened once, because splitting a message into
+    // per-line elements changed its height by a hair; nothing is built now, so there is
+    // no reason for a single pixel of difference, and a loose bound hides real ones.
+    assert.equal(await h(on.page), await h(off.page), "the expanded body must be exactly its own height");
   } finally { await off.close(); await on.close(); }
 });
 
@@ -256,11 +257,19 @@ test("a decision never escapes the message it was made for", async () => {
   } finally { await close(); }
 });
 
-test("the message box is NOT moved - that was tried and it took the buttons with it", () => {
-  // Kept as a note in test form: pushing the container to the bubble's right edge
-  // aligns the text where an RTL reader expects it, and moves the controls that
-  // live inside that container. The buttons win.
-  assert.ok(true);
+test("the message box is NOT moved - that was tried and it took the buttons with it", async () => {
+  // Pushing the container to the bubble's right edge aligns the text where an RTL
+  // reader expects it, and moves the controls that live inside that container. The
+  // buttons win. This used to be a note written as `assert.ok(true)`; it is measured
+  // now, both ways, so a change that moves the box fails here instead of in the panel.
+  for (const [label, text] of [["urdu", MIXED], ["english", "Just an English message."]]) {
+    const off = await open(userMessage(text), { fix: false });
+    const on = await open(userMessage(text));
+    try {
+      assert.deepEqual(await boxOf(on.page, ".expandableContainer_x"),
+                       await boxOf(off.page, ".expandableContainer_x"), `${label}: the message box moved`);
+    } finally { await off.close(); await on.close(); }
+  }
 });
 
 test("closing from deep inside a long message brings it back into view", async () => {

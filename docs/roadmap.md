@@ -47,8 +47,8 @@ first line - `SmartRTLDom.start(SmartRTL, {...})`.
 | `blocks` | selector for the elements that carry text, if the default is wrong |
 | `boxSelector` | hint for "one message", tried first when scoping a decision |
 | `boundary` | the ceiling a decision may never climb past, so one message's answer cannot reach the message beside it |
-| `perLine` | blocks that hold a WHOLE message, newlines and all, and must be split into an element per line before being decided |
-| `composer` | `{ container, layers[], probe }` - the box the user types into |
+| `ownDirAuto` | decide every run of text the page hands to `dir="auto"` by the rule, as one piece. Names no class at all |
+| `composer` | `{ container, input[], mirror[] }` - the box the user types into. Each part is a list tried in order: by name first, then by what the element is |
 | `extraCss` | rules the adapter wants in the same stylesheet |
 | `onDecision` | `(block, box)` - run once, when a message is decided |
 | `onCleanup` | `()` - undo the adapter's own work when the escape hatch is pulled |
@@ -147,8 +147,9 @@ be softened - a workaround presented as a feature is how people end up surprised
 **0. The VS Code extension is done, at 0.4.1.** What finished it, in order, and none of it
 was on this list when the list was written:
 
-- a sent message is decided line by line, so an English line inside an Urdu one is left
-  alone - by the formula, measured against Claude Code's own stylesheet
+- a sent message takes one direction, from what it says - found both by Claude Code's
+  class names and by the `dir="auto"` its text is handed to. It was decided line by line
+  until 0.5.0, and in the real panel that never once ran - see decisions.md section 34
 - the composer takes one direction and nothing else, after three attempts at per-line that
   were built, shipped, typed into and withdrawn. See rule 2 above; the limit that leaves is
   written down as a passing test

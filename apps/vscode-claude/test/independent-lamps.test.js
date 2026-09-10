@@ -33,7 +33,7 @@ test("it says which parts are on, and every part is named", async () => {
   const { page, close } = await open(message(`<p>${URDU}</p>`));
   try {
     const s = await status(page);
-    for (const name of ["direction", "composer", "splitSentMessages",
+    for (const name of ["direction", "composer", "sentMessages",
                         "unpinExpandedMessage", "keepTheViewOnTheMessage"]) {
       assert.ok(name in s, `${name} is not reported at all`);
     }
@@ -92,11 +92,15 @@ test("if Claude Code already reads it the right way, nothing of ours is installe
   } finally { await close(); }
 });
 
-test("and it stands down later too, when the first message finally arrives", async () => {
+test("and it stands down later too, when the first message finally arrives - that part alone", async () => {
   // At start-up there is no message to measure - the panel has not rendered one when
   // a patch at the end of its bundle runs - so the question is left open and asked
   // again the moment there is something to ask about.
-  const { page, close } = await open(`<div id="later"></div>`);
+  //
+  // Only the answers' part stands down. It used to take everything with it - the box you
+  // type in and sent messages as well - so Claude Code fixing its answers would have
+  // switched off two things it had never touched.
+  const { page, close } = await open(`<div id="later"></div>` + userMessage("npm install کے بعد یہ میرا پیغام ہے"));
   try {
     assert.equal((await status(page)).direction, "on", "it starts on, with the question open");
 
@@ -110,9 +114,10 @@ test("and it stands down later too, when the first message finally arrives", asy
     const s = await status(page);
     assert.equal(s.direction, "not needed - Claude Code does this itself now");
     assert.equal(await page.$$eval("[data-bidi]", (n) => n.length), 0,
-      "everything of ours came back out again");
-    assert.equal(await page.$("#smart-rtl-direction") === null, true,
-      "including the stylesheet");
+      "every answer decision of ours came back out again");
+    assert.equal(await page.$eval(".content_x", (el) => getComputedStyle(el).direction), "rtl",
+      "and a sent message still reads right to left - that lamp did not go out with this one");
+    assert.equal(s.sentMessages, "on - measured working");
   } finally { await close(); }
 });
 
@@ -188,4 +193,32 @@ test("asking whether it is still needed must not ask itself for ever", async () 
     assert.equal(await page.$$eval("[data-bidi-probe]", (n) => n.length), 0,
       "no probe was left behind");
   } finally { await close(); }
+});
+
+test("a page that refuses our style element still gets the rules, another way", async () => {
+  // Claude Code's webview allows a style element added from script today - its
+  // style-src carries 'unsafe-inline'. Every part of this rides on that one word, all at
+  // once. Measured: under a style-src without it, a <style> added from script is
+  // refused, while a constructed stylesheet handed to document.adoptedStyleSheets is
+  // not. So the engine checks that its stylesheet actually took, and if it did not,
+  // uses the other way - and says which one it used.
+  const { chromium } = require("playwright");
+  const fs = require("node:fs"), path = require("node:path");
+  const payload = fs.readFileSync(path.resolve(__dirname, "../dist/payload.js"), "utf8")
+    .replace(/var EXPIRES_AT = \d+;/, `var EXPIRES_AT = ${Date.now() + 864e5};`);
+  const browser = await chromium.launch();
+  try {
+    const page = await browser.newPage();
+    await page.setContent(`<!doctype html><meta charset="utf-8">
+      <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; script-src 'unsafe-inline'">
+      ${userMessage("npm install کے بعد یہ میرا پیغام ہے")}
+      <script>${payload}</script>`);
+    await page.waitForTimeout(400);
+    const seen = await page.evaluate(() => ({
+      dir: getComputedStyle(document.querySelector(".content_x")).direction,
+      sheet: window.__bidiStatus().engine.sheet
+    }));
+    assert.equal(seen.dir, "rtl", "the message was not turned on a page that refuses style elements");
+    assert.match(seen.sheet, /^adopted/, "and the status says which way the rules got in");
+  } finally { await browser.close(); }
 });

@@ -45,9 +45,13 @@ body{margin:0;padding:16px;background:#faf9f7;font-family:system-ui,sans-serif;f
 .collapseButton_x{display:flex;cursor:pointer;border:none;border-radius:4px;align-items:center;margin:4px;padding:8px;font-size:.85em}
 /* ------------------------------------------------------------------------- */
 .root table{border-collapse:collapse}
+/* unicode-bidi:plaintext on both layers is Claude Code's since 2.1.267, and it is copied
+   here on purpose: it is what killed a composer rule that set only direction, and a copy
+   without it kept every composer test on this page green while the real box was broken */
 .messageInputContainer_x{position:relative;display:flex;width:520px;border:1px solid #ddd}
-.messageInput_x{white-space:pre-wrap;color:#0000;caret-color:#c00;flex:1;padding:10px 36px 10px 14px;outline:none;position:relative;z-index:1}
-.mentionMirror_x{white-space:pre-wrap;position:absolute;inset:0;padding:10px 36px 10px 14px;pointer-events:none}
+.messageInput_x{unicode-bidi:plaintext;white-space:pre-wrap;color:#0000;caret-color:#c00;flex:1;padding:10px 36px 10px 14px;outline:none;position:relative;z-index:1}
+.mentionMirror_x{unicode-bidi:plaintext;white-space:pre-wrap;position:absolute;inset:0;padding:10px 36px 10px 14px;pointer-events:none}
+.visuallyHidden_x{position:absolute;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0;width:1px;height:1px;margin:-1px;padding:0}
 `;
 
 function payload() {
@@ -82,12 +86,24 @@ async function open(html, { width = 900, height = 700, fix = true, expired = fal
 }
 
 /**
+ * The heading Claude Code hides above every sent message, for screen readers - EJ0 in
+ * its bundle: "You: ", then the message on one line, cut at 120 characters. It is an h3,
+ * so it is a block to the engine, and it sits BEFORE the message. Left out of this page
+ * for as long as it was, it hid the fact that it decided every sent message first.
+ */
+const turnHeading = (text) => {
+  const flat = String(text).replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
+  if (!flat) return "Your message";
+  return "You: " + flat.slice(0, 120) + (flat.length > 120 ? "…" : "");
+};
+
+/**
  * One USER message, as the extension nests it: the text is a bare span carrying
  * the browser's own dir="auto" guess - not a paragraph, not any block - and the
  * whole row is pinned to the top of its turn with position: sticky.
  */
 const userMessage = (text, { expanded = true, sticky = true } = {}) => `
-<div class="message_x${sticky ? " stickyHeader_x" : ""} timelineMessage_x"><div class="userMessageContainer_x"><div class="userMessage_x">
+<div class="message_x${sticky ? " stickyHeader_x" : ""} timelineMessage_x"><h3 class="visuallyHidden_x screenReaderTurnHeading_x">${turnHeading(text)}</h3><div class="userMessageContainer_x"><div class="userMessage_x">
   <div class="expandableContainer_x">
     <div class="contentWrapper_x">
       <div class="content_x${expanded ? "" : " collapsed_x"}"${expanded ? "" : ' style="max-height:60px"'}><span dir="auto">${text}</span></div>

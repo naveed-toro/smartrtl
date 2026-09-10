@@ -26,7 +26,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 
-const { BEGIN, stripPatch } = require("./patch-format.js");
+const { BEGIN, stripPatch, writeWhole } = require("./patch-format.js");
 
 const TARGET_PREFIX = "anthropic.claude-code";
 const REL_TARGET = path.join("webview", "index.js");
@@ -61,7 +61,7 @@ function cleanUp(extensionsDir) {
       }
 
       if (current.includes(BEGIN)) {
-        fs.writeFileSync(target, kept || stripPatch(current), "utf8");
+        writeWhole(fs, target, kept || stripPatch(current));
         restored.push(entry);
       }
     } catch (e) { skipped.push(entry); }
