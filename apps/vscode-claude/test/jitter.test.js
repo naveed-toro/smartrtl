@@ -171,11 +171,11 @@ test("when it is over, going back up finds every line as it was read", async () 
 });
 
 test("the first Urdu answer in a conversation does not shove what is above it", async () => {
-  // A gutter is reserved on both sides of every row the moment any message turns
-  // out to be right to left - see mirrorTimeline in the payload. It is reserved
-  // once and for the whole conversation, so rows stay aligned with each other
-  // afterwards. This is about the once: the reader is partway through an English
-  // answer when the reservation happens.
+  // A message that turns out to be right to left flips its OWN row's gutter, so that its
+  // dot sits on the side it reads from - see mirrorTimeline in the payload. Until 0.5.5
+  // the gutter was reserved on both sides of every row instead, to keep all the columns
+  // identical, and that took 30px off every English answer in the conversation. It does
+  // not any more, so the answer above is not merely un-shoved: it is untouched.
   const { page, close } = await open(`
 <div class="messagesContainer_x" id="scroller" style="height:320px">
   <div class="turn_x">
@@ -194,12 +194,10 @@ test("the first Urdu answer in a conversation does not shove what is above it", 
     assert.equal(scrollJump(trace), 0, "and it must not scroll either");
     assert.equal(after, before,
       `the answer above moved sideways by ${after - before}px when the Urdu one arrived`);
-    // Its right edge does come in, by exactly the gutter that is now reserved on
-    // both sides of every row. Left-to-right text starts at the left, so nothing a
-    // reader is looking at moves - but a paragraph long enough to wrap will rewrap,
-    // so the size of it is pinned here rather than left to drift.
-    assert.ok(wideBefore - wideAfter <= 30,
-      `rows narrowed by ${wideBefore - wideAfter}px, more than the gutter`);
+    // and not one pixel narrower either: an English answer must not be re-wrapped
+    // because somebody else's message was in Urdu.
+    assert.equal(wideAfter, wideBefore,
+      `the answer above narrowed by ${wideBefore - wideAfter}px when the Urdu one arrived`);
   } finally { await close(); }
 });
 

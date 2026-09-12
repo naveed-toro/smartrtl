@@ -998,6 +998,105 @@ Payload: 135,021 bytes - 21,591 more than 0.5.2, for the long-message fix
 becoming a part of its own, a second way into the same trap, and the reasons written beside
 both.
 
+### 0.5.5 — the last thing here with one road, and one line drawn round the rest
+
+Almost nothing a person sees is different. What is different is what happens on the day Claude
+Code renames the file its panel loads from, what happens when three windows write that file at
+the same moment, what this says about itself when it has stopped - and one thing an Urdu reader
+does see, which is that the row beside their message is now the mirror of an English one rather
+than an approximation of it.
+
+- [x] **a message's dot is mirrored, and no other row pays for it** — the dot belongs to the
+      message, so an Urdu message's dot belongs on the side that message reads from. That much
+      was right since 0.0.1. What was not right was the gutter under it: it was reserved on
+      **both** sides of **every** row so that all rows kept one column, which took 30px off
+      every English answer in a conversation with one Urdu message in it. It is flipped now,
+      on that row alone. Measured on 2.1.269, from each row's own reading edge: edge → dot 9px,
+      dot → text 14px, edge → text 30px — **the same three numbers on both sides**, and every
+      row keeps its full 830px. An English answer is identical to the pixel with the fix and
+      without it **(lab, on the real stylesheet)**
+- [x] **and the test says so in those words** — `rendering.test.js` fails with "that is two
+      designs, not one mirrored" if those three distances ever stop matching. The allow-list
+      for an answer went from eight properties to four: `direction`, `unicode-bidi`, and the
+      two paddings that are the gutter moving. `width`, `inline-size`, `perspective-origin`
+      and `transform-origin` were the column nobody asked for **(lab)**
+- [x] **the file the panel loads is found three ways, not one** — `webview/index.js` was the
+      only thing in this project reached by a single road, and it is the road everything else
+      stands on. A content hash in that filename, which is what every bundler does by default,
+      would have taken the fix down on every machine at once. Now: the known path, then the
+      file Claude Code's own code names, then the one script in a folder with a stylesheet
+      beside it. Each was run with the ones above it taken away **(lab)**
+- [x] **and the patcher and the uninstall hook share that finder** — the hook kept its own
+      copy of the path, so a build that moved the panel's file would have been patched through
+      one road and left behind through another **(code)**
+- [x] **road three refuses to guess** — two scripts in a folder is not an answer, and neither
+      is a named file with no stylesheet beside it. A guess here writes five megabytes into a
+      file nobody loads and then reports that the fix is on **(lab)**
+- [x] **and the one way three roads could be worse than one is caught in CI** —
+      `webview/index.js` still sitting there while the panel has moved on. Road one is taken
+      on sight, so nothing at runtime would notice; the daily watch fails that morning
+      **(lab)**
+- [x] **each window writes its own file beside the bundle** — it used to be one name for
+      everybody, and every window activates at the same moment when the editor starts and when
+      this extension updates. One process's clean-up would delete a file another was still
+      writing, and a refused rename falls back to writing five megabytes in place from two
+      processes at once. That is a Claude Code that will not start, not a fix that is missing
+      **(lab)**
+- [x] **and then the atomic write turned out not to be atomic** — the rename was allowed to
+      fail back to writing in place, which read as a safe fallback and was the opposite. Put to
+      three processes writing a five-megabyte file while a fourth read it: **thirty-six renames
+      out of thirty-six refused**, every write done in place, and ten of the reader's reads
+      caught the file half written — 2,596,864 bytes of 5,200,000. On Windows a rename over a
+      file **any** process has open fails with EPERM, and the process certain to have this one
+      open is the Claude Code panel loading it. So the one outcome this project must never
+      cause — a Claude Code that will not start — was reachable through the fallback written to
+      prevent it **(lab, measured before and after)**
+- [x] **so a held bundle is waited for, and then left alone** — half a second of trying
+      outlasts a handle on a file being read; if it is still held after that, the bundle is not
+      touched and `apply()` answers `busy`. Same three writers and the same reader, after: **373
+      whole reads, not one torn**. A rename refused for a reason waiting cannot fix — a
+      filesystem that cannot do one at all — still falls back to writing in place, because
+      there it is the only road **(lab)**
+- [x] **and `busy` is said, never swallowed** — a "Turn off" that could not take the block out
+      must not be followed by "it is off". Turning it on or off offers to try again; an update
+      or an install says so; a background attempt is silent and comes back in a minute rather
+      than in six hours **(lab)**
+- [x] **and a temporary file left by a write that never finished is cleared up** — after a
+      minute, by whoever writes next, so the other half of that fix is not five megabytes of
+      ours left in somebody else's folder for ever **(lab)**
+- [x] **Show status stops saying "on" over a fix that has stopped** — it asked
+      `isPatched()`, which is "is the block in the file", while the status bar three inches
+      away asked whether it is doing anything. A laptop asleep for more than a day reaches
+      that gap. Three answers now, and the middle one carries the way out of it; `isPatched`
+      is gone rather than corrected **(lab)**
+- [x] **the daily watch stops crying wolf** — its test for "Claude Code now sets a direction
+      on a sent message itself" matched `flex-direction:column`, so it fired on 2.1.268, on
+      2.1.269 and on every build before them. The whole plan for surviving the next update
+      rests on somebody reading that report **(lab, and the instrument now checks itself)**
+- [x] **one small "RTL on", and only while Claude Code is in front of you** — Claude Code also
+      lives in the side bar, which is not a tab, so somebody who keeps it there never sees that
+      item. A reading of `claudeCode.preferredLocation` was built to close that gap and taken
+      straight back out: whether a side bar view is OPEN cannot be asked at all, so it would
+      have put a mark in the corner of every window, all day, for somebody editing a file with
+      Claude Code nowhere in sight. The switch is still in the Command Palette and in the
+      Extensions view beside Uninstall. `status-bar.test.js` holds that bound now, and asserts
+      that nothing of ours reads another extension's settings **(lab)**
+- [x] **what it costs a person who opens VS Code, measured and then held** — 10ms to activate
+      with the fix already in place, 8ms for a tab change and not one byte of disk, no write at
+      all on an ordinary start and never a read of the whole bundle. Held in reads and writes
+      rather than milliseconds, because a millisecond ceiling measures the machine it runs on
+      **(lab, on the real 5.4MB bundle)**
+- [x] **and the 1.8 seconds that is not ours** — after any change to that file, Windows makes
+      the virus scanner read all five megabytes before handing it to whoever opens it next.
+      Measured: 1825ms for the first read after a whole-file write, 0.6ms for the same read a
+      moment later — and 1932ms after writing **thirteen bytes in place**. Writing less does not
+      help. It is written down rather than worked around **(lab)**
+- [x] **a review is a command now, not a reading** — `npm run review`, 145 tests against the
+      installed Claude Code, and it is what the daily watch runs. `docs/reviewing.md` says what
+      the two questions are and - the part that matters - what is not a finding. Every review of
+      this project used to end with a list of new work; that list was the problem, not the
+      findings in it
+
 ### 0.5.4 — asked, measured, and got out of the way
 
 Nothing a person sees is different. What is different is what happens on the day Claude Code

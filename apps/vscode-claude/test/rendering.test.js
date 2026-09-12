@@ -69,28 +69,49 @@ test("every right-to-left language, not just Arabic script", async () => {
   }
 });
 
-test("the timeline dot follows its own message, and content columns stay aligned", async () => {
+test("a message's dot is mirrored exactly, not merely moved", async () => {
+  // The whole test, in one sentence: the two sides have to be the SAME behaviour.
+  //
+  //   english   [row edge] --9-- (dot) --14-- text starts...
+  //   urdu      ...text ends --14-- (dot) --9-- [row edge]
+  //
+  // If those numbers ever stop matching, a reader in Urdu is looking at a second design
+  // rather than at their own one, and the whole point of this project - that it should
+  // feel like Claude Code always did this - is gone. It is not enough for the dot to be
+  // "on the right"; it has to sit where its own reader expects it, at the same distances.
   const urdu = message("<p>یہ اردو کا جواب ہے اور اس کی سمت دائیں سے بائیں ہے۔</p>");
   const eng  = message("<p>This answer is in English and reads left to right.</p>");
   const { page, close } = await open(urdu + eng + urdu);
   try {
     const rows = await page.$$eval(".timelineMessage_x", (els) =>
       els.map((el) => {
-        const box = el.getBoundingClientRect();
-        const dot = getComputedStyle(el, "::before");
-        const x = dot.left === "auto"
-          ? box.right - parseFloat(dot.right) - parseFloat(dot.width)
-          : box.left + parseFloat(dot.left);
-        const content = el.firstElementChild.getBoundingClientRect();
-        return { rtl: el.getAttribute("data-bidi-row") === "rtl", dotX: Math.round(x),
-                 left: Math.round(content.left), width: Math.round(content.width) };
+        const row = el.getBoundingClientRect();
+        const t = el.firstElementChild.getBoundingClientRect();
+        const d = getComputedStyle(el, "::before");
+        const w = parseFloat(d.width) || 0;
+        const dotL = d.left === "auto" ? row.right - parseFloat(d.right) - w : row.left + parseFloat(d.left);
+        const rtl = el.getAttribute("data-bidi-row") === "rtl";
+        return {
+          rtl,
+          edgeToDot: Math.round(rtl ? row.right - (dotL + w) : dotL - row.left),
+          dotToText: Math.round(rtl ? dotL - t.right : t.left - (dotL + w)),
+          edgeToText: Math.round(rtl ? row.right - t.right : t.left - row.left),
+          width: Math.round(t.width)
+        };
       }));
     assert.equal(rows.length, 3);
     assert.ok(rows[0].rtl && rows[2].rtl, "the Urdu rows should be marked");
     assert.ok(!rows[1].rtl, "the English row should not be");
-    assert.ok(rows[0].dotX > rows[1].dotX, "an Urdu row's dot belongs on the right of an English row's");
-    const columns = new Set(rows.map((r) => `${r.left}:${r.width}`));
-    assert.equal(columns.size, 1, "every row must keep the same content column");
+
+    // the mirror, measured from each row's own reading edge
+    for (const key of ["edgeToDot", "dotToText", "edgeToText"]) {
+      assert.equal(rows[0][key], rows[1][key],
+        `${key} is ${rows[0][key]} for an Urdu row and ${rows[1][key]} for an English one - that is two designs, not one mirrored`);
+    }
+
+    // and nobody pays for anybody else's gutter: every row keeps the width it had
+    assert.equal(new Set(rows.map((r) => r.width)).size, 1,
+      "a row lost width to another row's dot: " + rows.map((r) => r.width).join(", "));
   } finally { await close(); }
 });
 

@@ -10,7 +10,7 @@ search for, in several languages.
 
 ## What is in here
 
-Forty sections, in the order they were written, which is the order the faults were
+Forty-one sections, in the order they were written, which is the order the faults were
 found. The ones worth reading first are marked.
 
  1. [The root cause](#1-the-root-cause)
@@ -242,6 +242,10 @@ back and forth.**
 ---
 
 ## 8. The timeline dot
+
+> **The gutter under it changed in 0.5.5.** The dot below is right and stayed; what is
+> described here as *per conversation* - one gutter reserved on both sides of every row -
+> was taking 30px from the English answers in the same conversation, and is gone. Section 41.
 
 The webview draws a small dot and a connector line to the left of every message:
 
@@ -3257,3 +3261,78 @@ sits in is called.
 > Measure the thing a person can feel, on the page they will feel it on, with an instrument
 > that is asked to prove itself first - and when a number says a part of this costs nothing,
 > suspect the instrument before believing it.
+
+---
+
+## 41. The dot is a direction, and the gutter under it was not
+
+The line this project has had since its first day: it decides which direction a piece of text
+belongs to, and sets it. Nothing else about Claude Code's panel is ours.
+
+The timeline dot was read as being over that line, and taken out. That was wrong, and the
+reasoning is worth keeping because it is the shape of a mistake that will be made again.
+
+**A message's dot is part of that message.** Claude Code draws a dot and a connector in a 30px
+gutter on the left of every row. Turn the message round and the dot goes with it, for the same
+reason the text does — it belongs to that message and to nothing else. The reader of an Urdu
+message looks to the right edge; that is where their message's dot belongs. That is a
+direction. It is not decoration, and it is not taste.
+
+What was actually over the line was never the dot. It was **how the gutter was reserved**.
+
+Until 0.5.5 the gutter was reserved on *both* sides of *every* row the moment any message in
+the conversation turned, so that the text columns of all the rows stayed identical to each
+other. Measured on Claude Code 2.1.269's own stylesheet, in a conversation with one Urdu
+message in it:
+
+| | every row's `padding-right` | the text inside it |
+|---|---|---|
+| without the fix | `0` | 830px wide |
+| with the fix | `30px` | 800px wide |
+
+Including the **English** answers in that conversation, which lost 30px each because somebody
+else's message was in Urdu. Keeping every row in one column is a layout decision and it was
+never ours to take.
+
+So the gutter is not reserved any more. It is **flipped**, on the row whose own message turned,
+and only from one side to the other:
+
+| | edge → dot | dot → text | edge → text | text width |
+|---|---|---|---|---|
+| an English row, from its left | 9px | 14px | 30px | 830px |
+| an Urdu row, from its right | 9px | 14px | 30px | 830px |
+
+The same three distances, measured from each row's own reading edge. Not "the dot is on the
+right" — the *same design*, mirrored, which is the only version of this that makes a reader
+feel Claude Code always did it. `test/rendering.test.js` asserts those three numbers match, and
+fails with "that is two designs, not one mirrored" if they ever stop.
+
+And no row pays for another row's dot: every row keeps the whole width it had, English rows are
+identical to the pixel with the fix and without it, and the allow-list in the test that reads
+every computed property of an answer is `direction`, `unicode-bidi`, and the two paddings that
+are the gutter moving. It used to have `width`, `inline-size`, `perspective-origin` and
+`transform-origin` in it as well — all of them the cost of a column nobody asked for.
+
+### The one that really was over the line
+
+The same week, a reading of `claudeCode.preferredLocation` was built and taken back out, and
+that one deserved it. Claude Code lives in the side bar as well as in a tab, and a side bar view
+is not a tab, so the status bar item is never shown to somebody who keeps it there. That was
+read as a gap; the cure was worse than it. Whether that view is open cannot be asked at all, so
+the item would have sat in the corner of every window, all day, for somebody editing a file with
+Claude Code nowhere in sight. One small "RTL on", only while Claude Code is in front of you, is
+the whole of what this extension shows anybody — and somebody in the side bar still has the
+switch in the Command Palette and in the Extensions view beside Uninstall.
+`test/status-bar.test.js` is that bound, written down.
+
+### The question that tells them apart
+
+Both of these came from asking one question of work already done — and getting it wrong once in
+each direction:
+
+> Does this belong to the text whose direction we are setting?
+
+A message's dot does. A gutter reserved on somebody else's row does not. A status bar item in a
+window with no Claude Code in it does not. Asking it of the *thing* rather than of the *property*
+is what separates a direction from a preference, and it is the only question that ends a review,
+because taste has no end.

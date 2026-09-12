@@ -29,7 +29,7 @@ require("module")._initPaths();
 const vscode = require("vscode");
 const patcher = require("../src/patcher.js");
 const fmt = require("../src/patch-format.js");
-const { whyItSays } = require("../src/extension.js");
+const { whyItSays, statusReport } = require("../src/extension.js");
 
 const EXT = path.resolve(__dirname, "..");
 const ORIGINAL = "//claude code bundle\nconsole.log('hello');\n";
@@ -193,4 +193,57 @@ test("the tooltip is labels, one idea to a line", () => {
   assert.match(off, /^Turn on/);
   assert.ok(!off.includes("Uninstall"), "there is nothing left running to warn about");
   assert.doesNotMatch(noClaude, /Turn/);                             // nothing to turn
+});
+
+/* ------------------------------------------------------------------
+   AND THE COMMAND, WHICH WAS STILL ASKING THE OLD QUESTION
+
+   The status bar was taught the difference between "there is a block" and "it is doing
+   something" - that is what everything above is about. Show status was not. It went on
+   calling patcher.isPatched(), which is state().present, so on the one day the two part
+   company the bar said off and the command said on, three inches apart, about the same
+   file. isPatched is gone now rather than corrected: a second name for a question this
+   already answers is how the two came to disagree in the first place.
+------------------------------------------------------------------ */
+
+test("live: the fix is on, and the answer names the build", () => {
+  const said = statusReport({ live: true, present: true }, "2.1.269");
+  assert.equal(said.kind, "info");
+  assert.match(said.message, /is on in Claude Code 2.1.269/);
+  assert.equal(said.action, undefined, "nothing to offer: it is already working");
+});
+
+test("present but run out: it does not say on, and it offers the way out", () => {
+  const said = statusReport({ live: false, present: true }, "2.1.269");
+  assert.doesNotMatch(said.message, /is on/, "this is the sentence that used to be a lie");
+  assert.match(said.message, /not being fixed/);
+  assert.equal(said.kind, "warning", "a fix that has stopped is not an informational notice");
+  assert.equal(said.action, "Turn it on", "a fact with no way out of it is half an answer");
+});
+
+test("no block at all: off, and Claude Code is untouched", () => {
+  const said = statusReport({ live: false, present: false }, "2.1.269");
+  assert.equal(said.kind, "info");
+  assert.match(said.message, /is off/);
+  assert.match(said.message, /untouched/);
+});
+
+test("the question that used to be asked is no longer there to ask", () => {
+  assert.equal(patcher.isPatched, undefined,
+    "isPatched is back: something can ask 'is there a block' and report it as 'the fix is on'");
+});
+
+test("and the three answers really are three, on a real expired block", () => {
+  // the whole path, through the disk rather than through a made-up object
+  const target = fakeClaudeCode();
+  patcher.apply(EXT);
+  assert.match(statusReport(patcher.state(), "x").message, /is on/);
+
+  ageTo(target, Date.now() - 1000);            // the laptop was asleep for a day and a half
+  const said = statusReport(patcher.state(), "x");
+  assert.equal(said.kind, "warning");
+  assert.match(said.message, /has run out/);
+
+  patcher.remove();
+  assert.match(statusReport(patcher.state(), "x").message, /untouched/);
 });

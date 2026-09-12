@@ -47,7 +47,7 @@ Then yes, this is the same bug.
 
 | where | what it is | status |
 |---|---|---|
-| Claude Code in VS Code | companion extension | 0.5.4 - the box you type in, the message you send, and Claude Code's own long-message bug each on a circuit of its own, put to seventeen Claude Code builds, 2.0.50 to 2.1.268; not published yet |
+| Claude Code in VS Code | companion extension | 0.5.5 - the box you type in, the message you send, and Claude Code's own long-message bug each on a circuit of its own, put to seventeen Claude Code builds, 2.0.50 to 2.1.269; and the file the panel loads found three ways rather than one; not published yet |
 | AI chat sites in the browser | Chrome extension | next |
 | a markdown editor | VS Code, desktop, web | shape not decided |
 | Claude desktop app | not investigated yet | unknown |
@@ -81,7 +81,8 @@ rule, and every wrong turn is written down rather than quietly dropped.
 
 | | |
 |---|---|
-| [docs/decisions.md](docs/decisions.md) | forty sections: every rule and fix that was tried, measured and rejected, including the two that crashed, the one that was too slow, the limits that were finally accepted, and how what was left was made to outlast the next update |
+| [docs/reviewing.md](docs/reviewing.md) | the two questions this project has, and the one command that answers them - read before reviewing anything here |
+| [docs/decisions.md](docs/decisions.md) | forty-one sections: every rule and fix that was tried, measured and rejected, including the two that crashed, the one that was too slow, the limits that were finally accepted, and how what was left was made to outlast the next update |
 | [docs/versions.md](docs/versions.md) | what was actually inside each build, read out of the `.vsix` rather than remembered |
 | [docs/roadmap.md](docs/roadmap.md) | what a new surface has to provide, the four rules an adapter obeys, and what order the rest gets built in |
 | [docs/claude-code-bug.md](docs/claude-code-bug.md) | the Claude Code bug on its own terms, with no RTL attached |

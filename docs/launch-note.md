@@ -198,7 +198,7 @@ worth stating:
   take it says so, instead of saying "on"
 
 The reasoning, and every formula and fix that was tried and rejected first, is in
-[decisions.md](decisions.md) — forty sections, including the wrong turns, the two
+[decisions.md](decisions.md) — forty-one sections, including the wrong turns, the two
 crashes, the measurements that came out the other way from what was expected, and the
 limits that were accepted in the end.
 

@@ -73,6 +73,10 @@ nothing else.
   exists to replace, applied by the extension itself in the one place the engine could
   not see. The body div is named as a block, and the engine tells any `dir="auto"`
   inside a decided block to inherit that decision
+- **the timeline dot** - a message's own dot moves to the side that message reads from, at
+  the same distances: 9px from the row's edge, 14px from the text, exactly as Claude Code
+  draws it on the other side. No other row pays for it - an English answer in the same
+  conversation is identical to the pixel
 - **the composer** - the box you type in is two stacked layers, an invisible
   contenteditable over a visible mirror; one flag on the container they share turns both,
   so the caret can never sit on one side while the glyph sits on the other. Nothing of
@@ -88,10 +92,9 @@ nothing else.
   by the `dir="auto"` its text is handed to - either one is enough - turned on the text
   alone, never on the row where the buttons are, and nothing is built inside it. Put to the
   same seventeen builds: every one that gives a sent message a road turns it
-- **the timeline dot** - moves to the side its own message reads from
 
 Each of those, and the formulas and fixes that were tried and rejected first, is written
-up in [docs/decisions.md](https://github.com/naveed-toro/smartrtl/blob/main/docs/decisions.md) - forty sections, including
+up in [docs/decisions.md](https://github.com/naveed-toro/smartrtl/blob/main/docs/decisions.md) - forty-one sections, including
 three attempts at per-line direction in the composer that were built, shipped and then
 withdrawn, the measurements that ended each one, the limits that were finally accepted so
 that a Claude Code update is the least likely thing to break it, and the box you type in

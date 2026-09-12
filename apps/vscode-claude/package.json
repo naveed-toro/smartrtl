@@ -2,7 +2,7 @@
   "name": "claude-code-rtl",
   "displayName": "SmartRTL for Claude Code",
   "description": "Fixes right-to-left text (Urdu, Arabic, Hebrew, Persian) in the Claude Code panel. ⚠ Uninstalling does not turn it off — use the ⚙ menu first.",
-  "version": "0.5.4",
+  "version": "0.5.5",
   "publisher": "smartrtl",
   "icon": "icon.png",
   "galleryBanner": {
@@ -85,7 +85,8 @@
     "vscode:prepublish": "npm run build",
     "vscode:uninstall": "node ./src/uninstall.js",
     "build": "node build/bundle-payload.js",
-    "test": "npm run build && node --test test/"
+    "test": "npm run build && node --test test/",
+    "review": "npm run build && node --test test/the-line.test.js test/status-bar.test.js test/startup-cost.test.js test/rendering.test.js test/claude-shape.test.js test/real-bundle.test.js test/real-webview.test.js test/composer-survival.test.js test/sent-survival.test.js test/pinned-message.test.js test/independent-lamps.test.js"
   },
   "devDependencies": {
     "playwright": "^1.56.0"

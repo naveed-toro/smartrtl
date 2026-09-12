@@ -9,7 +9,7 @@
  *
  * What is in this file
  *   Only the parts that are true of Claude Code and of nothing else: its class names,
- *   its timeline dot, its collapse button. The deciding and the watching live in
+ *   its timeline dot, its collapse button, its pinned row. The deciding and the watching live in
  *   @smartrtl/dom, and the rule itself in @smartrtl/core, so the browser extension and
  *   the desktop patch answer the same question the same way. The build step inlines
  *   both, because this file is appended to someone else's bundle and cannot import.
@@ -84,45 +84,60 @@
     var UNPIN_EXPANDED = true;    // let an expanded message scroll like ordinary content
 
     /* ------------------------------------------------------------------
-       OPTIONAL: put each message's timeline dot on the side that message reads from.
+       A message's own dot, on the side that message reads from.
 
-       Purely decorative. Two separate decisions, on purpose:
+       Claude Code draws a dot and a connector in a 30px gutter to the LEFT of every
+       message. For a message that reads right to left, that dot belongs on the right:
+       it is part of the message, and turning a message round turns its dot round. It
+       is a direction, not a decoration, and the whole stylesheet was searched to
+       confirm nothing else lives in that gutter - no buttons, no icons.
 
-         per conversation - once any message is RTL, the SAME gutter is reserved on
-                            both sides of every row. Content columns therefore stay
-                            identical from row to row, so nothing shifts sideways
-                            when an English answer sits between two Urdu ones.
+       HOW IT IS RESERVED, WHICH IS WHERE THIS WENT WRONG ONCE
 
-         per message      - only a row whose own content is RTL moves its dot and its
-                            line into the right hand gutter. An English answer keeps
-                            its dot on the left, next to its own text, exactly where
-                            it has always been.
+       Moving the dot means moving the gutter it sits in. Until 0.5.5 the gutter was
+       reserved on BOTH sides of EVERY row the moment any message turned - so that the
+       text columns of every row stayed identical to each other. Measured on 2.1.269,
+       in a conversation with one Urdu message in it, that cost the ENGLISH answers in
+       the same conversation 30px of width each. Keeping columns identical is a layout
+       decision and it was never ours to take; taking 30px from somebody's English
+       answer because of somebody else's Urdu one is not a direction by any reading.
 
-       The three offsets are read from the extension at runtime rather than copied,
-       so a restyle upstream cannot leave this stale. If any of them is not a plain
-       pixel number, nothing is done at all - moving the gutter without moving the
-       dot would be worse than leaving it alone.
+       So the gutter is flipped only on the row whose own message reads right to left,
+       and only from one side to the other. Measured, the same conversation:
+
+         english   text 50 -> 880, 830 wide, dot at 29    exactly as Claude Code drew it
+         urdu      text 20 -> 850, 830 wide, dot at 864   the mirror image of it
+
+       Nobody loses anything, each row keeps its full width, and each reader's eye
+       returns to the edge their own language starts from. What is given up is that an
+       English row and an Urdu row no longer share one column - which is what a mirror
+       is. decisions.md, 8 and 41.
+
+       The three offsets are read from the page at runtime rather than copied, so a
+       restyle upstream cannot leave them stale. If any of them is not a plain pixel
+       number, nothing is done at all - moving a gutter without moving the dot in it
+       would be worse than leaving both alone. And the rules sit in a cascade layer
+       declared ahead of all of the page's, every declaration !important, the same as
+       every other part of this file.
     ------------------------------------------------------------------ */
-    var timelineDone = false;
+    var timelineDone = false, timelineSheet = null;
     function mirrorTimeline() {
       if (!MIRROR_TIMELINE || timelineDone) return;
       try {
-        var row = document.querySelector(ROW_SEL + ":not([data-bidi-row])");
+        var row = document.querySelector(ROW_SEL + ':not([data-bidi-row])');
         if (!row) return;                       // nothing pristine to measure yet
         var pad  = getComputedStyle(row).paddingLeft;
-        var dot  = getComputedStyle(row, "::before").left;
-        var line = getComputedStyle(row, "::after").left;
+        var dot  = getComputedStyle(row, '::before').left;
+        var line = getComputedStyle(row, '::after').left;
         var px = /^(\d+(?:\.\d+)?)px$/;
         if (!px.test(pad) || !px.test(dot) || !px.test(line)) { timelineDone = true; return; }
         if (parseFloat(pad) <= 0) { timelineDone = true; return; }
-        var ts = document.createElement("style");
-        ts.id = "smart-rtl-timeline";
-        ts.textContent =
-          '[data-bidi-timeline="rtl"] ' + ROW_SEL + '{padding-right:' + pad + '!important}' +
+        timelineSheet = SmartRTLDom.layeredSheet('smart-rtl-timeline',
+          '@layer smartrtl-timeline{' +
+          ROW_SEL + '[data-bidi-row="rtl"]{padding-left:0!important;padding-right:' + pad + '!important}' +
           ROW_SEL + '[data-bidi-row="rtl"]::before{left:auto!important;right:' + dot + '!important}' +
-          ROW_SEL + '[data-bidi-row="rtl"]::after{left:auto!important;right:' + line + '!important}';
-        (document.head || document.documentElement).appendChild(ts);
-        document.documentElement.setAttribute("data-bidi-timeline", "rtl");
+          ROW_SEL + '[data-bidi-row="rtl"]::after{left:auto!important;right:' + line + '!important}' +
+          '}', function () {});
         timelineDone = true;
       } catch (e) { timelineDone = true; }
     }
@@ -131,16 +146,15 @@
       if (!MIRROR_TIMELINE) return;
       try {
         var row = el.closest(ROW_SEL);
-        if (row && !row.hasAttribute("data-bidi-row")) row.setAttribute("data-bidi-row", "rtl");
+        if (row && !row.hasAttribute('data-bidi-row')) row.setAttribute('data-bidi-row', 'rtl');
       } catch (e) {}
     }
 
     function undoTimeline() {
-      var t = document.getElementById("smart-rtl-timeline");
-      if (t && t.parentNode) t.parentNode.removeChild(t);
-      document.documentElement.removeAttribute("data-bidi-timeline");
-      var rows = document.querySelectorAll("[data-bidi-row]");
-      for (var k = 0; k < rows.length; k++) rows[k].removeAttribute("data-bidi-row");
+      try { if (timelineSheet) timelineSheet.remove(); } catch (e) {}
+      timelineSheet = null;
+      var rows = document.querySelectorAll('[data-bidi-row]');
+      for (var k = 0; k < rows.length; k++) rows[k].removeAttribute('data-bidi-row');
       timelineDone = false;
     }
 
@@ -1103,11 +1117,18 @@
         // puts on every message in the transcript, which no restyle renames
         boundary: '[class*="message_"],[data-transcript-message]',
         onDecision: function (block) {
-          lamp("timelineDot", function () {
+          lamp('timelineDot', function () {
             mirrorTimeline();   // measure + install, once, before any row is marked
-            return timelineDone && document.getElementById("smart-rtl-timeline") ? true : null;
+            if (!timelineDone || !timelineSheet) return null;
+            /* And what the SHEET says, not merely that one was asked for. A page that
+               refuses every way of adding a stylesheet is handed a sheet that is not
+               there and answers questions about itself honestly - so the lamp above a
+               dot that never moved must not say "on". Every other circuit in this file
+               reports sheet.road(); this one used to report that it had a variable. */
+            var road = timelineSheet.road();
+            return road.indexOf("off") === 0 ? road : true;
           });
-          markRow(block);       // this row's dot belongs on the right
+          markRow(block);       // this row's dot belongs on the side its message reads from
         },
         onCleanup: undoTimeline
       });

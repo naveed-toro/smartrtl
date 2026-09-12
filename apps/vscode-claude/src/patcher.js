@@ -27,22 +27,33 @@ const vscode = require("vscode");
 
 const fmt = require("./patch-format.js");
 const { BEGIN, stripPatch, readExpiry, stampExpiry, writeWhole } = fmt;
+const { findTarget } = require("./find-target.js");
 
 const TARGET_ID = "anthropic.claude-code";
-const REL_TARGET = path.join("webview", "index.js");
 const LEGACY_BACKUP = ".pristine-backup";
 
-/** @returns {{id:string, version:string, dir:string, target:string}|null} */
+/**
+ * The folder is not guessed, and nor - since 0.5.5 - is the file inside it.
+ *
+ * VS Code is asked where the extension it is actually running lives, which stays right
+ * through versions, a portable editor, and several copies side by side. The panel's own
+ * file used to be the one thing here written down and nothing else - webview/index.js -
+ * which made renaming it the single change that could take this fix down everywhere at
+ * once. find-target.js has three roads to it now, and says which one answered.
+ *
+ * @returns {{id:string, version:string, dir:string, target:string, road:string}|null}
+ */
 function findClaudeCode() {
   const ext = vscode.extensions.getExtension(TARGET_ID);
   if (!ext) return null;
-  const target = path.join(ext.extensionPath, REL_TARGET);
-  if (!fs.existsSync(target)) return null;
+  const hit = findTarget(ext.extensionPath);
+  if (!hit) return null;
   return {
     id: TARGET_ID,
     version: (ext.packageJSON && ext.packageJSON.version) || "unknown",
     dir: ext.extensionPath,
-    target
+    target: hit.target,
+    road: hit.road
   };
 }
 
@@ -83,11 +94,17 @@ function readPayload(extensionPath) {
 }
 
 /**
- * @returns {"applied"|"restamped"|"already-current"|"no-target"}
+ * @returns {"applied"|"restamped"|"already-current"|"busy"|"no-target"}
  *
  * "restamped" is its own answer on purpose. Refreshing the expiry changes the file
  * but not a single thing the reader would see, so it must not ask anybody to
  * reload - which is what "applied" means.
+ *
+ * And "busy" is its own answer for the opposite reason: NOTHING was done. Something has
+ * Claude Code's bundle open - a panel loading it is the ordinary way - and rather than
+ * write five megabytes underneath a reader, this leaves the file exactly as it is and
+ * comes back later. Silence would be the worst of the five: the caller would go straight
+ * on to tell somebody the fix is in place.
  */
 /**
  * The end of the bundle, and only the end.
@@ -142,18 +159,22 @@ function apply(extensionPath) {
       if (readExpiry(current) - now > fmt.REFRESH_BELOW_MS) {
         return { state: "already-current", install };
       }
-      writeWhole(fs, install.target, stripPatch(current) + "\n" + stampExpiry(payload, now) + "\n");
+      if (!writeWhole(fs, install.target, stripPatch(current) + "\n" + stampExpiry(payload, now) + "\n")) {
+        return { state: "busy", install };
+      }
       return { state: "restamped", install };
     }
   }
 
   const clean = kept || stripPatch(current);
-  writeWhole(fs, install.target, clean + "\n" + stampExpiry(payload, now) + "\n");
+  if (!writeWhole(fs, install.target, clean + "\n" + stampExpiry(payload, now) + "\n")) {
+    return { state: "busy", install };
+  }
   return { state: "applied", install };
 }
 
 /**
- * @returns {"removed"|"already-clean"|"no-target"}
+ * @returns {"removed"|"already-clean"|"busy"|"no-target"}
  */
 function remove() {
   const install = findClaudeCode();
@@ -163,7 +184,9 @@ function remove() {
   const kept = consumeLegacyBackup(install);
   if (!current.includes(BEGIN)) return { state: "already-clean", install };
 
-  writeWhole(fs, install.target, kept || stripPatch(current));
+  if (!writeWhole(fs, install.target, kept || stripPatch(current))) {
+    return { state: "busy", install };
+  }
   return { state: "removed", install };
 }
 
@@ -204,15 +227,15 @@ function state() {
   const install = findClaudeCode();
   // Not found can mean two different things, and they are told apart here: Claude Code
   // is not installed, or it is and the file its panel loads from is not where it was.
-  if (!install) return { installed: claudeCodeInstalled(), recognized: false, present: false, live: false, expiresAt: 0 };
+  if (!install) return { installed: claudeCodeInstalled(), recognized: false, present: false, live: false, expiresAt: 0, road: "" };
 
   let tail;
   try { tail = readTail(install.target); }
-  catch (e) { return { installed: true, recognized: true, present: false, live: false, expiresAt: 0 }; }
+  catch (e) { return { installed: true, recognized: true, present: false, live: false, expiresAt: 0, road: install.road }; }
 
   const present = tail.includes(BEGIN);
   const expiresAt = present ? readExpiry(tail) : 0;
-  return { installed: true, recognized: true, present, expiresAt,
+  return { installed: true, recognized: true, present, expiresAt, road: install.road,
            live: present && (!expiresAt || Date.now() < expiresAt) };
 }
 
@@ -228,12 +251,14 @@ function claudeCodeInstalled() {
   try { return !!vscode.extensions.getExtension(TARGET_ID); } catch (e) { return false; }
 }
 
-/** Cheap enough to call on every activation. Says nothing about whether it still runs. */
-function isPatched() {
-  return state().present;
-}
-
 /* TAIL_BYTES is exported for one test, and it is the right thing to test: every startup
    now answers from that window instead of reading five megabytes, and the day the payload
    outgrows it the answer quietly stops being available. */
-module.exports = { findClaudeCode, claudeCodeInstalled, apply, remove, isPatched, state, stripPatch, TARGET_ID, BEGIN, TAIL_BYTES };
+/* isPatched() used to live here, and answered state().present - "is the block in the
+   file". It had one caller, the Show status command, and that command is asking whether
+   right-to-left text is actually being FIXED, which is state().live. A block that is
+   present and out of date sits in the file doing nothing whatsoever, and for as long as
+   those two questions shared one answer, Show status said "on" over a fix that had
+   stopped. It is gone rather than corrected: a second name for a question this file
+   already answers is how the two drifted apart in the first place. */
+module.exports = { findClaudeCode, claudeCodeInstalled, apply, remove, state, stripPatch, TARGET_ID, BEGIN, TAIL_BYTES };

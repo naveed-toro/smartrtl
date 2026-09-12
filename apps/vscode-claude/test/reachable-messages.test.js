@@ -102,6 +102,14 @@ function offered() {
   return out;
 }
 
+/* Something holding Claude Code's bundle open, which is what a panel loading it looks
+   like from here. On Windows that refuses the rename outright, so nothing is written and
+   the extension has to say so instead of reporting the fix in place. The handle is held
+   for the whole of that state and let go of before any other. */
+let held = null;
+function letGo() { if (held !== null) { try { fs.closeSync(held); } catch (e) {} held = null; } }
+function holdTheBundleOpen() { try { held = fs.openSync(target, "r"); } catch (e) { held = null; } }
+
 const STATES = [
   ["Claude Code there, fix on", () => { claudeDir = dir; bundle(); patcher.apply(APP); }, true],
   ["Claude Code there, fix off", () => { claudeDir = dir; bundle(); }, false],
@@ -112,8 +120,24 @@ const STATES = [
   ["Claude Code there, but its panel file moved", () => {
     claudeDir = path.join(root, "anthropic.claude-code-moved");
     fs.mkdirSync(claudeDir, { recursive: true });
-  }, true]
+  }, true],
+  // and the bundle held open by something else, where nothing at all can be written to it
+  ["the bundle is held open by something else", () => {
+    claudeDir = dir; bundle(); holdTheBundleOpen();
+  }, false]
 ];
+
+/* Every state below rewrites Claude Code's bundle from underneath the extension - a
+   patched one, a clean one, a lapsed one - which is a thing no real editor does: that file
+   has exactly one writer, and it forgets its cached reading of it whenever it writes. So
+   the stand-in editor has to forget too. Without this, activate() in one state answers
+   refresh() from the state before it, the context key comes out wrong, and the commands
+   pressed below are not the ones VS Code would have offered - which quietly stopped
+   "Turn on" from ever being pressed at all. */
+for (const s of STATES) {
+  const rewriteTheDisk = s[1];
+  s[1] = () => { letGo(); rewriteTheDisk(); ext.forgetState(); };
+}
 
 function everythingAnybodyCanBeShown() {
   const seen = new Set();
@@ -130,6 +154,11 @@ function everythingAnybodyCanBeShown() {
       store["smartrtl.on"] = wanted;
     }
   }
+  // Everything from here on writes to the bundle, so whatever the last state was holding
+  // it with has to be let go of first - otherwise these scenarios all answer "busy" and
+  // the messages they exist to produce are never produced.
+  letGo();
+
   // the two nobody presses a button for: an update landing under the editor, and a
   // re-install that finds the fix switched off
   claudeDir = dir; claudeVersion = "2.1.263"; bundle(); store["smartrtl.on"] = true;
@@ -257,6 +286,7 @@ test("an update over an older build that was working still asks for a reload", (
   // "was it running a moment ago" said yes and nobody was asked to reload - while the
   // panel on screen went on running 0.4.22 from memory, which is exactly the build 0.5.0
   // was written to replace. A new block in the file means every open panel is stale.
+  letGo();                       // a state before this one may still be holding it
   claudeDir = dir; claudeVersion = "2.1.263";
   fs.writeFileSync(target, "//claude code bundle\n" + patcher.BEGIN +
     "\n/* an older build's block */ var EXPIRES_AT = " + (Date.now() + 864e5) + ";\n", "utf8");
@@ -271,6 +301,7 @@ test("an update over an older build that was working still asks for a reload", (
 });
 
 test.after(() => {
+  letGo();
   disposables.forEach((d) => d && d.dispose && d.dispose());
   fs.rmSync(root, { recursive: true, force: true });
 });

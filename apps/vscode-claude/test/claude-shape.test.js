@@ -17,6 +17,47 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const real = require("./support/real.js");
+const { findTarget } = require("../src/find-target.js");
+
+/* ------------------------------------------------------------------
+   A DECLARATION, NOT A SUBSTRING.
+
+   These two used to be written inline, as [^}]*(direction|unicode-bidi)\s*: - and that
+   matches "flex-direction:column", which is in almost every rule Claude Code ships. So
+   the diagnostic below fired on 2.1.268 and on 2.1.269 and on every build before them,
+   announcing that Claude Code had started setting a direction on a sent message itself.
+   It never had.
+
+   That is worse than a harmless bug. The whole plan for surviving the next update rests
+   on somebody READING the daily watch's report, and a line that appears every single day
+   teaches the reader to skip it - so the day it is finally true, it will be skipped too.
+
+   (?:[^}]*;)? is what makes it a declaration rather than a substring: the property has to
+   come straight after the brace that opened the block, or after the semicolon that ended
+   the declaration before it. A hyphen in front of it - flex-direction,
+   background-position, -webkit-text-align - is then not a match, because a hyphen is
+   neither of those two things.
+------------------------------------------------------------------ */
+const SETS_ON_THE_BOX =
+  /(messageInput|mentionMirror)_[^{}]*\{(?:[^}]*;)?\s*(direction|unicode-bidi|text-align)\s*:[^;}]*!important/;
+const SETS_ON_A_SENT_MESSAGE =
+  /(expandableContainer|content)_[^{}]*\{(?:[^}]*;)?\s*(direction|unicode-bidi)\s*:/;
+
+test("the instrument reads a declaration, not a substring of one", () => {
+  // No Claude Code needed, and that is the point. This is the one test in this file that
+  // checks the file itself, so it has to run on every machine and in every CI job - the
+  // rest of them skip where Claude Code is not installed, which is where CI started.
+  const onlyFlex = ".content_xx{display:flex;flex-direction:column;gap:4px}" +
+                   ".messageInput_xx{flex-direction:row!important;background-position:left}";
+  assert.equal(SETS_ON_A_SENT_MESSAGE.test(onlyFlex), false, "flex-direction was read as direction");
+  assert.equal(SETS_ON_THE_BOX.test(onlyFlex), false, "flex-direction was read as direction");
+
+  // ...and it still sees the real thing: first in a block, and after another declaration
+  assert.ok(SETS_ON_A_SENT_MESSAGE.test(".content_xx{direction:rtl}"));
+  assert.ok(SETS_ON_A_SENT_MESSAGE.test(".content_xx{display:flex;unicode-bidi:plaintext}"));
+  assert.ok(SETS_ON_THE_BOX.test(".messageInput_xx{color:red;direction:ltr!important}"));
+  assert.ok(SETS_ON_THE_BOX.test(".mentionMirror_xx{text-align:left !important}"));
+});
 
 const skip = real.installed ? false : "Claude Code is not installed in this editor";
 const WEBVIEW = real.installed ? path.dirname(real.installed.css) : null;
@@ -24,12 +65,28 @@ const HOME = WEBVIEW ? path.dirname(WEBVIEW) : null;
 const read = (f) => fs.readFileSync(f, "utf8");
 const bundle = () => read(path.join(WEBVIEW, "index.js"));
 
-test("the panel still loads its code from webview/index.js - the one file the fix goes into", { skip }, () => {
-  assert.ok(fs.existsSync(path.join(WEBVIEW, "index.js")), "webview/index.js is gone: the fix has nowhere to go");
+test("the panel's own file is still reachable, and road one is still the right road", { skip }, (t) => {
+  // Not "webview/index.js exists" any more. There are three roads to that file since
+  // 0.5.5, and losing the first one is a line in the report rather than a breakage - the
+  // same way losing one of the five roads to the box you type into is.
+  const hit = findTarget(HOME);
+  assert.ok(hit, "no road reaches the file Claude Code's panel loads: the fix has nowhere to go");
+  if (hit.road !== "webview/index.js") {
+    t.diagnostic("webview/index.js is gone; the panel's file is now found by " + hit.road);
+  }
+
   const main = JSON.parse(read(path.join(HOME, "package.json"))).main || "./extension.js";
   const host = read(path.join(HOME, main));
-  assert.match(host, /"webview"\s*,\s*"index\.js"/,
-    "Claude Code's panel no longer loads webview/index.js - the patch would be written where nothing reads it");
+  /* And the one way three roads can be WORSE than one: webview/index.js still sitting
+     there while the panel has moved on to some other file. Road one is taken on sight,
+     because it is a single stat call where reading the host is 3.4MB - so nothing at
+     runtime would ever notice, and the fix would be written into a file nobody loads
+     while the status bar went on saying "on". This is the day that has to be caught
+     here, so it is an assertion and not a note. */
+  if (fs.existsSync(path.join(WEBVIEW, "index.js"))) {
+    assert.match(host, /"webview"\s*,\s*"index\.js"/,
+      "webview/index.js is still there, but Claude Code no longer loads it - road one would take it every time and the patch would go where nothing reads it");
+  }
 });
 
 test("the box you type in can still be found by what it is, not only by name", { skip }, (t) => {
@@ -67,7 +124,7 @@ test("Claude Code does not set the box's direction with !important, or from a ca
   // direction itself - which is the day to look at __bidiStatus(), and at whether it is
   // still needed at all.
   const css = read(real.installed.css);
-  if (/(messageInput|mentionMirror)_[^{}]*\{[^}]*(direction|unicode-bidi|text-align)\s*:[^;}]*!important/.test(css)) {
+  if (SETS_ON_THE_BOX.test(css)) {
     t.diagnostic("the box's own rules now set direction, unicode-bidi or text-align with !important");
   }
   if (/@layer\b/.test(css)) t.diagnostic("Claude Code's stylesheet now uses cascade layers");
@@ -93,7 +150,7 @@ test("the heading above a sent message is still kept from deciding anything", { 
   if (!s.includes("screenReaderTurnHeading")) t.diagnostic("the heading above a sent message is no longer named; it is still skipped because nobody can see it");
   if (!s.includes('"data-transcript-message"')) t.diagnostic("data-transcript-message is gone; a message's row is bounded by its class name alone");
   const css = read(real.installed.css);
-  if (/(expandableContainer|content)_[^{}]*\{[^}]*(direction|unicode-bidi)\s*:/.test(css)) {
+  if (SETS_ON_A_SENT_MESSAGE.test(css)) {
     t.diagnostic("Claude Code now sets a direction on a sent message itself - the layered rules still win; check __bidiStatus()");
   }
   assert.ok(true);

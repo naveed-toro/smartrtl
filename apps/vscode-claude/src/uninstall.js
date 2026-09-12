@@ -20,6 +20,12 @@
  * Claude Code in it can be found by name. Old versions left behind by earlier
  * updates get cleaned up too, which asking the editor would not have done.
  *
+ * WHICH file inside each of those copies is find-target.js's answer, and it is shared
+ * with the patcher on purpose. This file used to keep a second copy of the path -
+ * webview/index.js, written out again - so a build that moved the panel's file would
+ * have been patched through one road and then left behind through another. Two copies
+ * of one fact is how the leaving stops matching the arriving.
+ *
  * Nothing here may throw. A cleanup that crashes on the way out is worse than one
  * that quietly does nothing.
  */
@@ -27,9 +33,9 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const { BEGIN, stripPatch, writeWhole } = require("./patch-format.js");
+const { findTarget } = require("./find-target.js");
 
 const TARGET_PREFIX = "anthropic.claude-code";
-const REL_TARGET = path.join("webview", "index.js");
 const LEGACY_BACKUP = ".pristine-backup";
 
 /**
@@ -43,9 +49,11 @@ function cleanUp(extensionsDir) {
 
   for (const entry of entries) {
     if (!entry.startsWith(TARGET_PREFIX)) continue;
-    const target = path.join(extensionsDir, entry, REL_TARGET);
+    let target = null;
     try {
-      if (!fs.existsSync(target)) continue;
+      const hit = findTarget(path.join(extensionsDir, entry));
+      if (!hit) continue;
+      target = hit.target;
 
       const current = fs.readFileSync(target, "utf8");
 

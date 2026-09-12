@@ -49,6 +49,24 @@ const NO_CLAUDE_CODE = "Claude Code is not installed, so there is nothing to fix
 const UNRECOGNIZED = "Claude Code has changed how its panel loads, so the fix cannot reach it until SmartRTL is updated.";
 const noTarget = () => (patcher.claudeCodeInstalled() ? UNRECOGNIZED : NO_CLAUDE_CODE);
 
+/* Something has Claude Code's bundle open, so nothing was written to it.
+   It is said rather than swallowed because the alternative was the worst thing in here:
+   writing five megabytes underneath a panel that is reading it, which does not cost
+   somebody the fix - it costs them Claude Code. Measured before it was believed: with a
+   reader on the file, thirty-six renames out of thirty-six were refused and the file was
+   caught half written. patch-format.js.
+   And it ends with what to do, because "busy" on its own leaves a person with nothing. */
+const BUSY = "Claude Code's panel is busy, so nothing was changed. Closing it and trying again usually does it.";
+const TRY_AGAIN = "Try again";
+
+/* How long before the fix is attempted again on its own after finding the bundle busy.
+   Not on the next tab change: waiting out a held file costs half a second of the editor's
+   own thread, and spending that on every tab change would be felt by somebody who is not
+   even looking at Claude Code. A minute is far below the block's own timings and far above
+   how long anything holds a file it is reading. */
+const BUSY_WAIT_MS = 60 * 1000;
+let busyUntil = 0;
+
 /* How often the winding is CONSIDERED. Cheap on purpose - almost every one of these
    is a comparison of two numbers in memory and nothing more. What it guards is
    fmt.STAMP_EVERY_MS, which is the interval that actually reaches the disk. */
@@ -117,6 +135,12 @@ function askIfStillOff(ctx, fresh) {
   });
 }
 
+function offerRetry(again) {
+  vscode.window.showWarningMessage(BUSY, TRY_AGAIN).then((choice) => {
+    if (choice === TRY_AGAIN) again();
+  });
+}
+
 function offerReload(message) {
   vscode.window.showInformationMessage(message, "Reload Window").then((choice) => {
     if (choice === "Reload Window") vscode.commands.executeCommand("workbench.action.reloadWindow");
@@ -147,6 +171,20 @@ function claudeCodeFocused() {
               String(input.viewType).toLowerCase().includes("claude"));
   } catch (err) { return null; }
 }
+
+/* WITHDRAWN: showing it where Claude Code has no tab.
+
+   Claude Code also lives in the side bar, which is not a tab, so for somebody who keeps it
+   there the question above answers "no" for ever and this item is never shown. That was
+   read as a fault and a reading of claudeCode.preferredLocation was built to answer it -
+   and the cure was worse: it put a mark in the corner of every window, all day, for
+   somebody editing a file with Claude Code nowhere in sight, because whether that view is
+   OPEN cannot be asked at all.
+
+   One small "RTL on", and only while Claude Code is the thing in front of you. That is the
+   whole of what this extension shows anybody, and it is not a gap to be closed by showing
+   more. Somebody in the side bar still has the switch in both of the places it has always
+   been: the Command Palette, and the Extensions view right beside Uninstall. */
 
 /* What patcher.state() last said, and when.
 
@@ -248,6 +286,48 @@ function whyItSays(st) {
   return "Turn on the right-to-left fix";
 }
 
+/**
+ * What "Show status" says - as a function of what is true, and nothing else.
+ *
+ * THREE answers, where there used to be two, and the missing one was a lie.
+ *
+ * It used to ask patcher.isPatched(), which answered "is the block in the file". That is
+ * not the question anybody runs this command for. A block that is present and out of date
+ * sits in Claude Code's bundle doing nothing whatsoever - the payload reads its date once,
+ * on the way in, and returns - so this said "the fix is on" while the status bar three
+ * inches away said "off". Both cannot be right, and the bar was.
+ *
+ * It is reachable, and not only in theory: a laptop asleep for more than a day wakes with
+ * the block already lapsed, and nothing winds it again until the next half-hourly check.
+ * That is the window this used to lie in.
+ *
+ * The middle answer does not stop at being true, either. "It is there and it has run out"
+ * leaves somebody holding a fact and no way out of it, so the way out is on the message.
+ *
+ * Lifted out of the command for the same reason whyItSays is lifted out of refresh: three
+ * situations sharing one command is not a thing to settle by reading the code and agreeing
+ * with yourself.
+ *
+ * @param {{live:boolean, present:boolean}} st  what patcher.state() said
+ * @param {string} version  Claude Code's version, because the answer is about that build
+ * @returns {{kind:"info"|"warning", message:string, action?:string}}
+ */
+function statusReport(st, version) {
+  // A report, not a notice. Nobody runs "Show status" by accident, so every answer can
+  // carry the build it is about - the first thing anybody is asked for afterwards.
+  if (st.live) {
+    return { kind: "info", message: `Right-to-left fix is on in Claude Code ${version}.` };
+  }
+  if (st.present) {
+    return {
+      kind: "warning",
+      message: `Right-to-left text in Claude Code ${version} is not being fixed: the block is in place but has run out.`,
+      action: "Turn it on"
+    };
+  }
+  return { kind: "info", message: `Right-to-left fix is off. Claude Code ${version} is untouched.` };
+}
+
 /* ------------------------------------------------------------------ *
  * Doing it
  * ------------------------------------------------------------------ */
@@ -259,6 +339,7 @@ function turnOn(ctx) {
   forgetState();
   refresh();
   if (result.state === "no-target") { vscode.window.showWarningMessage(noTarget()); return; }
+  if (result.state === "busy") { offerRetry(() => turnOn(ctx)); return; }
 
   // One answer, because it is true however much or little apply() had to do: the fix is
   // in place now. There used to be a second one here - "already on" - for the case where
@@ -276,6 +357,8 @@ function turnOff(ctx) {
   forgetState();
   refresh();
   if (result.state === "no-target") { vscode.window.showWarningMessage(noTarget()); return; }
+  // and a "Turn off" that could not take the block out must never be followed by "it is off"
+  if (result.state === "busy") { offerRetry(() => turnOff(ctx)); return; }
 
   // Same again: true whether there was a block to take out or not, and the "already off"
   // branch that used to be here could not be reached either.
@@ -290,6 +373,7 @@ function turnOff(ctx) {
  * touch Claude Code's folder at all.
  */
 function keepAlive(ctx, why) {
+  if (Date.now() < busyUntil) return;                     // found busy a moment ago; not every tab change
   if (Date.now() - stampedAt < fmt.STAMP_EVERY_MS) return;
   syncQuietly(ctx, why);
 }
@@ -313,10 +397,29 @@ function syncQuietly(ctx, why) {
     return;
   }
 
+  /* Busy means nothing was written, so none of the bookkeeping below may happen. Stamping
+     would hold off the next attempt for six hours; remembering the build would make
+     onDidChange take this Claude Code for one already dealt with. Both were the difference
+     between "it comes back in a minute" and "it never comes back at all". */
+  if (result.state === "busy") {
+    busyUntil = Date.now() + BUSY_WAIT_MS;
+    log.appendLine("[" + why + "] the bundle is held open by something else; nothing was written");
+    forgetState();
+    refresh();
+    // silent where nobody asked, said where they did: installing this, or an update landing
+    if (why === "installed" || why === "extensions-changed") offerRetry(() => syncQuietly(ctx, why));
+    return;
+  }
+  busyUntil = 0;
   if (result.install) lastSeen = { dir: result.install.dir, version: result.install.version };
   if (result.state !== "no-target") stampedAt = Date.now();
   forgetState();                       // we have just been the thing that could change it
-  log.appendLine(`[${why}] ${result.state}${result.install ? ` (Claude Code ${result.install.version})` : ""}`);
+  /* The road is in the line because there are three of them now, and the first one is the
+     only one that means nothing has changed. Finding the panel's file any other way is the
+     morning somebody will want to know about, and by then the log is all there is. */
+  const how = result.install && result.install.road && result.install.road !== "webview/index.js"
+    ? `, found by ${result.install.road}` : "";
+  log.appendLine(`[${why}] ${result.state}${result.install ? ` (Claude Code ${result.install.version}${how})` : ""}`);
   refresh();
 
   if (result.state === "no-target") return;
@@ -364,11 +467,21 @@ function activate(context) {
         vscode.window.showWarningMessage(noTarget());
         return;
       }
-      // A report, not a notice. Nobody runs "Show status" by accident, so the answer can
-      // carry the build it is about - the first thing anybody is asked for afterwards.
-      vscode.window.showInformationMessage(patcher.isPatched()
-        ? `Right-to-left fix is on in Claude Code ${install.version}.`
-        : `Right-to-left fix is off. Claude Code ${install.version} is untouched.`);
+      /* Asked of the disk, not of the cache. Everywhere else the cached answer is right
+         because nothing but this extension changes that file; here somebody has stopped and
+         asked on purpose, and half a minute of "probably still true" is not what they came
+         for. */
+      forgetState();
+      const said = statusReport(currentState(), install.version);
+      // Called ON vscode.window, never through a reference taken off it: the editor's own
+      // methods are not guaranteed to survive being detached from the object they live on.
+      const args = said.action ? [said.message, said.action] : [said.message];
+      const shown = said.kind === "warning"
+        ? vscode.window.showWarningMessage(...args)
+        : vscode.window.showInformationMessage(...args);
+      if (said.action && shown && shown.then) {
+        shown.then((choice) => { if (choice === said.action) turnOn(context); });
+      }
     })
   );
 
@@ -431,6 +544,7 @@ function activate(context) {
     vscode.window.tabGroups.onDidChangeTabGroups(() => refresh()),
     vscode.window.onDidChangeActiveTextEditor(() => refresh())
   );
+
 }
 
 function deactivate() {}
@@ -439,5 +553,15 @@ function deactivate() {}
    decide whether somebody is spoken to at startup, and how often - which is not a
    thing to settle by reading the code and agreeing with yourself. And whyItSays is
    there for the same reason: five situations share one word in the status bar, so
-   the only thing keeping them apart is the sentence each one produces. */
-module.exports = { activate, deactivate, freshInstall, askIfStillOff, whyItSays };
+   the only thing keeping them apart is the sentence each one produces. statusReport is
+   the same shape again, for the command - and it is the one that was caught being
+   wrong, so it is the one that most needed taking out where it could be asked. */
+module.exports = { activate, deactivate, freshInstall, askIfStillOff, whyItSays, statusReport,
+                   /* and forgetState, which is not about wording at all. It is here because a
+                      stand-in editor rewrites Claude Code's bundle between one situation and the
+                      next, and nothing in the real editor ever does that: only this extension
+                      writes that file, and it drops its cached reading of it every time it does.
+                      Without a way to say so, the harness asks the next situation's question and
+                      gets the last situation's answer - and which commands VS Code would offer is
+                      decided from exactly that. */
+                   forgetState };

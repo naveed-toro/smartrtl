@@ -98,3 +98,27 @@ test("with no Claude Code installed it reports that, rather than throwing", () =
   assert.equal(patcher.apply(EXT).state, "no-target");
   assert.equal(patcher.remove().state, "no-target");
 });
+
+test("a bundle held open is reported as busy, not as applied", () => {
+  // The one answer that means NOTHING was done. Said out loud because the alternative is
+  // an extension telling somebody the fix is in place when the file was never touched.
+  const target = fakeClaudeCode();
+  const reader = fs.openSync(target, "r");
+  try {
+    assert.equal(patcher.apply(EXT).state, "busy");
+    assert.equal(read(target), ORIGINAL, "it wrote underneath a reader");
+  } finally { fs.closeSync(reader); }
+  assert.equal(patcher.apply(EXT).state, "applied", "and it works again the moment the reader lets go");
+});
+
+test("and turning it off over a held bundle is busy too, never 'removed'", () => {
+  const target = fakeClaudeCode();
+  patcher.apply(EXT);
+  const reader = fs.openSync(target, "r");
+  try {
+    assert.equal(patcher.remove().state, "busy");
+    assert.ok(read(target).includes(BEGIN), "the block went out from under a reader");
+  } finally { fs.closeSync(reader); }
+  assert.equal(patcher.remove().state, "removed");
+  assert.equal(read(target), ORIGINAL);
+});

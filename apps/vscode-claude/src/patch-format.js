@@ -18,6 +18,8 @@
  * That does not make an uninstall instant - it makes it certain, and bounded. The
  * difference is worth being honest about.
  */
+const path = require("node:path");
+
 const BEGIN = "/* ==== smart-rtl-direction patch BEGIN ==== */";
 const MARK = "\n" + BEGIN;
 const STAMP = /var EXPIRES_AT = (\d+);/;
@@ -83,23 +85,124 @@ function stampExpiry(payload, now) {
  *
  * So the new content goes into a file beside it, and is then renamed over the old one,
  * which the file system does in one step: a reader sees the old file or the new one,
- * never a part of either. If the rename is refused - Windows does that while another
- * process holds the file open - it falls back to writing in place, which is exactly
- * what happened before, so the fallback is never worse than the past. The file beside
- * it is always cleaned up.
+ * never a part of either.
+ *
+ * AND THEN THE PROMISE WAS MEASURED, AND IT WAS NOT BEING KEPT
+ *
+ * The rename was allowed to fail back to writing in place - "never worse than the past",
+ * which was true and was not the point. Put to three processes writing a five-megabyte
+ * file while a fourth read it: THIRTY-SIX renames out of thirty-six refused, every write
+ * done in place, and ten of the reader's reads caught the file half written - 2,596,864
+ * bytes of 5,200,000. On Windows a rename over a destination ANY process has open fails
+ * with EPERM, and the one process certain to have this file open is the Claude Code panel
+ * that is loading it. The single most expensive thing this extension can do was reachable
+ * through the very fallback written to make it safe.
+ *
+ * So a refusal that means "somebody has it open" is now waited out rather than given in
+ * to: a handle on a file being read is held for a moment, and half a second of trying
+ * outlasts it. If it is STILL held after that, the bundle is left exactly as it is and
+ * this says so. Not applying the fix for another minute is a disappointment; a bundle
+ * torn in half is a Claude Code that will not start.
+ *
+ * A rename refused for a reason that will never come right - a filesystem that cannot do
+ * one at all - still falls back to writing in place, because there it is the only road
+ * there is and waiting would not help.
+ *
+ * The file beside it is always cleaned up.
+ *
+ * @returns {boolean} false only when the bundle was held open and is unchanged
  */
 const TMP_SUFFIX = ".smartrtl-tmp";
+
+/**
+ * The name of the file beside it - and why it carries a process id.
+ *
+ * It used to be one name for everybody: index.js.smartrtl-tmp. Two VS Code windows are
+ * ordinary and three are ordinary, and every one of them activates at the same moment -
+ * when the editor starts, and again the moment this extension is updated, which is the
+ * one time a write is certain. All of them would then write the SAME file beside the
+ * bundle: each one's clean-up deleting a file another was still writing, and each one's
+ * rename landing on a file another had just renamed away. On Windows a rename refused
+ * that way falls back to writing five megabytes IN PLACE, from two processes at once -
+ * which is precisely the torn bundle this whole function exists to prevent, and its cost
+ * is not a missing fix but a Claude Code that will not start.
+ *
+ * A process id makes the file this process's own. Nobody else writes it, nobody else
+ * deletes it, and the rename still puts the finished thing over the bundle in one step.
+ */
+function tempFor(file) { return file + TMP_SUFFIX + "." + process.pid; }
+
+/**
+ * And the other half of giving each write its own name: clearing up after the dead.
+ *
+ * A write that never finished - the machine lost power, the window was killed - leaves
+ * five megabytes of ours in somebody else's folder with nothing ever coming back for it,
+ * because the process it belonged to is gone. So each write clears up any temporary file
+ * shaped like one of ours and old enough that no live write could still be holding it.
+ * A minute is an age for one writeFileSync, and no time at all next to a file left over
+ * from a previous session.
+ */
+const STALE_AFTER_MS = 60 * 1000;
+function clearStaleTemps(fs, file) {
+  try {
+    const dir = path.dirname(file);
+    const mine = path.basename(file) + TMP_SUFFIX + ".";
+    const now = Date.now();
+    for (const name of fs.readdirSync(dir)) {
+      if (name.indexOf(mine) !== 0) continue;
+      const full = path.join(dir, name);
+      try {
+        if (now - fs.statSync(full).mtimeMs < STALE_AFTER_MS) continue;   // somebody may still be writing it
+        fs.unlinkSync(full);
+      } catch (e) { /* in use, or gone between the two calls: leave it */ }
+    }
+  } catch (e) { /* not our folder to insist on */ }
+}
+
+/* "Somebody has it open just now", as the three operating systems say it. Anything else -
+   a filesystem that cannot rename, a path that has gone - is not something waiting fixes. */
+const HELD_OPEN = { EPERM: 1, EACCES: 1, EBUSY: 1 };
+const RENAME_TRIES = 20;
+const RENAME_WAIT_MS = 25;            // twenty of these is half a second
+
+/* A wait with nothing running in it. This is the extension host's thread, so the wait has
+   to be short - and it is: it only ever happens while somebody is reading the bundle. */
+function pause(ms) {
+  try { Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms); } catch (e) {}
+}
+
 function writeWhole(fs, file, content) {
-  const tmp = file + TMP_SUFFIX;
+  const tmp = tempFor(file);
+  let done = false;
   try {
     fs.writeFileSync(tmp, content, "utf8");
-    fs.renameSync(tmp, file);
+    for (let go = 0; !done; go++) {
+      try { fs.renameSync(tmp, file); done = true; }
+      catch (e) {
+        if (!HELD_OPEN[e && e.code]) {
+          // it will never come right by waiting: this filesystem cannot do the rename at
+          // all, and writing in place is the only road there is
+          fs.writeFileSync(file, content, "utf8");
+          done = true;
+        } else if (go >= RENAME_TRIES) {
+          break;                      // still held: the bundle is left exactly as it is
+        } else {
+          pause(RENAME_WAIT_MS);
+        }
+      }
+    }
   } catch (e) {
-    fs.writeFileSync(file, content, "utf8");
+    /* the temporary file could not even be written. In place is not attempted here
+       either: if a five-megabyte file cannot be created beside it, the same write is not
+       going to go better on top of the one Claude Code loads. */
+    done = false;
   } finally {
     try { if (fs.existsSync(tmp)) fs.unlinkSync(tmp); } catch (e) {}
+    clearStaleTemps(fs, file);
   }
+  return done;
 }
 
 module.exports = { BEGIN, MARK, WINDOW_MS, REFRESH_BELOW_MS, STAMP_EVERY_MS, TMP_SUFFIX,
-                   stripPatch, readExpiry, stampExpiry, writeWhole };
+                   STALE_AFTER_MS, RENAME_TRIES, RENAME_WAIT_MS,
+                   tempFor, stripPatch, readExpiry, stampExpiry, writeWhole };

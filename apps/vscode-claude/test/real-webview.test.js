@@ -57,12 +57,14 @@ test("an answer read as it arrives, on the real stylesheet", { skip }, async () 
 });
 
 test("the edge the reader's eye returns to is moved exactly once", { skip }, async () => {
-  // Right to left, every line starts at the RIGHT edge of the panel. Anything that
-  // moves that edge mid-answer moves text somebody has already read - so this counts
-  // the times it moves at all, with the fix and without it, and requires that the
-  // fix add exactly one: the timeline gutter, reserved before there is anything to
-  // read. Counting rather than asserting a pixel, because the gutter's width is
-  // measured from the panel at runtime and is not ours to predict.
+  // Right to left, every line starts at the RIGHT edge of the panel, so anything that
+  // moves that edge mid-answer moves text somebody has already read. This counts the times
+  // it moves at all, with the fix and without it.
+  //
+  // Exactly one is required: the message's own gutter going to the side it reads from, at
+  // the moment the message is decided and before there is anything under it to read.
+  // Counting rather than asserting a pixel, because that gutter's width is measured from
+  // the panel at runtime and is not ours to predict. decisions.md, 41.
   const measure = async (fix) => {
     const { page, close } = await real.open(real.conversation(real.answer()) + real.working(), { fix });
     try {
@@ -92,7 +94,7 @@ test("the edge the reader's eye returns to is moved exactly once", { skip }, asy
   const untouched = await measure(false);
   const fixed = await measure(true);
   assert.equal(untouched, 0, "the panel does not move this edge by itself");
-  assert.equal(fixed, 1, "and the fix may move it once, to reserve the gutter");
+  assert.equal(fixed, 1, "and the fix may move it once, when the message's dot goes with it");
 });
 
 test("a sent message on the real stylesheet takes one direction, and nothing is built", { skip }, async () => {
@@ -178,71 +180,80 @@ test("an Urdu answer differs by direction, and by nothing that is not direction"
   const { differing, rewritten } = await bothWays(URDU_ANSWER);
   assert.deepEqual(rewritten, [], "no text is ever rewritten");
 
-  // direction and unicode-bidi ARE the fix. The rest of this list is the timeline
-  // dot being moved to the side the message reads from - a 30px gutter on the row,
-  // and the width every element inside it then inherits. It is decoration, it is
-  // the only thing here that is not direction, and it is behind MIRROR_TIMELINE in
-  // the payload: set that to false and this list is exactly two entries long.
-  const allowed = [
-    "direction", "unicode-bidi",
-    "padding-right", "padding-inline-end",             // the gutter itself
-    "width", "inline-size",                            // what the gutter takes
-    "perspective-origin", "transform-origin"           // both are computed from width
-  ];
+  // direction and unicode-bidi ARE the fix. The padding is the message's own dot moving to
+  // the side that message reads from - the same fix, applied to the one thing beside the
+  // text that belongs to it: the row's 30px gutter goes from its left to its right.
+  //
+  // This list used to have six more in it - width, inline-size, perspective-origin and
+  // transform-origin among them - because the gutter was reserved on BOTH sides of EVERY
+  // row so that all rows kept one column. That took 30px off the English answers in the
+  // same conversation, which is not a direction by any reading. It is only flipped now, on
+  // the row whose own message turned, and no row loses anything. decisions.md, 41.
+  const allowed = ["direction", "unicode-bidi",
+                   "padding-left", "padding-inline-start",     // the gutter it leaves
+                   "padding-right", "padding-inline-end"];     // the one it moves to
   const unexpected = differing.filter((p) => !allowed.includes(p));
   assert.deepEqual(unexpected, [],
-    `these are neither direction nor the timeline gutter: ${unexpected.join(", ")}`);
-
+    `these are neither the direction nor the message's own dot: ${unexpected.join(", ")}`);
   assert.ok(differing.includes("direction"), "and it must actually set a direction");
+  // the one that caught a real restyle: <th> is centred by the BROWSER, not by the host,
+  // and text-align:start was quietly un-centring every header in an Urdu table
+  assert.ok(!differing.includes("text-align"),
+    "the fix must not re-align anything the browser or the host aligned");
   // the one that caught a real restyle: <th> is centred by the BROWSER, not by the
   // host, and text-align:start was quietly un-centring every header in an Urdu table
   assert.ok(!differing.includes("text-align"),
     "the fix must not re-align anything the browser or the host aligned");
 });
 
-test("the dot goes with its message, in the frame the message turns", { skip }, async () => {
-  // The dot is Claude Code's, drawn by its own ::before at left: 9px, and a message
-  // that reads from the right belongs beside a dot on the right. This worked once a
-  // turn had finished; while the model was still working it did not happen at all -
-  // on a one-paragraph reply the dot never moved, because the message it belonged to
-  // was never decided. Measured on the old engine: the dot changed on zero frames.
+test("the dot goes with its message, and the English rows beside it keep every pixel", { skip }, async () => {
+  // The dot is Claude Code's, drawn by its own ::before in a 30px gutter on the left of
+  // every row. A message that reads from the right belongs beside a dot on the right: the
+  // dot is part of that message, and turning the message turns it too. It is the same fix
+  // as the text, applied to the one thing beside the text that belongs to it.
   //
-  // So this asserts the two halves together: that it moves, and that it moves WITH
-  // the text rather than after it - and that an English answer in the same
-  // conversation keeps its own dot exactly where the panel put it.
+  // What is asserted with it is the half that was wrong until 0.5.5. The gutter used to be
+  // reserved on both sides of every row, so that all rows kept one column - and that took
+  // 30px off every English answer in the same conversation. An English answer must be
+  // exactly where it was, to the pixel, and exactly as wide, whatever language anybody else
+  // wrote in. decisions.md, 41.
   const c = real.cls;
-  const english = `<div class="${c.message} ${c.timelineMessage}"><div class="${c.root}">
-    <p>The build tool comparison is documented upstream and stays in English.</p></div></div>`;
+  const md = (html) => `<div class="${c.message} ${c.timelineMessage}"><div class="${c.root}">${html}</div></div>`;
+  const html = real.conversation(
+    md("<p>The build tool comparison is documented upstream and stays in English.</p>") +
+    md("<p>npm install کے بعد پروجیکٹ چلائیں اور نتیجہ دیکھیں</p>") +
+    md("<p>Another English answer, after the Urdu one.</p>"));
 
-  const { page, close } = await real.open(
-    real.conversation(english + real.answer()) + real.working());
-  try {
-    const seen = await page.evaluate(async (text) => {
-      const md = document.getElementById("md");
-      const rows = [...document.querySelectorAll('[class*="timelineMessage_"]')];
-      const frame = () => new Promise((r) => requestAnimationFrame(() => r()));
-      const side = (row) => {
-        const b = getComputedStyle(row, "::before");
-        return b.left === "9px" ? "left" : "right";
-      };
+  const look = async (fix) => {
+    const { page, close } = await real.open(html, { fix });
+    try {
+      await page.waitForTimeout(700);
+      return await page.evaluate(() => [...document.querySelectorAll('[class*="timelineMessage_"]')].map((el) => {
+        const box = el.getBoundingClientRect(), p = el.querySelector("p").getBoundingClientRect();
+        const d = getComputedStyle(el, "::before");
+        return {
+          dotX: Math.round(d.left === "auto" ? box.right - parseFloat(d.right) : box.left + parseFloat(d.left)),
+          textL: Math.round(p.left), textR: Math.round(p.right), textW: Math.round(p.width)
+        };
+      }));
+    } finally { await close(); }
+  };
 
-      const dots = rows.map((r) => [side(r)]), turned = [];
-      const p = document.createElement("p");
-      md.appendChild(p);
-      for (let i = 1; i <= text.length + 30; i += 3) {
-        p.textContent = text.slice(0, i);
-        await frame();
-        rows.forEach((r, n) => { const s = side(r); if (s !== dots[n][dots[n].length - 1]) dots[n].push(s); });
-        turned.push(!!p.closest('[data-bidi="rtl"]'));
-      }
-      return { english: dots[0], urdu: dots[1], turnedAt: turned.indexOf(true) };
-    }, "useMemo اور useCallback کا فرق یہی ہے۔");
+  const off = await look(false), on = await look(true);
+  assert.equal(on.length, 3);
 
-    assert.deepEqual(seen.english, ["left"], "an English answer's dot never moves");
-    assert.deepEqual(seen.urdu, ["left", "right"],
-      "the Urdu message's dot moves once, to the side it reads from, and stays there");
-    assert.ok(seen.turnedAt >= 0, "and the message really did turn while the model worked");
-  } finally { await close(); }
+  // the Urdu row: its dot crosses the panel, and its text keeps every pixel of its width
+  assert.ok(on[1].dotX > on[0].dotX + 200,
+    `the Urdu message's dot stayed on the left, at ${on[1].dotX}`);
+  assert.equal(on[1].textW, off[1].textW, "and its text must lose no width to the move");
+  assert.ok(on[1].textR > off[1].textR - 40 && on[1].textR < off[1].textR,
+    "its text should now end where the gutter it gave up used to be");
+
+  // and the English rows, before it and after it: untouched, to the pixel
+  for (const i of [0, 2]) {
+    assert.deepEqual(on[i], off[i],
+      "an English answer moved because somebody else's message was in Urdu");
+  }
 });
 
 /* ------------------------------------------------------------------------- *

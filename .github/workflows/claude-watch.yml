@@ -5,6 +5,16 @@
 # the newest Claude Code from the Marketplace and puts this build to it - its own
 # stylesheet, its own running bundle, and the assumptions this fix makes about it. If
 # anything fails, GitHub emails the repository's owner the same day, naming the release.
+#
+# It answers the only two questions this project has, every morning, so that neither has
+# to be answered by reading everything again:
+#
+#   1. does the formula reach every place text appears, without costing anybody anything?
+#   2. will it still do that after Claude Code's next update?
+#
+# It runs `npm run review`, which is the same command a person runs by hand, so that a
+# review is a command rather than a reading. docs/reviewing.md says what is in it and -
+# more importantly - what is not a finding.
 
 name: Claude Code watch
 
@@ -53,4 +63,4 @@ jobs:
       - name: Put this build to the newest Claude Code
         env:
           SMARTRTL_CLAUDE_DIR: /tmp/claude/extension
-        run: node --test test/claude-shape.test.js test/real-bundle.test.js test/real-webview.test.js
+        run: npm run review
