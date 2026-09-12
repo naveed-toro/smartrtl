@@ -1,4 +1,4 @@
-# The fifty builds, and what each one actually contained
+# The fifty-one builds, and what each one actually contained
 
 Compiled by opening every `.vsix` and reading what is inside it, not from memory. The
 second table was rebuilt the same way after the fact, which is why some of its rows say
