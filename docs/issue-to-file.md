@@ -15,6 +15,13 @@ Search the open and closed issues for `sticky` and for `Show less` first; if it 
 there, add the reproduction and the measurement below to that thread instead of opening a
 second one, and say what your build numbers were.
 
+**Searched on 2026-09-11:** the symptoms are there, many times, and the cause is not. The
+plain case - an ordinary long message, opened - appears as #39809 (closed as a duplicate),
+#72707 (open) and #85505 (closed by the stale bot, put down to a scrollbar). The
+command-shaped case is diagnosed correctly in #88512 and #93052, both open. So this is still
+worth filing as its own issue, since it is the only one with the cause of the plain case and
+a one-rule fix, with those five linked from it. The body below does that already.
+
 **Afterwards:** put the issue URL at the top of `claude-code-bug.md`, so the write-up and
 the public record point at each other.
 
@@ -46,7 +53,7 @@ This is not a language or RTL issue — it behaves identically in English.
 
 | | |
 |---|---|
-| Extension | `anthropic.claude-code` — reproduced on 2.1.247, 2.1.259 and 2.1.263 |
+| Extension | `anthropic.claude-code` — reproduced on 2.1.247, 2.1.259 and 2.1.263, and measured unchanged in every build that pins a message, 2.1.90 to 2.1.268 |
 | VS Code | 1.135 |
 | OS | Windows 11 |
 
@@ -84,6 +91,12 @@ The longer the answer underneath, the longer the panel appears frozen. The furth
 had scrolled, the worse it is — opening a message at the very bottom of a conversation
 looks fine, because there is nothing below it to hide.
 
+Measured with a forty-line message and a 150-line answer in a 560px panel: opened, the
+message is 856px tall and stays pinned; "Show less" comes into reach after 22 turns of the
+wheel, at the very end of the turn; and after closing it the reader is 2,640px from the line
+they had been reading. The same in every build from 2.1.90 — when a message that heads a turn
+first became sticky — to 2.1.268.
+
 ### Cause
 
 Two rules in `webview/index.css`, each reasonable on its own:
@@ -116,6 +129,23 @@ reliable signal.
 Capping the expanded body's height and giving it its own scrollbar also works, but it means
 deciding how much of a window a message may occupy, and the right answer differs on a
 laptop and an external display.
+
+### The same trap with no way out: a message taken for a command
+
+This is the cause of #88512 and #93052, and it is the same trap entered a second way. A
+message whose text starts with `/` — a skill with long arguments, or a pasted path such as
+`/Users/me/notes.md` — is rendered by the `isSlashCommand` branch, which returns before the
+collapsible wrapper: no "Show more", no "Show less", no height cap, and the row is still
+`stickyHeader`. Measured in 2.1.268, a forty-line one is 755px tall in a 560px panel and forty
+turns of the wheel pass without a line of its answer appearing. The rule above cannot reach it
+(it has no collapse row); routing it through the same wrapper would, and until then:
+
+```css
+.stickyHeader:has(.slashCommandMessage) { position: static }
+```
+
+Related, as far as I can tell the same underlying pinning: #39809, #72707, #85505 (the plain
+case, described by its symptoms) and #69771, #72590, #88512, #93052 (the command case).
 
 ### One more thing, if you take the fix above
 

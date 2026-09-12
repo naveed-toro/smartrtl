@@ -10,7 +10,7 @@ search for, in several languages.
 
 ## What is in here
 
-Thirty-four sections, in the order they were written, which is the order the faults were
+Forty sections, in the order they were written, which is the order the faults were
 found. The ones worth reading first are marked.
 
  1. [The root cause](#1-the-root-cause)
@@ -47,11 +47,24 @@ found. The ones worth reading first are marked.
 32. [Every message, read out loud one at a time](#32-every-message-read-out-loud-one-at-a-time) ←
 33. [Installing it said nothing, and the reason was a file we shipped by mistake](#33-installing-it-said-nothing-and-the-reason-was-a-file-we-shipped-by-mistake) ←
 34. [Accepting the limits: one direction for the box you type in, and one for a sent message](#34-accepting-the-limits-one-direction-for-the-box-you-type-in-and-one-for-a-sent-message) ←
+35. [The box you type into, built for the next update](#35-the-box-you-type-into-built-for-the-next-update) ←
+36. [A message somebody sent, on a circuit of its own](#36-a-message-somebody-sent-on-a-circuit-of-its-own) ←
+37. [The long message nobody can read past, on a circuit of its own](#37-the-long-message-nobody-can-read-past-on-a-circuit-of-its-own) ←
+38. [Ten looks at one paragraph, and the cost of the pass nobody had counted](#38-ten-looks-at-one-paragraph-and-the-cost-of-the-pass-nobody-had-counted) ←
+39. [The question only one of the three places was ever asked](#39-the-question-only-one-of-the-three-places-was-ever-asked) ←
+40. [The one place where nothing is allowed to cost anything](#40-the-one-place-where-nothing-is-allowed-to-cost-anything) ←
 
 ← 6 and 7 are the rule and the design it forced. 13 is what the first live run found.
 25 and 27 are the composer crash and the decision to stop; 28 is what that would have
 cost; 29 is how the whole thing is wired so one fault cannot spread. 34 is where the
-project stopped trying to beat every limit and started building for the next update.
+project stopped trying to beat every limit and started building for the next update, and
+35 and 36 are that done to the first two places text appears - the box people write in,
+and the message once it is sent - each put to ten months of Claude Code. 37 is the same
+done to Claude Code's own long-message bug, and the answer to whether they have fixed it. 38 is
+what all four of them cost, measured, and what happens when each is broken on purpose. 39 is
+the question two of the three places were never asked - whether Claude Code has fixed this
+itself - and what a lamp says once it has stopped working. 40 is the box you type into held to
+a harder rule than anything else here: that nobody can tell this is installed.
 
 ---
 
@@ -2337,3 +2350,910 @@ compares medians, because a watch that cries wolf is a watch somebody stops read
 The first would have kept 2.1.267 from breaking anything. The second is what lets a
 restyle pass. The third is what turns the next surprise from a report weeks later into a
 line in the status on the day it happens.
+
+---
+
+## 35. The box you type into, built for the next update
+
+0.5.0 accepted a limit - the box takes one direction as a whole - and the instruction that
+followed it was about nothing else: that one place, where people write, must keep working
+through every Claude Code update that can be foreseen, as a lamp of its own, and must never
+be the thing that crashes anything. Not a larger formula. The same small one, made hard to
+break.
+
+### Ten months of the box, booted
+
+"Measured on one build" is how 2.1.267 broke the box without anything noticing. So before a
+line was changed, seventeen builds were downloaded from the Marketplace - 2.0.50 from
+November 2025 to 2.1.268, released the day before this was written - and each one was
+booted with the payload in it and typed into: its own bundle, its own stylesheet.
+
+| builds | class names | layers | what the box sets on itself |
+|---|---|---|---|
+| 2.0.50 - 2.1.0 | minified: `c`, `d` | one, visible | nothing |
+| 2.1.30 - 2.1.59 | `messageInput_cKsPxg` | one, visible | nothing |
+| 2.1.90 - 2.1.266 | the same | two: a caret layer at `color:#0000`, and a copy drawn over it | nothing |
+| 2.1.267 - 2.1.268 | the same | two | `unicode-bidi: plaintext` on both |
+
+Three changes in ten months, and through every one of them what the box says about ITSELF
+never moved: `role="textbox"`, `aria-label="Message input"`, `aria-multiline="true"`,
+`data-placeholder`, `contenteditable="plaintext-only"`. Untouched, every one of the seventeen
+reads `Hello ہیلو` left to right. With 0.5.0, every one of them reads it right to left - on
+2.0.50 and 2.1.0 through `role=textbox` alone, because there was no class name to find.
+Describing the box twice had already survived two changes nobody saw coming.
+
+That is the evidence for the rest of this section. The next change will most likely be of
+one of those three kinds: a restyle, a new layer, or a property the box sets on itself.
+
+### The next update, made on purpose
+
+So each of those, and the ones nearest to them, were made - to the copied page, and to
+Claude Code's own bundle and stylesheet, rewritten before they were served. 0.5.0 against
+0.5.1:
+
+| the change | 0.5.0 | 0.5.1 |
+|---|---|---|
+| Claude Code forcing `ltr`, `plaintext` and `left` with `!important`, from a specific selector | **lost** | holds |
+| the same from inside a cascade layer | **lost** | holds |
+| every class renamed, and the role and the label gone | **not found** | found by `aria-multiline`, or by `data-placeholder` alone |
+| the box wrapped in a new element, or the layer over it wrapped | **off** | holds |
+| a second layer drawn over the box - inline suggestions, say | turned, by the accident of a loose selector | turns with it, found as a layer drawn over the box |
+| an icon put beside the box, hidden from screen readers | **turned with the box** | left alone |
+| the layer over the box drawn only once there is text | **never turned** - "off" was remembered | turns when the layer arrives |
+| the box rebuilt with Urdu already in it | waited for a key | turns at once |
+| two boxes, text put into the one not last typed in | **missed** | each follows its own text |
+| the answers' part failing to start | **took the box with it** | the box stays on |
+| one layer held left to right from script | **caret and letters apart** | given back whole, and said |
+| our stylesheet taken out of the page | **gone** | put back |
+| the box inside a shadow root | **unreachable** | turned, from inside it |
+
+On the copied page that is twenty-four tests, and 0.5.0 fails eighteen of them. In Claude
+Code's own running app it is five rewrites of its real bundle, and 0.5.0 fails three on
+behaviour - `test/composer-survival.test.js` and `test/real-bundle.test.js`.
+
+### How it is built now
+
+**Its own circuit.** The box used to be one part of one engine: one start, one observer, one
+stylesheet, and a throw anywhere in the answers' half reached it. Now it is `startComposer`,
+started first and inside its own guard, with its own listeners, its own observers - one that
+finds boxes as they are added, and one on each box it has found - its own stylesheet and its
+own status. The answers' part failing to start was made to happen, and the box stays on. The
+box throwing on every question was made to happen, and the answer beside it is decided
+exactly as before.
+
+**Five roads to it.** By name, by `role=textbox`, by its label, by `aria-multiline`, by
+`data-placeholder`. The last four are what the box is, and `data-placeholder` occurs on it
+and on nothing else in the bundle. A label on something that cannot be typed into is not the
+box, so a hit counts only if it is editable.
+
+**The rules name nothing of the host's.** JavaScript finds the layers and marks each one; the
+stylesheet speaks only of our own two attributes. There is no class name in it to go stale,
+and no selector in it the browser could refuse.
+
+**No stylesheet can overrule it.** 2.1.267 won by adding one property the rule did not set.
+0.5.0 set all three, with `!important`, and would still have lost to the next step: the same
+properties with `!important` and a longer selector, or from inside a cascade layer. The rules
+now live in a cascade layer declared before any of the page's, their stylesheet first in the
+document. An `!important` declaration in the earliest layer outranks every later layer and
+every unlayered rule, whatever its specificity and wherever it sits. Only an inline
+`!important` from script can beat it - not how React styles anything, and what the
+measurement below exists for.
+
+**Nothing inside a turned layer decides for itself.** The caret's layer is plain text; the
+layer people read is not always - a mention is a chip, a misspelling a span. Were any of those
+ever given a direction of its own - `dir`, `bdi`, `plaintext` - the letters would be laid out
+by one rule and the caret by another. So inside a turned layer everything is held to the
+layer's direction. Measured on Claude Code's own stylesheet with a chip in the box: what
+differs with the fix and without it is `direction`, `unicode-bidi`, and the logical names of
+padding that did not move. On today's box it changes nothing else at all.
+
+**Layers found by what they are.** More than one thing beside the box can be hidden from a
+screen reader - a copy of its text, and an icon. They are told apart by the only thing that
+makes a copy a copy: it is drawn over the box. More than one candidate beside it, or any
+deeper in the container, is taken only if it covers most of the box. Every road is asked and
+what they find is put together, so a layer Claude Code adds tomorrow turns with the one it
+has today.
+
+**Found as it arrives, and watched from itself.** A box rebuilt with text already in it -
+switching sessions, a draft restored - fires no key and no focus. The finder looks inside what
+is added to the page, which costs about a microsecond for a paragraph of a streaming answer
+and fifteen for a sixty-cell table. Once found, a box is watched from the box itself, so
+while an answer streams elsewhere nothing about the box is asked. Over a four-hundred-chunk
+stream: 8.21ms a chunk without the payload, 8.19ms with it.
+
+**It fails to nothing.** A fault while handling a box takes that box's direction back out, so
+its layers return to Claude Code's rendering together. After a box turns, the page is read
+back: if its layers did not all take the direction, the caret would sit apart from the
+letter it writes, so none of them is turned and the status says why. A stylesheet taken out
+of the page goes back. A page that refuses a style element gets a constructed one. A box
+inside a shadow root gets a sheet of its own.
+
+**It says what it measured.** Which road found the box, which road the stylesheet came in by,
+and whether the page took the direction - `on - measured working`, or `not working` with the
+values that prove it, kept until it is measured again. If something editable is typed into
+while no box has been found, the status says that too: the day a restyle closes every road,
+the first line of the report is which one.
+
+### What was found in it before it was built
+
+Five faults, and four of them were in the new code - two found by its tests, two by reading
+it again once the tests were green. Each has a test now, and each of those tests was run
+with its fix taken out, to see it fail:
+
+- **Black text was taken for invisible.** With nothing drawn over it, the box is only turned
+  if people can see it. The first version read the last number in the colour, and in
+  `rgb(0, 0, 0)` that is the blue. A one-layer box with black text - every build before
+  2.1.90, in a light theme - would never have turned. Found by the test that runs under a
+  strict CSP, where no page style reaches the box and its text is black.
+- **"Not working" lasted one letter.** The status went back to "not measured" at the next
+  keystroke, so the one report that mattered was on screen for a single character.
+- **A reading-back that outlived its box.** A box turns, and is read back a moment later.
+  If Claude Code rebuilt a layer inside that moment, the reading-back still named the old
+  layer, gone from the page - and a layer that is gone reads like a layer that disagrees. It
+  took the direction back from the healthy box that had replaced it. Only a box still being
+  looked after is read back now.
+- **A layer added inside a wrapper went unseen.** Whether the box needed looking at again was
+  asked of its own children, and a layer put inside something it already had does not
+  change those. What arrives in the box is looked at instead.
+- **Two lamps on one box.** A sent message's text is a run handed to `dir="auto"`, and so
+  would be any run Claude Code drew into the copy over the box - which sits BESIDE the
+  editable layer, not inside it, so "never inside an editor" did not keep the sent-message
+  lamp out. It marked the copy while a draft had one line, kept the mark when it had two, and
+  once the draft was English again the copy read right to left over a caret that did not.
+  None of the seventeen builds draws such a run; it was a fault waiting for an update. The
+  sent-message lamp now stays out of an editor and out of the copy drawn over one. That is
+  the only line of it that changed, and all of its own tests pass unchanged.
+
+Which is also why every new test here was run against 0.5.0 as well. A test that passes on
+both proves nothing about the change. Eighteen of the twenty-four fail on 0.5.0; of the six
+that do not, three test what 0.5.0 already did, one passes on 0.5.0 only through the
+two-lamps fault above, and two test faults of the new code that 0.5.0 never had.
+
+### The one way this could break Claude Code itself
+
+Everything above fails to "nothing happens". One thing does not. The payload is appended to
+Claude Code's bundle, and the bundle is loaded with `type="module"`: a syntax error in module
+mode is not our part going quiet - the whole module fails to parse and the panel never
+starts. The build checked the payload with `new Function`, which parses a forgiving script.
+It now also parses it as a module, and that check was shown to have teeth: a legacy octal
+literal passes the old check and fails the new one.
+
+### What it still cannot survive, said plainly
+
+- **Claude Code holding both layers left to right with an inline `!important`.** Nothing a
+  stylesheet does outranks that. The status says `not working`, with the values.
+- **The box moved into a closed shadow root, or another frame.** Nothing of ours reaches it.
+  The status goes on waiting, and says something was typed into that matched nothing.
+- **A textarea whose text is changed from code.** A textarea's value is not in the page, so
+  no observer sees it change; it turns at the next key or focus. No build has had one.
+- **A different kind of editor** - one that lays out its own lines and draws its own caret.
+  It may well be found, by role. Whether turning it is right is a question that build would
+  have to answer, and the layer check and the daily watch are what would ask it.
+- **A draft that mixes two languages takes one direction as a whole.** The limit section 34
+  accepted, and still the one this is built around.
+
+### Knowing the day it changes
+
+`claude-shape.test.js` now names each of the four things the box has always been, one line
+each, and says so when Claude Code starts setting the box's direction itself - with
+`!important`, or from a cascade layer. The daily watch puts that, the real bundle and its five
+rewrites to every new release. And `build/fetch-claude-builds.js` fetches builds by version,
+keeping only the four files anything here reads, so that `test/history.test.js` can put the
+box to every one of them: seventeen today, all holding.
+
+### The rule this leaves
+
+> Find it by what it is. Turn it from somewhere nothing else can outrank. When it cannot be
+> turned whole, give it back whole - and let no other lamp reach inside it.
+
+---
+
+## 36. A message somebody sent, on a circuit of its own
+
+The second of the four places text appears, done the way section 35 did the first: studied
+in every build there is, then built for the updates that have not happened yet. It takes
+one direction as a whole, from what it says - any RTL word in it and it reads right to left,
+none and it is left exactly as Claude Code drew it. That was already the behaviour. What
+this section is about is what was holding it up.
+
+### Seventeen builds, and a message sent in each
+
+The stubbed app draws a sent message exactly as the real panel does - its row, its
+expandable container, the run its text sits in - so the same seventeen builds as section 35
+were booted and sent `npm install کے بعد پروجیکٹ چلائیں`. Untouched, every one of them reads
+it left to right. With 0.5.1, what turned it depended on which era the build came from:
+
+| builds | what the build gives a sent message | what turned it in 0.5.1 |
+|---|---|---|
+| 2.0.50 - 2.1.0 | minified classes, a plain `<span>` | **nothing - it never turned** |
+| 2.1.30 - 2.1.200 | its container's class name | the code for answers, treating its body as one of their blocks |
+| 2.1.220 - 2.1.235 | that, and the run its text is handed to `dir="auto"` | the same, and the `dir="auto"` road |
+| 2.1.247 - 2.1.268 | that, and a heading hidden above it for screen readers | **the code for answers, deciding the whole row from that heading** |
+
+Three things in that table were wrong, and none of them showed on the screen:
+
+- **A sent message had no lamp of its own.** Both of its roads lived inside the code for
+  answers. Had Claude Code fixed its answers - the one fault that part stands down for - or
+  had that part failed to start, sent messages would have gone dark with it.
+- **It was decided from text nobody can see.** Since 2.1.247 the first block in a sent
+  message's row is a heading kept one pixel square for screen readers. The answers' part met
+  it first and put the decision on the whole row. Rename the row's class, and nothing stops
+  that decision climbing out of the row onto the answer below it.
+- **A class it leaned on had quietly gone.** `contentWrapper_` - named here as "one message"
+  for a sent message - stopped existing in 2.1.266. Claude Code's component still asks for
+  it; its stylesheet no longer defines it, so no element carries it.
+
+And the status said `nothing decided yet` on every build from 2.1.30 to 2.1.200, over
+messages that had been turned - by a different part.
+
+### What replaced it
+
+`startSent`, a third circuit beside the box and the answers:
+
+**Found two ways, each enough.** By the class of the element that holds a sent message's
+text - the same class and hash in every build from 2.1.30 to 2.1.268 - and by what it is:
+the run the page hands to `dir="auto"`, the browser's first-strong guess applied to text the
+page did not want to decide. A slash command with its arguments, shown in a plain div with
+neither, is named too; no road reached it before.
+
+**Decided where the text is, and nowhere else.** The direction goes on the element that
+holds the text, never on the row: the controls beside a message sit in flex rows that end
+at `flex-end`, and a row that turned would carry "Show less" to the other side. Inside the
+text, the run handed to `dir="auto"` and the text's own children are held to the message's
+direction. Anything deeper that Claude Code gives a direction on purpose - a mention it
+marks left to right - keeps it.
+
+**No stylesheet can overrule it.** The same cascade layer, declared first, every
+declaration `!important`, as the box's. Claude Code has never set a direction on a sent
+message; it set one on the box in 2.1.267, and the next place it does so will not win.
+
+**It fails to nothing.** A message that throws when it is read is left as the page had it,
+and the message beside it is still decided. Each message found is watched from itself, so a
+message the page rewrites is decided again - both ways - and one that leaves the page is let
+go.
+
+**The code for answers stays out of it.** It skips the heading by name, and never takes a
+decision from a block drawn one pixel square - the same heading said by what it is, so a
+rename does not bring it back. And one message now ends at `data-transcript-message` as well
+as at its class name: Claude Code has put that attribute on every message in the
+transcript since 2.1.268, and no restyle renames an attribute.
+
+### What it came to, measured
+
+- **Fifteen of the seventeen builds** turn a sent message - every line of it, the English
+  line with the rest - and in not one of them does anything else decide anything in its row.
+  2.0.50 and 2.1.0 give a sent message no road at all, and the report says so rather than
+  failing.
+- **Eighteen tests on the copied page, and 0.5.1 fails twelve.** Among them: Claude Code
+  forcing `plaintext` on the message from its most specific selector and from a cascade
+  layer; the run given `plaintext` by a class with `dir="auto"` gone; every class renamed
+  with an English answer streaming under the message, watched frame by frame for a single
+  frame of it reading right to left; a slash command; the answers' part failing to start; a
+  message that throws when read.
+- **Seven in Claude Code's own app**, five of them rewrites of its real bundle: the message's
+  classes renamed, `dir="auto"` removed, `plaintext` forced with `!important` and from a
+  layer, and the heading renamed along with everything that names it - where the one-pixel
+  rule alone keeps the answers' part off the row.
+- **Nothing measurable to pay.** A conversation of a hundred sent messages, and of three
+  hundred, with an answer streaming under it: the same cost per chunk as 0.5.0 and 0.5.1, and
+  the same with none. Each message watched from itself costs a streaming answer nothing.
+
+That last measurement also found something that is not this section's: in that stress test
+the answers' part spends about a third of a millisecond on each chunk, in every build of
+this extension there has been. A frame is sixteen. It is written down for number three.
+
+### What it still cannot do
+
+- **2.0.50-shaped builds** - every class minified and no `dir="auto"` - give a sent message
+  nothing to be told apart by. The composer survived them through its role; a sent message
+  has none.
+- **A message inside a shadow root.** The box is reached there through the events that come
+  out of it; a sent message sends none.
+- **A message that mixes two languages takes one direction as a whole.** The limit section
+  34 accepted, unchanged.
+
+### The rule this leaves
+
+> A message is decided by its own lamp, from its own text, where its text is - never by the
+> lamp beside it, and never from anything nobody can see.
+
+## 37. The long message nobody can read past, on a circuit of its own
+
+Not a right-to-left fault, and not ours: Claude Code's own, found here and written up in
+[claude-code-bug.md](claude-code-bug.md). A message that heads a turn is `position: sticky`,
+and once it is opened it has no height cap, so a pinned element taller than the panel can
+never show its own bottom. Sections 10, 15 and 29 built the fix for it. This is that fix,
+put through what sections 35 and 36 put the box and a sent message through - and asked
+whether Claude Code has fixed the bug itself.
+
+### Every build, with a real answer under the message
+
+Everything earlier here was measured on a copy of the page, with a stand-in for the component
+that opens and closes a message. This time Claude Code's own app was booted, and the
+extension host was made to answer: a forty-line message, a hundred and fifty lines of answer
+streamed under it the way the host streams one, more conversation below, and then what a
+person does - scroll back into the answer, point at the message, click "Show more", wheel
+down to "Show less", click it.
+
+| builds | untouched | 0.5.2 |
+|---|---|---|
+| 2.0.50 - 2.1.59 | nothing is pinned; there is no trap | nothing to do |
+| 2.1.90 - 2.1.268 | opened, the message stays pinned: 856px in a 560px panel. Not one line of the answer is seen. "Show less" arrives after **22** turns of the wheel, at the very end of the turn. Closing it leaves the reader **2,640px** from their line | unpinned; "Show less" after **3** turns; closing puts the reader back on their line exactly |
+
+The same in all thirteen that pin, to the pixel. Nothing between 2.1.90 - when a message that
+heads a turn first became sticky - and 2.1.268 has changed it. The only thing near it that did
+change: from 2.1.257 a click on a pinned message's text scrolls to the start of its turn,
+300ms later, and from 2.1.268 moving focus between messages allows for the pinned header's
+height. Neither touches the trap.
+
+### And upstream
+
+Claude Code's public tracker has this, many times, from different people, since March 2026 -
+the plain message (#39809, #72707, #85505) and, far more often, a message taken for a command
+(#69771, #72590, #88512, #93052). As of 2026-09-11 none shows a reply from Anthropic or a
+linked fix; two were closed by the stale bot as "not planned" and two as duplicates. The plain
+case was put down to a scrollbar that stops short (#85505); the command case was diagnosed
+correctly - pinned, with no collapsible wrapper - in #88512 and #93052. The write-up here has
+still not been filed.
+
+### What was wrong with it
+
+The behaviour was right. Everything around it was not:
+
+- **It rode in the answers' stylesheet.** `UNPIN_CSS` was handed to the engine as `extraCss`,
+  so if the answers' part could not start, this went with it: two lamps on one circuit.
+- **It was plain CSS**, unlayered, winning by specificity alone: `(0,3,0)` against Claude
+  Code's `(0,2,0)`. One rule of theirs as specific, later in the page, and it would have lost.
+- **It was found by class names and nothing else.** Four of them, all stable since 2.1.90 -
+  and any one renamed would have brought the trap back without a word.
+- **It never asked whether it was needed.** The question was put once, at start-up, when no
+  message exists. Every build reported `on - no header rendered yet, the rule waits in the
+  sheet` for ever - so the promise that it stands down when Claude Code stops pinning was one
+  it could not keep, and "on" meant nothing.
+- **It did not know about the second way into the trap.** A message Claude Code takes for a
+  command - a skill run with long arguments, or any message whose first character is `/`, a
+  pasted path included - is drawn with no collapsible wrapper: no "Show more", no "Show less",
+  no height cap, and pinned like any other. In 2.1.268, 755px of it in a 560px panel, and
+  forty turns of the wheel went by without a line of the answer under it appearing - with
+  0.5.2 in, because its rule looked for a "Show less" that is never there.
+- **`__bidiFixOff()` left the listener behind**, still putting the reader back on their line
+  after all of this had been turned off.
+
+### What replaced it
+
+`startPinned`, a circuit of the adapter's own, started before the engine inside its own guard:
+
+**Found by three roads.** A pinned row by its class name; by what it is - a message in the
+transcript (`data-transcript-message`, 2.1.268) that the page makes sticky; and, failing both,
+the sticky ancestor of the run a sent message's text is handed to (`dir="auto"`, 2.1.220).
+That last road is kept out of the box you type into - not inside it and not beside it, the
+same test the sent-message lamp uses. It was written without that at first, and a test gave
+the box `position: sticky` and a forty-line draft: the road took the box for a message and
+let go of it. Nothing of Claude Code's but a message is sticky today; the day the box is,
+a long draft would have scrolled it away.
+An opened message by name - the collapse row that only an opened message has - and by what
+the trap IS: a pinned row, showing its whole length, taller than half the panel it is pinned
+in. That road is the one that reaches the command-shaped message, and it still finds an opened
+one with every name renamed.
+
+**It never touches what Claude Code designed.** A collapsed message - collapsed by name, or
+held under an inline height cap that clips its text - stays pinned, however small the panel.
+So does a short one, and a short command. Only a message showing its whole length is let go
+of, and only while it is taller than half the panel.
+
+**No stylesheet can overrule it.** Its own sheet, first in the page, a cascade layer declared
+ahead of all of Claude Code's, every declaration `!important`.
+
+**It stands down row by row, and altogether.** A row the page does not pin is never touched. If
+the first message drawn is named as pinned and the page does not pin it, Claude Code has
+stopped pinning, and the sheet, the marks and the listener all come back out.
+
+**It says what it measured.** Each row it lets go of is read back after the frame; an opened
+message found still pinned and taller than the panel is `not working`, not `on`.
+
+### What it came to, measured
+
+- **All seventeen builds** in Claude Code's own app: in the thirteen that pin, the command-shaped
+  message is let go of and its answer is read; a collapsed message, a short one and a short
+  command stay pinned; opened, the long one reaches "Show less" in three turns of the wheel and
+  closing it lands on the reader's line; the status reads `measured working`. In the four that
+  pin nothing, nothing is marked. Not one error.
+- **Every name renamed** - `stickyHeader`, `expandableContainer`, `buttonContainer`,
+  `collapsed`, in the bundle and the stylesheet together: in 2.1.268 all of it still works, by
+  what it is. In 2.1.220 - 2.1.267 the plain message still works through `dir="auto"`.
+- **A build that stops pinning**, made by taking `position: sticky` out of its own rule: in all
+  thirteen, `not needed`, and nothing of this left in the page.
+- **Seven tests in the installed build's app, and 0.5.2 fails five**: the status, the
+  command-shaped message, the renamed names, the build that stops pinning, and the listener
+  left behind.
+- **Nothing to pay.** A hundred pinned messages with an answer streaming under them: 377
+  microseconds a chunk against 0.5.2's 381. Everything of it runs when a message is added or
+  changes size, and a streaming answer does neither to a pinned row.
+
+### Found while re-checking the other two
+
+- **Two lamps on one paragraph, the day it would happen.** `dir="auto"` is one of the two roads
+  to a sent message because it occurs once in Claude Code's bundle - on a sent message. The day
+  an answer's paragraphs are handed to it too, an obvious way for anyone to start fixing
+  right-to-left, that road would take every paragraph of every answer for a sent message. The
+  sent-message lamp is told what an answer is now - the test id every answer has carried since
+  2.1.59 - and never goes inside one.
+- **A guard with a gap in it.** Keeping the view on a message it opens does its work two frames
+  after the click, outside the `try` that wraps the click. A fault there had nothing between it
+  and the page. It has a guard of its own.
+
+### What it still cannot do
+
+- **Half the panel is a choice, not a measurement.** Below it, a message showing its whole
+  length stays pinned, as Claude Code has it; above it, it scrolls. Taller than the panel is
+  the only point at which the trap is strictly a trap - a message 90% of the panel tall can
+  still be read past, through the 10% left. Half was chosen because a pinned message is there
+  to keep the question in view while the answer is read, and past half it covers more of the
+  answer than it leaves.
+- **With every name renamed and `data-transcript-message` gone**, a command-shaped message has
+  nothing left to be found by: it carries no `dir="auto"`.
+- **While a message is let go of**, 2.1.268's focus movement still allows for its height as if
+  it were pinned, and a message it moves focus to lands that much lower. Nothing breaks.
+
+### The rule this leaves
+
+> A fix for somebody else's bug is asked, row by row, whether it is still needed - and says
+> what it measured, not what it was told when it was switched on.
+
+## 38. Ten looks at one paragraph, and the cost of the pass nobody had counted
+
+Asked before the commits for 0.5.3 went in: is any of this too expensive to live inside
+somebody else's panel? The three circuits added since 0.5.0 each watch the page from
+their own observer, which is what keeps one of them failing from reaching another - and
+that is four document-wide observers where there used to be one.
+
+So it was measured rather than argued about, in Claude Code's own running app and on its
+own stylesheet.
+
+### What it costs to arrive
+
+| | |
+|---|---|
+| the block appended to `webview/index.js` | 135,471 bytes, against the bundle's 5,279,795 - **2.6% bigger** |
+| parsing it, running it, and installing all four circuits | **3 - 7ms**, once, inside a boot that takes about 1,300ms |
+| the panel rendering its composer, with the fix and without | 1,266 - 1,436ms against 1,376 - 1,600ms: **no measurable difference** |
+
+### What it costs while an answer streams
+
+The interesting number is not the total; it is the work done per batch of mutations,
+because that is what repeats. 1,500 appends - words added to a paragraph, a new paragraph
+every 25, the way markdown streams - into an answer with a composer and three sent
+messages on the page:
+
+| | untouched | 0.5.2 | after this |
+|---|---|---|---|
+| selector queries of ours | 0 | **7,023** | **1,224** |
+| our scripting, over a 3.1s answer | 4 - 6ms | 51 - 85ms | **41 - 42ms** |
+| style recalculation | 28 - 68ms | 27 - 47ms | 27ms |
+| wall clock for the whole stream | 3,097 - 3,489ms | 3,078 - 3,110ms | 3,078 - 3,101ms |
+
+7,023 queries for 1,500 appends is nearly five per append, and the reason is the shape of
+streaming rather than anything clever: text arrives word by word into the SAME paragraph,
+so one batch of mutations names that paragraph over and over - ten times in a batch is
+ordinary. The queue was a list, so each of those ten asked the page for its blocks again
+and read the whole paragraph again.
+
+The queue is a `Set` now, and so is the list of blocks a pass collects. Looking at one
+block twice in a pass can only ever reach the same verdict twice, so nothing about the
+outcome changes - the 249 tests say the same thing after it as before. What changes is
+that the pass happens once.
+
+It was never slow enough for anybody to see: the wall clock is the same either way, and
+the browser's own layout is twenty times the cost of our pass. It is worth doing because
+a guest in somebody else's panel should not be spending five times what it needs to, and
+because the number nobody has counted is the one that grows.
+
+### What was checked and left alone
+
+- **Four document-wide observers, not one.** One observer fanning out to four circuits
+  would be cheaper by three callbacks and would put all four on one fuse. Measured, those
+  three callbacks are not worth anybody's independence.
+- **`getComputedStyle` outside the hot path.** The box is measured once per turn, a sent
+  message once per decision, a pinned row once per resize - never per mutation. Style
+  recalculation during a streamed answer is *lower* with the fix in than without it.
+- **The probe that asks whether the fault is still here** builds and removes two
+  paragraphs, up to 40 times, and then never again. Section 29 has the hang it caused and
+  the two guards that ended it.
+
+### And the fuse box, put to the test rather than described
+
+Each of the four circuits was made to throw at its first line, in the real app, and the
+page read back afterwards:
+
+| broken | uncaught errors | Claude Code's error pane | the other three |
+|---|---|---|---|
+| the box you type into | 0 | empty | a sent message still turns; answers and the pinned message still on |
+| a sent message | 0 | empty | the box still turns; answers and the pinned message still on |
+| answers | 0 | empty | the box and a sent message both still turn |
+| the pinned message | 0 | empty | all three of the engine's parts still on |
+
+And the two things all of them share, broken the same way, because a claim about
+independence is worth only as much as its exceptions:
+
+- **`layeredSheet`**, the helper that gets a stylesheet into the page: breaking it took the
+  box, a sent message and the pinned message dark together. Answers survived - that part
+  installs its own sheet. Nothing reached the page, and every lamp said `off` and no more.
+- **the rule**: the box still turned (it asks a different function of it), and the
+  sent-message lamp went on reporting `on - nothing decided yet` while deciding nothing.
+  Its fault counter rose, which `__bidiStatus()` shows beside it, but the headline was
+  still `on`.
+
+Neither is reachable from anything Claude Code can do - only from a fault of ours inside one
+of those two functions - and the first draft of this section said so and left them. That was
+the wrong call twice over. The first is the one piece of code three circuits share, so it is
+the one fault that could ever dim three lamps at once, and it costs six lines to make it
+unable to: the helper is guarded from outside as well as inside now, and a circuit handed a
+sheet that could not be built goes on running, turns nothing anybody can see, and reports
+what it measured - `not working - the direction was set and the page did not take it` - which
+is exactly what is true. And the second is this project's own rule broken in its own status:
+a lamp that has thrown and never once worked now says so, instead of saying `on`. Both are
+in section 39, with what they look like now.
+
+### The rule this leaves
+
+> The cost of a pass is measured on the page it runs on, and the claim that one lamp
+> cannot dim another is made by breaking them one at a time, not by reading the code.
+
+## 39. The question only one of the three places was ever asked
+
+Section 29 set the rule for this whole fix, in one line: **needed is MEASURED, never assumed**.
+Two fixes for one fault fight each other, and the fight is invisible to whoever shipped
+either of them - so every part of this is supposed to ask the page whether the fault it
+exists for is still there, and take itself out if it is not.
+
+One of the three places text appears was actually asking. The answers' part has put a probe
+in the page since the beginning: two paragraphs in a copy of the markdown root, one pure
+Urdu to check the instrument and one mixed to ask the question, read back and removed. The
+other two lamps looked like this:
+
+```js
+var composer = MIRROR_INPUT ? lamp("composer", function () { return true; }) : false;
+var sent = lamp("sentMessages", function () { return true; });
+```
+
+"Is it needed? — yes, assume so, for ever." And of everything Claude Code might fix next, the
+box you type into is the likeliest: it is the thing people keep filing about, and in 2.1.267
+they were already in that file, putting `unicode-bidi: plaintext` on both of its layers. The
+day they finish the job, the old behaviour was for our rule to go on forcing the whole box
+right to left underneath theirs, with the status cheerfully reporting `on`.
+
+### Why these two could not use the probe
+
+A probe is a copy, and the thing that makes these two places different from an answer is
+exactly that a copy of them is worthless. A copy of a box nobody types into says nothing
+about the box people do type into - half of what is being measured is the host's own live
+layer, drawn by React a frame behind the caret. The same goes for a message: the run its text
+is handed to, the heading above it, the wrapper it is clipped by, are all the host's.
+
+So the real thing is asked, and the question is put to it before anything of ours is on it -
+which is the part that makes the answer mean anything. Our own rules all apply under our own
+attributes, so a box with no attribute of ours on it is answering about itself.
+
+### The one text worth asking with
+
+```js
+function tellsThemApart(text) {
+  return firstStrong(text) === "ltr" && containsRtlLetter(text);
+}
+```
+
+`dir="auto"` and `unicode-bidi: plaintext` take a run's direction from its first strong
+character; this project's rule takes it from whether there is any right-to-left text at all.
+For most text the two agree. Where they disagree is a line that opens in Latin and turns
+Urdu - which is the fault, written as a string. So that is the only text a page is asked
+with, and where the page draws its first character is the whole answer:
+
+| what the page does with "npm install کے بعد" | what it means | what happens |
+|---|---|---|
+| draws the **n** on the left | the fault is here | carry on, nothing changes |
+| draws the **n** on the right | somebody has fixed it | that circuit comes out of the page |
+
+**A draft of pure Urdu is never asked with, and that exclusion is the whole reliability of
+it.** The browser reads pure Urdu right to left whether the fault is there or not, so a
+question asked with one answers "fixed" on every build ever shipped - including the one in
+front of you. There is a test for exactly that, on a page where the temptation is live: a
+fixed page, a pure Urdu draft, and the lamp required to stay on.
+
+### The instrument checks itself
+
+Every layer showing the same text has to give the same answer, or there is no answer yet.
+That is not ceremony: the caret's layer is updated in the same instant a key goes down and
+the layer drawn over it is the host's, a frame behind, so while the two disagree they are
+looking at different drafts and neither is worth having. A keystroke later they agree. The
+same rule covers a message caught half rebuilt: it answers nothing, and the next one is
+asked instead.
+
+And the character has to land inside the box it was measured against, or something nobody
+modelled is going on - a transform, a scrolled overflow - and the answer would be arithmetic
+rather than a measurement.
+
+### Measured, on the real stylesheet
+
+| the build | the box | a sent message | answers | attributes of ours left on the page |
+|---|---|---|---|---|
+| Claude Code as it is | on, measured working | on, measured working | watching | 4 |
+| + the box fixed | **not needed** | on, measured working | watching | 1 |
+| + a sent message fixed | on, measured working | **not needed** | watching | 3 |
+| + all three fixed | **not needed** | **not needed** | **not needed** | **0** |
+
+In each of those the reader still sees every line the right way round - their fix doing what
+ours did - and one place being fixed moves nothing in the other two. Which is the point: a
+page that draws a mixed draft correctly has said nothing whatsoever about what it does with a
+message somebody sent, or with an answer.
+
+### A lamp that has stopped working stops saying it is on
+
+Found by breaking this fix on purpose, one circuit at a time, inside Claude Code's own app -
+the runs in section 38. Every fault was contained exactly as intended. What none of them did
+was say so: the fault counter rose in a field underneath and the headline still read `on`.
+
+Three goes at the condition, and the first two were wrong in the same way - they counted
+attempts:
+
+1. **around the turn.** A fault in the first thing an attempt does - asking the rule - was
+   never counted at all, because the counter sat after it.
+2. **around the whole attempt.** Better, and still wrong: the box's commonest attempt by far
+   is the **empty draft**, which succeeds at doing nothing. A circuit that handled every empty
+   draft perfectly and threw on every real one went on reporting `on`.
+3. **has anything ever actually worked?** Something threw, and nothing has ever been turned.
+   Both halves are needed: a fault while setting something up, on a circuit that goes on
+   turning boxes, says nothing about the circuit - and a circuit with no faults that has
+   never been shown any Urdu is not broken, it is waiting.
+
+A third shape turned up while testing it: a box that throws the moment it is asked anything
+never becomes a record at all, so nothing is ever *tried* and the clause above has nothing to
+speak about. That one says `not working - it could not take hold of a box at all`.
+
+It can still cry wolf in one way - a harmless fault on a healthy circuit that has not yet
+been shown anything to turn. On the real panel every circuit reports `contained: 0`, so that
+fault is hypothetical; and of the two ways to be wrong, a status that says "not working" when
+nothing has worked yet is the one this project can live with.
+
+### And one more name taken out of the pinned message
+
+Whether a message is collapsed is the question that decides whether Claude Code's own design
+is left alone, and it was answered by two names: a `collapsed_` class, and an inline
+`max-height`. Move that cap into a stylesheet or a custom property and both answers go quiet
+together - and a message Claude Code is deliberately holding back gets let go of.
+
+It is answered by measurement now as well: something inside the message is taller than itself
+and is not letting it out. No name, and nothing about how the cap is written. With one
+discrimination that has to be kept, and a test that failed until it was: a cap that **clips**
+text is Claude Code holding something back, and a cap that lets it overflow is not - and the
+wrapper Claude Code draws around a message clips on its own account, so while it does, text
+is being held back whatever the cap says.
+
+### Found while writing it
+
+One missing backslash. The new first-letter matcher was written `new RegExp("\p{L}", "u")`
+instead of `"\\p{L}"`, which throws - and it was inside a `try` with a fallback range after
+it, so it fell silently to the broader road and stayed there. That road had the digits of
+these scripts in it as well as their letters, so it answered that "2024 کا سال" begins right
+to left. Exactly the shape of fault this whole file is about: a thing that works, reached by
+the wrong road, saying something slightly wrong for ever. The fallback is letters only now,
+and `usingScriptProperties` says from outside which road was taken.
+
+### What it still cannot do
+
+- **If the box is already turned by us when the first mixed draft arrives** - select all,
+  paste a mixed draft over pure Urdu - the question is not asked, because our own rule would
+  be what got measured. It stays unasked until a clean chance comes, and in the meantime
+  nothing changes. Unasked is the safe side: it means "carry on".
+- **A page that reads a mixed draft right to left for some other reason** - an editor-wide
+  direction somebody set - stands the circuit down too. Which is correct, if not for the
+  reason it thinks: the reader already sees it the right way round.
+- **Each place answers only for itself.** Three questions, three circuits, three answers.
+  There is no arrangement in which one of them speaks for another.
+
+### The rule this leaves
+
+> Every part of this asks the page whether it is still needed, with the one text that can
+> answer, and never with text that cannot - and a part that has thrown and never worked says
+> that, rather than "on".
+
+## 40. The one place where nothing is allowed to cost anything
+
+Everything up to here was about being right, and about staying right through somebody else's
+updates. This is about the other half, and it has a rule of its own:
+
+> A person typing must not be able to tell this is installed. Not "barely", not "within
+> tolerance". Everywhere else a millisecond is an argument; in the box you type into it is a
+> verdict.
+
+The order matters too, and it is the order somebody actually meets this fix:
+
+| | what is acceptable |
+|---|---|
+| installing it, once | a reload, and a wait, if it must |
+| every time the editor opens | a little, unnoticed |
+| **every keystroke** | **nothing at all** |
+| an answer arriving, a message sent | good, and never worse than it is without us |
+
+### Three instruments, and the first two lied
+
+The first said our whole cost was **0.14ms a keystroke**. The second said **2 to 3ms**, and
+that one keystroke cost **11ms**. The third said **0.15ms** again. They cannot all be right,
+and the way they were wrong is worth more than the numbers.
+
+- **Real typing through the browser's own keyboard.** Unusable, and quietly so: for an Urdu
+  character the driver inserts text without a keydown at all, so two thirds of the keystrokes
+  were never timed - and a timeout queued to measure the end of a keystroke lands after the
+  next paint, which puts a frame's worth of the browser's own work inside every number.
+- **Keystrokes back to back.** The event was dispatched exactly as the page sees it, which is
+  right, and then the next one was sent immediately, which is not. The browser amortises one
+  style recalculation across a burst, so the cost of a keystroke was divided among the ten
+  after it. A person leaves a frame or more between keys, and each of those keystrokes pays
+  for its own layout. Leaving a frame between them multiplied the measured cost by fifteen.
+- **Separate browsers for the two sides.** The comparison that finally broke: switching a
+  circuit OFF came out slower than leaving it on, twice. That is not a result, it is machine
+  drift with a decimal point on it.
+
+What was believable in the end: **one page, the fix injected and taken out again between
+blocks, alternating, hundreds of samples a side.** Whatever the machine is doing, it is doing
+it to both sides at once. Every number below is from that.
+
+### What a keystroke actually cost
+
+| | mean, per keystroke |
+|---|---|
+| all four circuits, before | **1.25ms** |
+| the answers' part, of that | **1.07ms** |
+| all four circuits, after | **0.18ms** |
+
+The answers' part had nothing whatsoever to do with typing, and was taking six sevenths of
+what typing cost. It is the only part of this fix that listens for `characterData` - it has
+to, because that is how an answer arrives a word at a time - so every keystroke anybody types
+was delivered to it, and it asked the page two selector questions about a box it has no
+business in. The answer was always "there is nothing here".
+
+One line, and it is a correctness rule that happens to be the whole cost as well:
+
+```js
+if (node.isContentEditable) return;
+```
+
+An answer is never inside an editor. What IS inside one has a lamp of its own - so a block
+found there would be decided twice over, by two parts, each its own way, which is exactly what
+three separate circuits exist to prevent. The day Claude Code gives its composer real
+paragraphs instead of plain text, that is what would have happened.
+
+That day was then written as a test - a composer with real paragraphs in it - and the test
+failed twice more before it passed, both times on something the measurement could not have
+found:
+
+**The layer drawn over the box is not editable.** It is a copy of the draft, sitting beside
+the thing that holds the caret, and "never inside an editor" does not reach it. Decided there,
+the glyphs would take a direction of their own while the caret took the box's - and the
+answers' part would WIN, because its stylesheet is unlayered and an unlayered `!important`
+outranks the layered one the composer's rules live in. The caret and the letters would part,
+which is the single thing the composer circuit exists to prevent.
+
+**And it cannot be answered by our own mark.** The layers carry one, but only once the box's
+lamp has turned them, and the answers' first pass over the page runs before that - a microtask
+against a frame. A draft already in the box when the panel loads is decided before the
+composer has said a word. Marking the layers as soon as the box is FOUND would fix it and
+would cost a promise this fix makes and tests: an English draft leaves not one attribute of
+ours anywhere on the page.
+
+So it is recognised by shape, with the same function the sent-message lamp uses to stay out of
+the same place - and that is where the second failure came from. `besideAnEditor` looks four
+levels up, because the run IT asks about is a span nested inside the copy. Asked about a
+paragraph with four levels of room, it walks up until it reaches a level where the composer is
+a sibling - which on a real page it always eventually is - and then answers yes about every
+paragraph on the page. Three tests said so within a minute. A block is the copy's own child:
+one hop, and the caller says so.
+
+### And the one keystroke that cost eleven
+
+Section 39 put a question in: is this box still ours to turn? It is answered by reading where
+the page drew a character, and reading geometry forces style and layout. Mid-keystroke that is
+the most expensive thing this file can do, and the measurement found it exactly where it was
+put - on the keystroke where Urdu first follows Latin:
+
+```
+12  "npm install "     2.3ms      4.5ms
+13  "npm install ک"    3.2ms     14.2ms   <- the question
+14  "npm install کے"   1.8ms      4.3ms
+```
+
+It is asked after the frame now, where the browser has already laid the page out and the
+identical read is free. Not from `requestAnimationFrame`, which runs BEFORE the frame's
+layout and would force it again - from a timeout queued inside a frame callback, which runs
+after that frame has been drawn with nothing left pending.
+
+What it costs instead: on that one keystroke, once per page, the box turns a frame later than
+it used to. Against a keystroke somebody can feel, that is the right way round.
+
+**And the test caught what the change broke.** Tying the deferred question to one record was
+wrong: the test for a host that rebuilds a layer in the moment after the box turns showed the
+box never turning at all. The question was scheduled for record A, the host replaced the
+layer, A was let go of and B took its place - and B could not schedule a question of its own,
+because A's was still pending. A's then fired, found itself forgotten, and returned. Nothing
+was waiting for anything any more. The question belongs to the circuit, not to a record.
+
+### What is left, and why it stays
+
+| | per keystroke |
+|---|---|
+| the box you type into | 0.087ms |
+| a message somebody sent | 0.086ms |
+| the pinned message | 0.027ms |
+| answers | 0.020ms |
+| **all four** | **0.187ms** |
+
+That is one percent of a frame, and it is the floor for this shape of fix rather than
+something left undone. Almost none of it is our code running: it is the cost of four separate
+`MutationObserver`s existing at all, and the browser delivering the same records to each. One
+observer fanning out to four circuits would be cheaper - and would put all four on one fuse,
+which is the thing sections 29 and 38 exist to prevent. The independence is worth more than
+0.1ms.
+
+Two things measured and deliberately left alone:
+
+- **The box's own handler runs three times for one keystroke** - the typed event, the caret
+  layer's text changing, the layer over it being rebuilt. Skipping the repeats needs a memory
+  of the last draft, and that memory is wrong in exactly the case that matters: a host that
+  takes our attribute off without touching the text. Three cheap passes beat one clever one.
+- **The composer's rule for elements inside a turned layer** was the suspect going in - a
+  universal selector over a subtree React rebuilds on every keystroke - and it measures at
+  zero. It stays.
+
+### Every time the editor opens
+
+The same instrument, pointed at the extension rather than the page, found something bigger
+than all of the above put together.
+
+```
+apply(), with the block already in place       197.70ms
+  of which, reading Claude Code's bundle       130.05ms
+state(), which reads only the end of the file   13.30ms
+```
+
+`apply()` runs on every activation - every time somebody opens VS Code - and read five
+megabytes to decide whether anything needed doing. The answer is almost always no: the block
+is there and its clock is not due for winding. `state()` had been reading only the end of the
+file since 0.5.0 for exactly this reason; `apply()` never got the same treatment.
+
+It asks the end of the file first now. **197.70ms became 13.64ms.** A tail too short to hold
+the whole block cannot match one, so it falls through to the full read and is merely slow,
+never wrong - and a test holds the window at more than twice the payload so that it does not
+quietly stop being available.
+
+The other one: the status bar item refreshes on every tab change, every tab-group change and
+every editor change, and each refresh read the end of that file again - 13ms, every time
+anybody switched files. Nothing but this extension changes that file, so the answer is
+remembered now, and forgotten by hand at each of the three moments it could stop being true:
+when we write the file, when Claude Code is replaced, and when a write fails.
+
+### And one more name given a second road
+
+While the typing path was being read through, the guard that keeps the two message lamps off
+each other's text turned out to rest on a single name - the test id every answer carries. A
+renamed test id does not fail loudly: the selector stays valid and simply stops matching, so
+the guard would go quiet and nothing would say so. Pair that with the day Claude Code hands an
+answer's paragraphs to `dir="auto"` - which is how anyone would start fixing right-to-left -
+and both circuits would be deciding the same paragraph.
+
+The shape says it without a name: an answer is markdown, so its text lands in real blocks; a
+sent message is not markdown, its text is a bare run in a plain container. A run whose holder
+IS one of the answers' blocks is not the sent-message lamp's business, whatever the row it
+sits in is called.
+
+### What is still single-road, said plainly
+
+- **A message Claude Code takes for a command.** It is drawn as plain text with no
+  `dir="auto"` anywhere near it - read out of the bundle, not guessed - so the class name is
+  the only road there is. Renamed, slash-command messages stop being decided; every other
+  sent message carries on, and the status still says which road found what.
+- **The timeline dot**, which is decoration and says so.
+
+### The rule this leaves
+
+> Measure the thing a person can feel, on the page they will feel it on, with an instrument
+> that is asked to prove itself first - and when a number says a part of this costs nothing,
+> suspect the instrument before believing it.

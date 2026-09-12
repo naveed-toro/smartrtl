@@ -110,6 +110,31 @@ test("the end of the bundle is read, not five megabytes of it", () => {
   assert.equal(st.live, true);
 });
 
+test("the block fits in the window that is read, with room to spare", () => {
+  // Every startup now asks the END of Claude Code's bundle whether there is anything to do,
+  // instead of reading five megabytes to find out that there is not: 198ms became 14ms. That
+  // answer is only available while the whole of our block fits in the window being read. It
+  // fits today with three quarters of the window to spare - and a payload that outgrew it
+  // would not break anything, it would quietly stop answering and go back to reading the
+  // whole file, which is the expensive thing this exists to avoid. So it is held here.
+  const payload = fs.statSync(path.resolve(__dirname, "../dist/payload.js")).size;
+  assert.ok(payload * 2 < patcher.TAIL_BYTES,
+    "the payload is " + Math.round(payload / 1024) + "KB and the window read is " +
+    Math.round(patcher.TAIL_BYTES / 1024) + "KB - too close, and the cheap answer stops being available");
+});
+
+test("a bundle whose block is already current is not rewritten, and says so", () => {
+  // "already-current" is what every ordinary startup should get, and it is what makes the
+  // cheap read worth having. A rewrite here would put a new mtime on somebody else's file
+  // every time the editor opened.
+  const target = fakeClaudeCode();
+  patcher.apply(EXT);
+  const first = fs.statSync(target).mtimeMs;
+  const again = patcher.apply(EXT);
+  assert.equal(again.state, "already-current");
+  assert.equal(fs.statSync(target).mtimeMs, first, "the file was written again for nothing");
+});
+
 test("the winding cannot be slower than the running out", () => {
   // several winds can be missed outright - a laptop asleep is the ordinary way - and
   // the block still has to be re-stamped with time in hand.

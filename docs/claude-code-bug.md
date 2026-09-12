@@ -8,7 +8,10 @@ it exactly as hard. It is written up separately so it can be reported on its own
 
 **Affects:** the Claude Code extension for VS Code. Reproduced on `anthropic.claude-code`
 **2.1.247, 2.1.259 and 2.1.263**, VS Code 1.135, Windows 11 - from a clean install every
-time, with the conditions in "Reproducing it" below.
+time, with the conditions in "Reproducing it" below. And measured, on **2026-09-11**, in
+Claude Code's own webview app with a real answer streamed under the message, in **every
+build that pins a message - thirteen of them, 2.1.90 to 2.1.268**: identical in every one, to
+the pixel. It is not fixed in any build so far.
 
 **Use it freely.** This write-up may be copied, quoted, filed as an issue, or acted on by
 anyone, with or without permission. If it leads to a fix, a line of credit is the only
@@ -16,7 +19,8 @@ thing asked for - the finding is the work here. The fix itself is three lines of
 
 **Filed as:** *(not yet - put the issue URL here the moment it is)*. The version cut down
 for a public tracker, with no links back into this repository, is
-[issue-to-file.md](issue-to-file.md).
+[issue-to-file.md](issue-to-file.md). Others have hit it - see "Already reported?" below -
+and none of those reports names this cause.
 
 ---
 
@@ -97,6 +101,55 @@ permanently off-screen, and no amount of scrolling within that turn will reveal 
   looking closely at message layout for other reasons. The behaviour is identical in
   English.
 
+### Measured, in every build that pins
+
+A forty-line message, a hundred and fifty lines of answer streamed under it, two more
+messages below, the panel 560px tall. Scroll 400px into the answer, click "Show more", wheel
+down until "Show less" is on screen, click it:
+
+| | every build from 2.1.90 to 2.1.268 |
+|---|---|
+| the opened message | stays pinned, 856px tall in a 560px panel |
+| the answer under it, while it is open | never seen |
+| "Show less" comes into reach after | **22** turns of the wheel - the end of the turn |
+| after closing it, the reader is | **2,640px** from the line they were reading |
+
+2.1.30 and 2.1.59 pin nothing, and have no trap. Between 2.1.90, where a message that heads a
+turn first became sticky, and 2.1.268, the rule behind it has not changed by a character.
+
+## The same trap, a second way in
+
+A message Claude Code takes for a **command** is drawn by a different branch of the same
+component, which returns before the collapsible wrapper: no "Show more", no "Show less", no
+height cap at all - and the row is still `position: sticky`, because every user message with
+text gets `stickyHeader`. "A command" is decided by `text.startsWith("/")` alone, so it is not
+only a skill run with long arguments: **any message whose first character is `/` - a pasted
+path like `/Users/me/notes.md` - is drawn this way.**
+
+Measured in 2.1.268: a forty-line message opening with a path is 755px tall in a 560px panel,
+pinned, and forty turns of the wheel go by without one line of the answer under it appearing.
+There is no button to press at all. This one is worse than the first: the first trap has a
+way out at the end of the turn; this has none.
+
+## Already reported?
+
+Yes - often, by different people, and none of the reports names this cause. As of 2026-09-11,
+in `anthropics/claude-code`:
+
+| | what it describes | state |
+|---|---|---|
+| [#39809](https://github.com/anthropics/claude-code/issues/39809) | "SHOW LESS" toggle broken, long responses hidden behind the message | closed as a duplicate |
+| [#72707](https://github.com/anthropics/claude-code/issues/72707) | a long prompt that cannot be collapsed, "toggle unresponsive or not shown" | open |
+| [#85505](https://github.com/anthropics/claude-code/issues/85505) | after long pasted content, plain or through a skill, the answer cannot be scrolled to - put down to the scrollbar | closed by the stale bot, "not planned" |
+| [#69771](https://github.com/anthropics/claude-code/issues/69771) | a long slash-command prompt covers the whole panel while the answer streams | closed by the stale bot, "not planned" |
+| [#72590](https://github.com/anthropics/claude-code/issues/72590) | a skill's large injected block pins the viewport | open |
+| [#88512](https://github.com/anthropics/claude-code/issues/88512) | slash-command messages are never collapsible and the sticky header hides the response - diagnosed correctly | open |
+| [#93052](https://github.com/anthropics/claude-code/issues/93052) | a message starting with an absolute path is taken for a slash command - diagnosed correctly | open |
+
+None of them shows a reply from Anthropic or a linked fix. The command-shaped case has been
+diagnosed well twice; the plain case - an ordinary long message, opened - has only ever been
+described by its symptoms, and put down to a scrollbar.
+
 ---
 
 ## Suggested fixes, in order of how little they change
@@ -139,6 +192,16 @@ quite what it had been. Everything under a message moves rigidly when that messa
 or shrinks, so putting one element under it back where it was puts the whole of what the
 reader was reading back where it was - whatever the message above it did in between.
 
+**4. And the command-shaped message needs its own.** Fix 1 cannot reach it, because it has
+no collapse row to find. The honest fix is the one #93052 suggests: draw it through the same
+collapsible wrapper as any other message, and fix 1 then applies to it unchanged - and a
+path is not a command, so `startsWith("/")` alone should not decide that it is one. Until
+then, the smallest rule that ends the trap is to not pin what cannot collapse:
+
+```css
+.stickyHeader:has(.slashCommandMessage) { position: static }
+```
+
 ---
 
 ## What we did about it meanwhile
@@ -148,12 +211,16 @@ from outside, by appending a marked block to the webview bundle. That is a worka
 our own use, not a solution - the real fix belongs in the renderer, where it costs one CSS
 rule and nobody has to patch anybody's files.
 
-It is also built to get out of the way. The part of it that exists for this bug asks the
-live element whether a turn header is still `position: sticky` before it does anything, so
-the day this is fixed upstream that part switches itself off rather than arguing with the
-fix. `__bidiStatus()` in the webview console reports which parts are on and which have
-stood down.
+Since 0.5.3 it reaches the second way in too: a pinned message that is showing its whole
+length and is taller than half the panel is not held pinned. A collapsed message is never
+touched - that part of the design was never broken.
+
+It is also built to get out of the way. It asks the page, of every message it pins, whether
+it is really `position: sticky`; the first message drawn that is named as pinned and is not
+switches the whole of it off, rather than leaving it to argue with a fix. `__bidiStatus()` in
+the webview console reports which parts are on, which have stood down, and what each one
+measured.
 
 The reasoning behind each of the above, including two fixes that were tried and rejected
 first - capping the height, and forcing the collapse row sticky, which moved a button the
-extension had placed - is in [decisions.md](decisions.md) sections 10, 15 and 29.
+extension had placed - is in [decisions.md](decisions.md) sections 10, 15, 29 and 37.

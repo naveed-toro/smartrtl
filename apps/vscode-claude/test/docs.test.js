@@ -126,6 +126,26 @@ test("what the documents promise the payload contains, it contains", () => {
     "__bidiFixOff": true,     // so does every document here
     "faultIsStillHere": true, // "needed is measured, not read"
     "readingPosition": true,  // closing gives back the reader's line
+    // the box you type in, as decisions.md section 35 describes it: a circuit of its own,
+    // its rules in a cascade layer ahead of the page's, and no other lamp inside it
+    "startComposer": true,
+    "@layer smartrtl-composer": true,
+    "besideAnEditor": true,
+    // and a sent message, as section 36 describes it: a circuit of its own, its rules in a
+    // layer of their own, and the answers' part never deciding from what nobody can see
+    "startSent": true,
+    "@layer smartrtl-sent": true,
+    "screenReaderOnly": true,
+    // and the message nobody can read past, as section 37 describes it: a circuit of its
+    // own, its rules in a layer of their own, a row it lets go of marked by an attribute of
+    // ours - and the question "is it needed" asked of every row, not once before any existed
+    "startPinned": true,
+    "@layer smartrtl-unpin": true,
+    "data-bidi-unpin": true,
+    "headersAreStillPinned": false,
+    // the class 0.5.1 leaned on for "one message" of that kind, gone from Claude Code since
+    // 2.1.266 - named in a comment still, and in no selector
+    "[class*=\\\"contentWrapper_\\\"]": false,
     // and the three the documents say are NOT there any more, each of which shipped once
     "smart-rtl-input-line": false,
     "smart-rtl-mirror": false,
@@ -144,7 +164,7 @@ test("what the documents promise the payload contains, it contains", () => {
 test("the adapter keys the roadmap lists are the ones the engine reads", () => {
   const roadmap = read("docs/roadmap.md");
   const engine = read("packages/dom/src/engine.js");
-  for (const key of ["blocks", "boxSelector", "boundary", "ownDirAuto", "composer",
+  for (const key of ["blocks", "boxSelector", "boundary", "sent", "skip", "composer",
                      "extraCss", "onDecision", "onCleanup", "quietMs", "maxBox"]) {
     assert.ok(roadmap.includes("`" + key + "`"), "the roadmap does not list " + key);
     assert.ok(new RegExp("(cfg|config)\\." + key + "\\b").test(engine),

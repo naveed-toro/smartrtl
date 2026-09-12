@@ -146,6 +146,31 @@ test("a message still reads right to left while its neighbours' lamps are off", 
   } finally { await close(); }
 });
 
+test("the long-message fix never takes the box you type into for a message, even a pinned one", async () => {
+  // It finds a pinned row three ways, one of them upward from a run of text handed to
+  // dir="auto". Nothing of Claude Code's but a message is sticky today - but a box pinned to
+  // the bottom of the panel, with a draft long enough to pass half of it and its text drawn in
+  // a layer beside it, is exactly what that road would find, and it must never be let go of.
+  const DRAFT = Array.from({ length: 40 }, (_, i) => "draft line " + (i + 1)).join("\n");
+  const { page, errors, close } = await open(
+    `<div id="scroller" style="height:500px;overflow-y:auto"><div style="height:1200px">the conversation</div>
+       <div class="messageInputContainer_x" style="position:sticky;bottom:0;background:#fff">
+         <div class="messageInput_x" contenteditable="plaintext-only" role="textbox" aria-multiline="true">${DRAFT}</div>
+         <div class="mentionMirror_x" aria-hidden="true"><span dir="auto">${DRAFT}</span></div>
+       </div></div>`);
+  try {
+    const seen = await page.$eval(".messageInputContainer_x", (el) => ({
+      tall: el.getBoundingClientRect().height > 250,
+      position: getComputedStyle(el).position,
+      marked: el.hasAttribute("data-bidi-unpin")
+    }));
+    assert.ok(seen.tall, "the box has to be taller than half the panel, or this proves nothing");
+    assert.equal(seen.marked, false, "the box you type into was taken for a message to let go of");
+    assert.equal(seen.position, "sticky");
+    assert.deepEqual(errors, []);
+  } finally { await close(); }
+});
+
 test("the escape hatch stops claiming that everything is on", async () => {
   const { page, close } = await open(message(`<p>${URDU}</p>`));
   try {
@@ -221,4 +246,214 @@ test("a page that refuses our style element still gets the rules, another way", 
     assert.equal(seen.dir, "rtl", "the message was not turned on a page that refuses style elements");
     assert.match(seen.sheet, /^adopted/, "and the status says which way the rules got in");
   } finally { await browser.close(); }
+});
+
+/* ---------------------------------------------------------------------------- *
+ * Stand down, do not fight - one place at a time.
+ *
+ * Promise 2 at the top of this file used to hold for one of the three places text
+ * appears: answers. The box you type into and a sent message were simply assumed to be
+ * needed, for as long as either existed. So the likeliest update of all - Claude Code
+ * fixing one of them, which is what people keep asking it to do - would have left two
+ * fixes on one fault, ours invisible underneath theirs.
+ *
+ * Each of the three asks now, of the page, with the one text that can answer: a line that
+ * opens in Latin and turns Urdu, which the browser's own rule reads one way and this rule
+ * the other. Below: one place fixed, and the other two carrying on untouched.
+ * ---------------------------------------------------------------------------- */
+
+const COMPOSER = `<div class="messageInputContainer_x">
+  <div class="messageInput_x" contenteditable="plaintext-only" role="textbox"
+       aria-label="Message input" aria-multiline="true" data-placeholder="Ask anything"></div>
+  <div class="mentionMirror_x" aria-hidden="true"></div>
+</div>
+<script>
+  document.querySelector(".messageInput_x").addEventListener("input", function () {
+    document.querySelector(".mentionMirror_x").textContent =
+      document.querySelector(".messageInput_x").textContent;
+  });
+</script>`;
+
+const FIXED_BOX = `<style>.messageInput_x,.mentionMirror_x{
+  direction:rtl!important;unicode-bidi:isolate!important;text-align:start!important}</style>`;
+const FIXED_SENT = `<style>.content_x,.content_x [dir="auto"]{
+  direction:rtl!important;unicode-bidi:isolate!important;text-align:start!important}</style>`;
+
+const everything = (html) => message(`<p>${URDU}</p>`) + userMessage(URDU) + COMPOSER + html;
+
+async function draft(page, text) {
+  await page.click(".messageInput_x");
+  await page.keyboard.type(text, { delay: 3 });
+  await page.waitForTimeout(250);
+}
+
+test("Claude Code fixing the box you type into dims that lamp and no other", async () => {
+  const { page, errors, close } = await open(everything(FIXED_BOX));
+  try {
+    await draft(page, URDU);
+    const s = await status(page);
+    assert.match(s.composer, /^not needed/, "the box: " + s.composer);
+    assert.equal(s.sentMessages, "on - measured working", "a sent message went with it");
+    assert.equal(s.engine.blocks, "watching", "the answers' part went with it");
+    assert.equal(await page.$eval(".content_x", (el) => el.getAttribute("data-bidi-sent")), "rtl");
+    assert.deepEqual((await directions(page, ".root p")).map((d) => d[0]), ["rtl"]);
+    assert.equal(await page.evaluate(() =>
+      document.querySelectorAll("[data-bidi-input],[data-bidi-layer]").length), 0);
+    assert.deepEqual(errors, []);
+  } finally { await close(); }
+});
+
+test("Claude Code fixing a sent message dims that lamp and no other", async () => {
+  const { page, errors, close } = await open(everything(FIXED_SENT));
+  try {
+    await draft(page, URDU);
+    const s = await status(page);
+    assert.match(s.sentMessages, /^not needed/, "a sent message: " + s.sentMessages);
+    assert.equal(s.composer, "on - measured working", "the box went with it");
+    assert.equal(s.engine.blocks, "watching", "the answers' part went with it");
+    assert.equal(await page.evaluate(() => document.querySelectorAll("[data-bidi-sent]").length), 0);
+    assert.ok(await page.evaluate(() =>
+      document.querySelectorAll("[data-bidi-input],[data-bidi-layer]").length >= 2),
+      "the box is no longer turned");
+    assert.deepEqual(errors, []);
+  } finally { await close(); }
+});
+
+test("and a build that has fixed all three leaves nothing of ours on the page at all", async () => {
+  const FIXED_ANSWERS = `<style>.root :is(p,li,h1,h2,h3,h4,h5,h6,blockquote,td,th){
+    unicode-bidi:isolate!important;direction:rtl!important}</style>`;
+  const { page, errors, close } = await open(everything(FIXED_BOX + FIXED_SENT + FIXED_ANSWERS));
+  try {
+    await draft(page, URDU);
+    await page.waitForTimeout(400);
+    const s = await status(page);
+    assert.match(s.composer, /^not needed/);
+    assert.match(s.sentMessages, /^not needed/);
+    assert.match(s.direction, /^not needed/, "the answers' part: " + s.direction);
+    assert.equal(await page.evaluate(() => document.querySelectorAll(
+      "[data-bidi],[data-bidi-sent],[data-bidi-input],[data-bidi-layer],[data-bidi-row]").length), 0,
+      "something of ours is still on a page that needs none of it");
+    assert.deepEqual(errors, []);
+  } finally { await close(); }
+});
+
+/* ---------------------------------------------------------------------------- *
+ * A lamp that has stopped working must stop saying it is on.
+ *
+ * Both of these were found by breaking this fix on purpose, inside Claude Code's own
+ * running app, one circuit at a time - which is how the two things every circuit shares
+ * came to be tested at all. Each was contained exactly as intended; what neither did was
+ * say so. A fix that has quietly stopped working looks exactly like one that is working,
+ * and `__bidiStatus()` is the only thing standing between that and somebody's afternoon.
+ * ---------------------------------------------------------------------------- */
+
+test("a circuit whose every attempt throws stops calling itself on", async () => {
+  // The rule cannot be reached from the page at all - the build keeps the rule, the engine
+  // and the adapter inside one closure, and puts nothing of ours among the page's globals.
+  // So this breaks what a page CAN break: the one element the circuit has to read. One
+  // message, and it throws, so there is no second message quietly carrying the lamp.
+  const { page, errors, close } = await open(`<div id="only"></div>` + COMPOSER);
+  try {
+    await page.evaluate((html) => {
+      const only = document.getElementById("only");
+      only.insertAdjacentHTML("beforeend", html);
+      const body = only.querySelector(".content_x");
+      Object.defineProperty(body, "textContent", {
+        configurable: true,
+        get() { throw new Error("this message cannot be read"); }
+      });
+      body.setAttribute("data-poke", "1");      // something for the observer to notice
+    }, userMessage(URDU));
+    await page.waitForTimeout(300);
+    const s = await status(page);
+    assert.match(s.sentMessages, /^not working/, "it went on claiming to be on: " + s.sentMessages);
+    assert.match(s.sentMessages, /cannot be read/, "and it does not say WHAT threw");
+    assert.ok(s.engine.sentDetail.contained >= 1, "the fault was counted");
+    assert.equal(await page.evaluate(() =>
+      document.querySelectorAll("[data-bidi-sent]").length), 0,
+      "a message it could not read is left exactly as the page had it");
+    assert.deepEqual(errors, [], "and none of it reached the page");
+  } finally { await close(); }
+});
+
+test("and the box does the same: one box, broken, and the lamp over it stops saying on", async () => {
+  const { page, errors, close } = await open(COMPOSER);
+  try {
+    await page.evaluate(() => {
+      // a box that throws the moment anything of ours asks it a question
+      document.querySelector(".messageInput_x").getAttribute = function () {
+        throw new Error("this box cannot be asked");
+      };
+    });
+    await draft(page, URDU);
+    const s = await status(page);
+    assert.match(s.composer, /^not working/, "it went on claiming to be on: " + s.composer);
+    assert.match(s.composer, /cannot be asked/, "and it does not say WHAT threw");
+    assert.ok(s.engine.composerDetail.contained >= 1, "the fault was counted");
+    assert.equal(await page.evaluate(() =>
+      document.querySelectorAll("[data-bidi-input]").length), 0,
+      "and the box is not left half turned");
+    assert.deepEqual(errors, []);
+  } finally { await close(); }
+});
+
+test("and a page that refuses every way of adding a stylesheet says what it measured, not that it is on", async () => {
+  // The one piece of code the box, a sent message and an adapter's own circuit all share is
+  // the thing that gets a stylesheet into the page. Break it and three lamps could have
+  // gone dark together with nothing but "off" to show for it. They do not: each carries on,
+  // reads the page back, and reports that the direction it set was not taken.
+  const NO_SHEETS = `<script>
+    (function () {
+      var make = Document.prototype.createElement;
+      Document.prototype.createElement = function (tag) {
+        var el = make.apply(this, arguments);
+        if (String(tag).toLowerCase() === "style") {
+          try { Object.defineProperty(el, "sheet", { get: function () { return null; } }); } catch (e) {}
+        }
+        return el;
+      };
+      window.CSSStyleSheet = function () { throw new Error("no constructed sheets here"); };
+    })();
+  </script>`;
+  const { page, errors, close } = await open(NO_SHEETS + userMessage(URDU) + COMPOSER);
+  try {
+    await draft(page, URDU);
+    const s = await status(page);
+    assert.match(s.composer, /^not working/, "the box: " + s.composer);
+    assert.match(s.sentMessages, /^not working/, "a sent message: " + s.sentMessages);
+    assert.match(s.engine.sheet, /^off/, "and the answers' part says its sheet never got in");
+    assert.deepEqual(errors, [], "nothing reached the page");
+  } finally { await close(); }
+});
+
+test("the day the box you type into has real paragraphs, the answers' part still stays out of it", async () => {
+  // Claude Code's composer is plain text today, so nothing in it is a block and the question
+  // never came up. A rich-text composer is an ordinary thing to ship - and on that day every
+  // paragraph of somebody's draft would be a block the answers' part could decide, while the
+  // box's own lamp is deciding the whole box. Two lamps, one element, each its own way.
+  //
+  // An answer is never inside an editor. That is the rule, and it is said in both places the
+  // answers' part can reach a block from: the queue, and the pass over what is already there.
+  const RICH = `<div class="messageInputContainer_x">
+    <div class="messageInput_x" contenteditable="true" role="textbox"
+         aria-label="Message input" aria-multiline="true" data-placeholder="Ask anything"
+      ><p>npm install کے بعد</p><p>and a second line</p></div>
+    <div class="mentionMirror_x" aria-hidden="true"><p>npm install کے بعد</p><p>and a second line</p></div>
+  </div>`;
+  const { page, errors, close } = await open(message(`<p>${URDU}</p>`) + RICH);
+  try {
+    await page.click(".messageInput_x");
+    await page.keyboard.type(" مزید", { delay: 5 });
+    await page.waitForTimeout(250);
+    const seen = await page.evaluate(() => ({
+      insideTheBox: document.querySelectorAll('.messageInputContainer_x [data-bidi]').length,
+      theBoxTurned: document.querySelector(".messageInputContainer_x").getAttribute("data-bidi-input"),
+      theAnswer: document.querySelector(".root p").closest('[data-bidi="rtl"]') ? "rtl" : "-"
+    }));
+    assert.equal(seen.insideTheBox, 0,
+      "the answers' part decided a block inside the box you type into - the caret's layer or the one over it");
+    assert.equal(seen.theBoxTurned, "rtl", "and the box's own lamp still turns it whole");
+    assert.equal(seen.theAnswer, "rtl", "while the answer beside it is decided exactly as before");
+    assert.deepEqual(errors, []);
+  } finally { await close(); }
 });

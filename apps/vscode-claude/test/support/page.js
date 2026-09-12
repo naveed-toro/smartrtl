@@ -9,7 +9,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { chromium } = require("playwright");
-const { LINE_BOXES, lineBoxes, lineReads } = require("./lines.js");
+const { LINE_BOXES, lineBoxes, lineReads, lineSides } = require("./lines.js");
 
 const PAYLOAD = path.resolve(__dirname, "../../dist/payload.js");
 
@@ -70,10 +70,15 @@ function payload() {
  *
  * `expired: true` loads the real payload with its expiry set in the past - what a
  * block left behind by an uninstalled extension becomes once nobody re-stamps it.
+ *
+ * `errors` collects every exception that reached the page uncaught, from the first
+ * byte. Nothing of ours may ever put one there, so a test can assert it stayed empty.
  */
 async function open(html, { width = 900, height = 700, fix = true, expired = false } = {}) {
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width, height } });
+  const errors = [];
+  page.on("pageerror", (e) => errors.push(String(e && e.message || e)));
   await page.setContent(
     `<!doctype html><meta charset="utf-8"><style>${CSS}</style>${html}` +
     (fix ? `<script>${expired
@@ -82,7 +87,7 @@ async function open(html, { width = 900, height = 700, fix = true, expired = fal
       }</script>` : "")
   );
   await page.waitForTimeout(600);   // past the payload's quiet timer
-  return { browser, page, close: () => browser.close() };
+  return { browser, page, errors, close: () => browser.close() };
 }
 
 /**
@@ -183,6 +188,6 @@ const userMessageWithChip = (before, chip, after) => userMessage("").replace(
   `<span dir="auto">${before}<span class="mentionChip_x" data-chip="1">${chip}</span>${after}</span>`);
 
 module.exports = {
-  open, message, userMessage, userMessageWithChip, turn, directions, CSS,
-  lineBoxes, lineReads, LINE_BOXES
+  open, message, userMessage, userMessageWithChip, turn, directions, CSS, payload,
+  lineBoxes, lineReads, lineSides, LINE_BOXES
 };

@@ -65,4 +65,24 @@ fs.mkdirSync(path.dirname(outPath), { recursive: true });
 fs.writeFileSync(outPath, out, "utf8");
 
 new Function(out); // parse check - a broken payload must never reach the extension
-console.log("built dist/payload.js  (" + out.length + " bytes, core + dom inlined)");
+
+/* And parsed the way it is actually run. The payload is appended to Claude Code's
+   bundle, and that bundle is loaded with type="module" - so it is parsed as a module,
+   where a handful of things a plain script allows are syntax errors. A syntax error
+   there is not our part going quiet: the whole module fails to parse, and Claude
+   Code's panel never starts. Of everything this extension could get wrong, that is
+   the one that would break Claude Code itself, so it is checked where it would
+   happen rather than in the more forgiving parser above. */
+const os = require("node:os");
+const { execFileSync } = require("node:child_process");
+const asModule = path.join(os.tmpdir(), "smartrtl-payload-check-" + process.pid + ".mjs");
+try {
+  fs.writeFileSync(asModule, "/* module-mode parse check */\n" + out, "utf8");
+  execFileSync(process.execPath, ["--check", asModule], { stdio: "pipe" });
+} catch (err) {
+  const why = err && err.stderr ? String(err.stderr) : String(err);
+  throw new Error("dist/payload.js does not parse as a module, and Claude Code loads it as one:\n" + why);
+} finally {
+  try { fs.unlinkSync(asModule); } catch (e) {}
+}
+console.log("built dist/payload.js  (" + out.length + " bytes, core + dom inlined, parses as a script and as a module)");

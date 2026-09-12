@@ -54,7 +54,7 @@ test("an English message is left exactly as the page had it", async () => {
   const off = await open(userMessage("first line\nsecond line"), { fix: false });
   const on = await open(userMessage("first line\nsecond line"));
   try {
-    assert.equal(await on.page.$$eval("[data-bidi],[data-bidi-run]", (e) => e.length), 0, "nothing is marked");
+    assert.equal(await on.page.$$eval("[data-bidi],[data-bidi-sent]", (e) => e.length), 0, "nothing is marked");
     assert.deepEqual(await read(on.page), await read(off.page), "and nothing computes differently");
   } finally { await off.close(); await on.close(); }
 });
@@ -129,7 +129,7 @@ test("if Claude Code renames every class, dir=\"auto\" alone still turns it", as
   const { page, close } = await open(renamed);
   try {
     const r = await page.$eval(".body_y", (el) => ({
-      dir: getComputedStyle(el).direction, run: el.getAttribute("data-bidi-run")
+      dir: getComputedStyle(el).direction, run: el.getAttribute("data-bidi-sent")
     }));
     assert.equal(r.run, "rtl", "the run was not decided");
     assert.equal(r.dir, "rtl", "and the block it sits in does not read right to left");
@@ -141,7 +141,8 @@ test("if Claude Code drops dir=\"auto\", the class names alone still turn it", a
   const { page, close } = await open(noAuto);
   try {
     assert.equal((await read(page)).dir, "rtl");
-    assert.equal(await page.$$eval("[data-bidi-run]", (e) => e.length), 0, "this path had nothing to go on");
+    const found = await page.evaluate(() => window.__bidiStatus().engine.sentDetail.found);
+    assert.match(found, /expandableContainer/, "found by name - the run handed to dir=\"auto\" had nothing to go on: " + found);
   } finally { await close(); }
 });
 
@@ -153,14 +154,14 @@ test("a block holding two runs is not spoken for by either", async () => {
   const { page, close } = await open(
     `<div id="two"><span dir="auto">یہ اردو ہے</span> <span dir="auto">and this is not</span></div>`);
   try {
-    assert.equal(await page.$eval("#two", (el) => el.hasAttribute("data-bidi-run")), false);
+    assert.equal(await page.$eval("#two", (el) => el.hasAttribute("data-bidi-sent")), false);
   } finally { await close(); }
 });
 
 test("code is never turned, whatever it contains", async () => {
   const { page, close } = await open(`<pre id="c"><code dir="auto">const s = "اردو";</code></pre>`);
   try {
-    assert.equal(await page.$$eval("[data-bidi-run]", (e) => e.length), 0);
+    assert.equal(await page.$$eval("[data-bidi-sent]", (e) => e.length), 0);
   } finally { await close(); }
 });
 
@@ -171,7 +172,7 @@ test("a run that is itself a block carries its own decision, and English beside 
     const seen = await page.evaluate(() => ({
       u: getComputedStyle(document.getElementById("u")).direction,
       e: getComputedStyle(document.getElementById("e")).direction,
-      parent: document.getElementById("u").parentElement.hasAttribute("data-bidi-run")
+      parent: document.getElementById("u").parentElement.hasAttribute("data-bidi-sent")
     }));
     assert.equal(seen.u, "rtl");
     assert.equal(seen.e, "ltr", "an English run is left to the page");

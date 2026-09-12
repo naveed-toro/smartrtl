@@ -72,4 +72,19 @@ async function lineReads(page, sel) {
   return boxes.map((b) => (b.firstChar === null ? "-" : b.firstChar > b.width / 2 ? "rtl" : "ltr"));
 }
 
-module.exports = { LINE_BOXES, lineBoxes, lineReads };
+/**
+ * The same question for text in a box only as wide as its longest line - a sent message's
+ * bubble. There a long line fills the box edge to edge, and where its first letter sits
+ * says nothing. So each line is read by the edge it hugs, and only a line that hugs both
+ * falls back to its first letter.
+ */
+async function lineSides(page, sel) {
+  return (await lineBoxes(page, sel)).map((b) => {
+    if (b.firstChar === null) return "-";
+    if (b.leftGap > 2 && b.rightGap <= 2) return "rtl";
+    if (b.rightGap > 2 && b.leftGap <= 2) return "ltr";
+    return b.firstChar > b.width / 2 ? "rtl" : "ltr";
+  });
+}
+
+module.exports = { LINE_BOXES, lineBoxes, lineReads, lineSides };

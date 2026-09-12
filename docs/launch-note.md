@@ -110,6 +110,9 @@ long answer under it, and something below that.
   opened it from the top of the conversation, the middle or the end
 - closing it gives you back **the line you were reading**. Not the message — the answer
   underneath it, exactly where you left it
+- a long message Claude Code takes for a **command** — a skill run with long arguments, or
+  anything that opens with `/`, a pasted path included — has no "Show more" or "Show less"
+  at all and is pinned anyway. It is no longer held over its own answer
 
 That last one is the half that is easiest to miss and the most annoying to live with:
 you were partway down a long answer, opened the question above to check something,
@@ -185,13 +188,17 @@ worth stating:
   correctly by itself, or stops pinning turn headers, the part of this that existed for
   that goes quiet — measured by laying out the exact sentence the fault is about and
   looking at where the browser put it, not by reading their stylesheet
-- **while you type, it sets one attribute and nothing else.** Nothing of ours goes into
+- **while you type, it sets attributes and nothing else** - one decision on the element the
+  box's layers share, and a mark on each layer that turns with it. Nothing of ours goes into
   the box, and nothing in it is rebuilt
+- **the box you type in was put to ten months of Claude Code** - seventeen builds, booted and
+  typed into, through two restyles and a new layer - and to the next update made on purpose:
+  its classes renamed, its roles taken away, its own direction forced over ours. It held
 - **it reports what it measured.** A part that set a direction and found the page did not
   take it says so, instead of saying "on"
 
 The reasoning, and every formula and fix that was tried and rejected first, is in
-[decisions.md](decisions.md) — thirty-four sections, including the wrong turns, the two
+[decisions.md](decisions.md) — forty sections, including the wrong turns, the two
 crashes, the measurements that came out the other way from what was expected, and the
 limits that were accepted in the end.
 

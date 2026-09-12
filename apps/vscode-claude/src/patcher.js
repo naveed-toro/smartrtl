@@ -89,14 +89,51 @@ function readPayload(extensionPath) {
  * but not a single thing the reader would see, so it must not ask anybody to
  * reload - which is what "applied" means.
  */
+/**
+ * The end of the bundle, and only the end.
+ *
+ * Everything this extension writes is appended, so "is it there, and is it still
+ * alive" is always answered by the last few kilobytes. This used to read the whole
+ * file - five megabytes - and it is asked on every tab change, which was five
+ * megabytes of reading to look at the end of a file.
+ *
+ * A byte window can cut a UTF-8 character in half where it starts. That is harmless
+ * here: what is searched for is ASCII, it sits well inside the window, and nothing
+ * read this way is ever written back.
+ */
+const TAIL_BYTES = 512 * 1024;
+
 function apply(extensionPath) {
   const install = findClaudeCode();
   if (!install) return { state: "no-target" };
 
-  const current = fs.readFileSync(install.target, "utf8");
   const kept = consumeLegacyBackup(install);
   const payload = readPayload(extensionPath);
   const now = Date.now();
+
+  /* The end of the file first, because the ordinary question is "is there anything to do at
+     all?" and the ordinary answer is no: the block is already there and its clock is not due
+     for winding. This runs on every activation - every time somebody opens VS Code - and
+     reading five megabytes to find out that nothing needs doing was measured at 198ms of
+     every startup, against 13ms for the end of the file. Everything else here still reads
+     the whole of it, because everything else is about to write it.
+
+     A tail too short to hold the whole block cannot match one, so it falls through to the
+     full read and is merely slow, never wrong. patch-format.js keeps the window well clear
+     of the payload, and a test holds it there. */
+  if (!kept) {
+    let tail = null;
+    try { tail = readTail(install.target); } catch (e) { tail = null; }
+    if (tail && tail.includes(BEGIN)) {
+      const here = tail.slice(tail.indexOf(BEGIN)).trimEnd();
+      if (withoutStamp(here) === withoutStamp(payload) &&
+          readExpiry(tail) - now > fmt.REFRESH_BELOW_MS) {
+        return { state: "already-current", install };
+      }
+    }
+  }
+
+  const current = fs.readFileSync(install.target, "utf8");
 
   if (!kept && current.includes(BEGIN)) {
     const here = current.slice(current.indexOf(BEGIN)).trimEnd();
@@ -130,19 +167,6 @@ function remove() {
   return { state: "removed", install };
 }
 
-/**
- * The end of the bundle, and only the end.
- *
- * Everything this extension writes is appended, so "is it there, and is it still
- * alive" is always answered by the last few kilobytes. This used to read the whole
- * file - five megabytes - and it is asked on every tab change, which was five
- * megabytes of reading to look at the end of a file.
- *
- * A byte window can cut a UTF-8 character in half where it starts. That is harmless
- * here: what is searched for is ASCII, it sits well inside the window, and nothing
- * read this way is ever written back.
- */
-const TAIL_BYTES = 512 * 1024;
 
 function readTail(file) {
   const fd = fs.openSync(file, "r");
@@ -209,4 +233,7 @@ function isPatched() {
   return state().present;
 }
 
-module.exports = { findClaudeCode, claudeCodeInstalled, apply, remove, isPatched, state, stripPatch, TARGET_ID, BEGIN };
+/* TAIL_BYTES is exported for one test, and it is the right thing to test: every startup
+   now answers from that window instead of reading five megabytes, and the day the payload
+   outgrows it the answer quietly stops being available. */
+module.exports = { findClaudeCode, claudeCodeInstalled, apply, remove, isPatched, state, stripPatch, TARGET_ID, BEGIN, TAIL_BYTES };

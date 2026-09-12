@@ -1,4 +1,4 @@
-# The forty-seven builds, and what each one actually contained
+# The fifty builds, and what each one actually contained
 
 Compiled by opening every `.vsix` and reading what is inside it, not from memory. The
 second table was rebuilt the same way after the fact, which is why some of its rows say
@@ -141,39 +141,57 @@ and six tests cover it - the first of which is simply that it loads.
 Read out of the packaged `.vsix` the same way, months later. `·` means the build carried
 it; a blank means it did not.
 
-| | 0.1.0-4 | 0.1.5 | 0.1.6-7 | 0.2.0 | 0.3.0 | 0.3.1 | 0.3.2 | 0.3.3 | 0.3.4 | 0.4.0 | 0.4.1 | 0.4.2 | 0.4.3 | 0.4.4 | 0.4.5 | 0.4.6 | 0.4.7 | 0.4.8 | 0.4.9 | 0.4.10 | 0.4.11 | 0.4.12 | 0.4.13 | 0.4.14 | 0.4.15 | 0.4.16 | 0.4.17 | 0.4.18 | 0.4.19 | 0.4.20 | 0.4.21 | 0.4.22 | 0.5.0 |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| answers read right-to-left | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| your own messages read right-to-left | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| a sent message decided line by line | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | |
-| ... **as a copy, moving nothing of theirs** | | | | | | | | | | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | |
-| the composer takes one direction | · | · | · | · | · | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| the composer decided **per line** | | | | | · | | | · | | | | | | | | | | | | | | | | | | | | | | | | | |
-| ... by `unicode-bidi: plaintext` | | | | | | · | · | | | | | | | | | | | | | | | | | | | | | | | | | | |
-| ... with a third, "mixed" state | | | | | | | · | | | | | | | | | | | | | | | | | | | | | | | | | | |
-| a clone of React's mirror | | | | | | | | · | | | | | | | | | | | | | | | | | | | | | | | | | |
-| its own undo stack | | | | | · | | | · | | | | | | | | | | | | | | | | | | | | | | | | | |
-| **a sent message decided as one, found twice over** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · |
-| **the composer sets `unicode-bidi` too** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · |
-| **the composer found by what it is, not only its name** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · |
-| **text put in the box from code turns it too** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · |
-| **the status reports what was measured** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · |
-| the timeline dot | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| an expanded message unpinned | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| the view follows the message | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| **closing gives back the reader's line** | | | | | | | | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| the block expires on its own | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| **a fault stops where it happens** | | | | | | | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| **a fuse box, and `__bidiStatus()`** | | | | | | | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| **stands down if Claude Code fixes it** | | | | | | | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| **crashed the panel** | | | | | **✗** | | | | | | | | | | | | | | | | | | | | | | | | | | | | |
-| **typed blank spaces** | | | | | **✗** | | | | | | | | | | | | | | | | | | | | | | | | | | | | |
-| **every keystroke one late** | | | | | | | | **✗** | | | | | | | | | | | | | | | | | | | | | | | | | |
-| payload, bytes | 28,975 | 30,998 | 31,371 | 35,485 | 59,047 | 51,513 | 54,185 | 71,979 | 51,754 | 66,147 | 69,798 | 70,554 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 80,092 |
+| | 0.1.0-4 | 0.1.5 | 0.1.6-7 | 0.2.0 | 0.3.0 | 0.3.1 | 0.3.2 | 0.3.3 | 0.3.4 | 0.4.0 | 0.4.1 | 0.4.2 | 0.4.3 | 0.4.4 | 0.4.5 | 0.4.6 | 0.4.7 | 0.4.8 | 0.4.9 | 0.4.10 | 0.4.11 | 0.4.12 | 0.4.13 | 0.4.14 | 0.4.15 | 0.4.16 | 0.4.17 | 0.4.18 | 0.4.19 | 0.4.20 | 0.4.21 | 0.4.22 | 0.5.0 | 0.5.1 | 0.5.2 | 0.5.3 | 0.5.4 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| answers read right-to-left | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| your own messages read right-to-left | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| a sent message decided line by line | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | |  |  |  |  |
+| ... **as a copy, moving nothing of theirs** | | | | | | | | | | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | |  |  |  |  |
+| the composer takes one direction | · | · | · | · | · | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| the composer decided **per line** | | | | | · | | | · | | | | | | | | | | | | | | | | | | | | | | | | | |  |  |  |  |
+| ... by `unicode-bidi: plaintext` | | | | | | · | · | | | | | | | | | | | | | | | | | | | | | | | | | | |  |  |  |  |
+| ... with a third, "mixed" state | | | | | | | · | | | | | | | | | | | | | | | | | | | | | | | | | | |  |  |  |  |
+| a clone of React's mirror | | | | | | | | · | | | | | | | | | | | | | | | | | | | | | | | | | |  |  |  |  |
+| its own undo stack | | | | | · | | | · | | | | | | | | | | | | | | | | | | | | | | | | | |  |  |  |  |
+| **a sent message decided as one, found twice over** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · | · | · | · |
+| **the composer sets `unicode-bidi` too** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · | · | · | · |
+| **the composer found by what it is, not only its name** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · | · | · | · |
+| **text put in the box from code turns it too** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · | · | · | · |
+| **the status reports what was measured** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · | · | · | · |
+| the timeline dot | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| an expanded message unpinned | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| the view follows the message | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| **closing gives back the reader's line** | | | | | | | | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| the block expires on its own | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| **a fault stops where it happens** | | | | | | | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| **a fuse box, and `__bidiStatus()`** | | | | | | | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| **stands down if Claude Code fixes it** | | | | | | | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| **a keystroke costs 0.18ms, and the answers' part is out of the box entirely** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · |
+| **every startup answers from the end of the bundle, not five megabytes of it** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · |
+| **the answers' part never looks inside anything editable** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · |
+| **... asked of the box you type in and of a sent message too, of the real thing** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · |
+| **a lamp that has thrown and never worked stops saying it is on** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · |
+| **a collapsed message recognised by what it is, not only by name** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · |
+| **the box you type in on a circuit of its own** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · | · | · |
+| **no stylesheet can overrule the box: first layer, `!important`** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · | · | · |
+| **the box found five ways, its layers by what is drawn over it** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · | · | · |
+| **the payload parsed as a module before it ships** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · | · | · |
+| **a sent message on a circuit of its own, found by name and by `dir="auto"`** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · | · |
+| **the answers' part never decides from text nobody can see** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · | · |
+| **the long-message fix on a circuit of its own: first layer, `!important`, asked of every row** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · |
+| **a long message taken for a command is not pinned over its answer** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · |
+| **a sent message is never looked for inside an answer** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · |
+| **crashed the panel** | | | | | **✗** | | | | | | | | | | | | | | | | | | | | | | | | | | | | |  |  |  |  |
+| **typed blank spaces** | | | | | **✗** | | | | | | | | | | | | | | | | | | | | | | | | | | | | |  |  |  |  |
+| **every keystroke one late** | | | | | | | | **✗** | | | | | | | | | | | | | | | | | | | | | | | | | |  |  |  |  |
+| payload, bytes | 28,975 | 30,998 | 31,371 | 35,485 | 59,047 | 51,513 | 54,185 | 71,979 | 51,754 | 66,147 | 69,798 | 70,554 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 80,092 | 100,249 | 113,430 | 157,281 | 157,281 |
 
 The byte count is worth reading as a line of its own. It climbs while the composer is
 being fought over — 35K to 59K to 72K — and comes back down to 51K when that was given
-up. Everything after that is resilience, and it costs 18K.
+up. Everything after that is resilience: 28K by 0.5.0, 20K more in 0.5.1 for the box alone, 13K in 0.5.2 for sent
+messages, 22K in 0.5.3 for Claude Code's own long-message bug, and 22K in 0.5.4 for the question every
+part of this is now asked - each doing exactly what
+it did before, and each much harder to break.
 
 ---
 
@@ -827,6 +845,249 @@ Given up on purpose: a message that mixes two languages takes one direction as a
 while it is typed and after it is sent.
 
 Payload: 80,092 bytes - 4,597 more than 0.4.22, for the per-part stand-down, a second road for the stylesheet and a third way to the box you type in, with the per-line machinery taken out.
+
+### 0.5.1 — the box you type into, built for the updates that have not happened yet
+
+Nothing a person sees is different: the box still takes one direction as a whole, from any
+RTL letter in it. What is different is how much it takes to break that. Seventeen Claude
+Code builds were downloaded and booted first - 2.0.50 to 2.1.268, ten months - to find out
+how the box has actually changed: its class names went from minified letters to hashes, a
+second layer appeared over it, and 2.1.267 added `plaintext`. Its role, label,
+`aria-multiline` and `data-placeholder` never changed once. decisions.md, section 35.
+
+- [x] the box is a lamp on its own circuit: its own observers, listeners, stylesheet and
+      status. The answers' part failing to start was made to happen, and the box stayed on
+      **(lab)**
+- [x] its rules sit in a cascade layer declared before any of Claude Code's, all
+      `!important`, and name only our own attributes: Claude Code forcing `ltr` with
+      `!important` from a specific selector, or from its own cascade layer, loses - in its
+      own running app, with its real stylesheet rewritten to do it **(lab, on the real app)**
+- [x] found five ways - by name, role, label, `aria-multiline`, `data-placeholder` - so every
+      class renamed AND the role and label taken away still finds it, in the real app
+      **(lab, on the real app)**
+- [x] the layers that turn with it are found by what they are: anything drawn over the box
+      turns, an icon beside it does not, a box or layer wrapped in something new is still
+      found **(lab)**
+- [x] inside a turned layer nothing decides a direction of its own, so the caret and the
+      letters cannot part; on today's box, with a mention chip in it, that changes nothing
+      at all - measured property by property on Claude Code's own stylesheet **(lab)**
+- [x] a box rebuilt with Urdu already in it turns at once, a box whose layer over it is drawn
+      late turns when it arrives, two boxes are each followed, and a message brought back
+      from history turns the box in the real app **(lab, on the real app)**
+- [x] a fault takes a box back to how Claude Code had it, whole; layers that did not all take
+      the direction are given back together and the status says why; a stylesheet taken out
+      is put back; a box in a shadow root is reached **(lab)**
+- [x] the sent-message lamp stays out of the box and out of the layer drawn over it - it
+      could reach in before, and would have left the copy right to left over an English
+      caret on a build that drew a `dir="auto"` run into it **(lab)**
+- [x] the payload is parsed as a module before it ships, the way Claude Code loads it: the
+      one mistake in it that could stop Claude Code's own panel from starting **(lab)**
+- [x] every build from 2.0.50 to 2.1.268 booted and typed into with this in it: first letter
+      on the right, both layers turned, measured working, no error - seventeen of seventeen
+      **(lab, on the real app)**
+- [x] twenty-four new tests on the copied page, and 0.5.0 fails eighteen of them; five
+      rewrites of Claude Code's real bundle, and 0.5.0 fails three on behaviour **(lab)**
+- [x] four faults in the new code itself were found before it was built - two by its own
+      tests, two by reading it again: black text taken for invisible, "not working"
+      forgotten at the next keystroke, a reading-back that turned a rebuilt box back, and a
+      layer added inside a wrapper going unseen. Each test was run with its fix taken out,
+      and failed **(lab)**
+- [ ] typed into and read in the real panel **(unseen - this is the one to try)**
+
+Payload: 100,249 bytes - 20,157 more than 0.5.0, for the box becoming a part of its own and
+the reasons written beside it.
+
+### 0.5.2 — a message somebody sent, on a circuit of its own
+
+Nothing a person sees is different: a sent message still takes one direction as a whole,
+from what it says. What is different is what holds that up. The same seventeen builds were
+booted and sent a message first, and in 0.5.1 a sent message turned out to have no lamp of
+its own - it was turned by the code for answers, from 2.1.247 on by deciding the whole row
+from a heading hidden for screen readers, and in 2.0.50 and 2.1.0 by nothing at all. A class
+it leaned on had also quietly stopped existing in 2.1.266. decisions.md, section 36.
+
+- [x] a sent message is decided by a lamp of its own - its own observers, stylesheet and
+      status - found by the class of the element holding its text and by the run its text
+      is handed to `dir="auto"`, either one enough **(lab, on the real app)**
+- [x] the direction goes on the text only, never on the row, so the controls beside a
+      message stay where Claude Code put them; a mention Claude Code marks left to right
+      keeps its own direction **(lab)**
+- [x] its rules sit in the cascade layer declared ahead of all of Claude Code's: `plaintext`
+      forced on a sent message with `!important`, from a specific selector or a cascade layer,
+      loses - in Claude Code's own running app, its real stylesheet rewritten to do it
+      **(lab, on the real app)**
+- [x] the code for answers stays out of sent messages: it skips the heading above them by
+      name, and never takes a decision from anything drawn one pixel square - so with every
+      class renamed, an English answer streaming under an Urdu message does not read right to
+      left for a single frame **(lab, on the real app)**
+- [x] one message now ends at `data-transcript-message` as well as at its class name - the
+      attribute Claude Code has put on every message in the transcript since 2.1.268 **(code)**
+- [x] the class `contentWrapper_`, named for sent messages until 0.5.1, is no longer relied
+      on - it stopped existing in 2.1.266 **(lab)**
+- [x] a slash command sent with Urdu in it now turns - no road reached it before **(lab)**
+- [x] a message rewritten by the page is decided again, both ways; a message that throws when
+      read is left as the page had it while the one beside it is still decided; the answers'
+      part failing to start leaves sent messages on **(lab)**
+- [x] every build from 2.1.30 to 2.1.268 sends a message that reads right to left, decided by
+      its own lamp alone and measured working; 2.0.50 and 2.1.0 give a sent message no road,
+      and the report says so **(lab, on the real app)**
+- [x] eighteen new tests on the copied page, and 0.5.1 fails twelve of them; seven in the real
+      app, five of them rewrites of its bundle **(lab)**
+- [x] a hundred and three hundred sent messages with an answer streaming: the same cost per
+      chunk as 0.5.1, and the same as with none **(lab)**
+- [ ] typed into, sent and read in the real panel **(unseen - this is the one to try)**
+
+Given up on purpose, still: a message that mixes two languages takes one direction as a whole.
+
+Payload: 113,430 bytes - 13,181 more than 0.5.1, for sent messages becoming a part of their
+own and the reasons written beside it; the part of the answers' code that used to do their
+work is gone from it.
+
+### 0.5.3 — the long message nobody can read past, on a circuit of its own
+
+Claude Code's own bug, not a right-to-left one, put through what 0.5.1 and 0.5.2 put the box
+and a sent message through. Measured first in Claude Code's own app, with a real answer
+streamed under the message: in every build that pins a message, 2.1.90 to 2.1.268, the trap
+is identical to the pixel - it has not been fixed upstream - and 0.5.2's fix for it worked,
+while everything around the fix did not. decisions.md, section 37.
+
+- [x] a circuit of its own, started before the engine inside its own guard: its own
+      observers, its own stylesheet - until now its rule rode in the answers' stylesheet
+      **(code)**
+- [x] its rules sit in a cascade layer declared ahead of all of Claude Code's, every
+      declaration `!important`; until now plain CSS winning by specificity alone **(code)**
+- [x] a pinned row found by name, by `data-transcript-message`, and by the sticky ancestor of
+      a sent message's `dir="auto"` - never from inside or beside the box you type into, which
+      a draft could make taller than half the panel the day it is pinned; an opened message by
+      name and by what the trap is - pinned, showing its whole length, taller than half the
+      panel. With every name it relies on renamed, it still works **(lab, on the real app)**
+- [x] a long message Claude Code takes for a command - anything that opens with `/`, a pasted
+      path included - has no "Show more" or "Show less" and was pinned over its own answer,
+      forty turns of the wheel without a line of it seen; it is let go of now **(lab, on the
+      real app)**
+- [x] what Claude Code designed is not touched: a collapsed message, a short one and a short
+      command stay pinned, however small the panel **(lab, on the real app)**
+- [x] whether it is needed is asked of every row it pins, not once before any existed: a build
+      that stops pinning takes all of it back out of the page, and its status says `not
+      needed` **(lab, on the real app)**
+- [x] the status says what was measured: `on - measured working`, or `not working` for an
+      opened message the page kept pinned and taller than the panel - it said `on - no header
+      rendered yet` for ever before **(lab, on the real app)**
+- [x] `__bidiFixOff()` takes out the listener too; it used to be left behind, still moving the
+      view on close **(lab, on the real app)**
+- [x] the view kept on an opened message does its work two frames after the click, outside
+      the guard around the click; it has a guard of its own now **(code)**
+- [x] a sent message is never looked for inside an answer - named by the test id every answer
+      has carried since 2.1.59 - so the day an answer's paragraphs are handed to `dir="auto"`,
+      two lamps do not decide the same paragraph **(lab)**
+- [x] all seventeen builds, in Claude Code's own app: in the thirteen that pin, the long one
+      reaches "Show less" in three turns of the wheel instead of twenty-two and closing it
+      lands on the reader's line; nothing is marked in the four that pin nothing **(lab, on the
+      real app)**
+- [x] seven new tests in the real app, and 0.5.2 fails five; the history test for this, and
+      0.5.2 fails it in all thirteen builds that pin **(lab)**
+- [x] a hundred pinned messages with an answer streaming: 377 microseconds a chunk, against
+      0.5.2's 381 **(lab)**
+- [ ] opened, read and closed in the real panel **(unseen - this is the one to try)**
+
+Given up on purpose, still: a message that mixes two languages takes one direction as a whole.
+And a choice worth knowing is made here: a pinned message showing its whole length is let go
+of once it is taller than **half** the panel, not only once it is taller than all of it.
+
+Payload: 135,021 bytes - 21,591 more than 0.5.2, for the long-message fix
+becoming a part of its own, a second way into the same trap, and the reasons written beside
+both.
+
+### 0.5.4 — asked, measured, and got out of the way
+
+Nothing a person sees is different. What is different is what happens on the day Claude Code
+fixes one of these itself, what a lamp says once it has stopped working, and what any of it
+costs somebody who is typing.
+
+0.5.3 was finished, built and installed - and then put to the four questions that decide
+whether it should be committed at all: is it over-built, does it load quickly, is every part
+really on a circuit of its own, and will it survive the next update without breaking or
+crashing. Three came back clean and measured. The fourth found the gap that matters most, and
+this release is that gap closed, and then the cost of the whole thing brought down to where a
+person cannot feel it. decisions.md, sections 38, 39 and 40.
+
+And then the whole of it was put to the four questions it has to answer before any of this is
+committed - is it over-built, does it load fast, is every part really on its own circuit, and
+will it survive the next update. Three of the four came back clean and measured. The fourth
+found the gap that matters most, and the rest of 0.5.3 is that gap closed. decisions.md,
+sections 38 and 39.
+
+- [x] **the box you type in and a sent message are asked whether they are still needed** -
+      until now only answers ever asked, and those two simply assumed it for ever. The
+      likeliest update of all is Claude Code fixing the box, and ours would have gone on
+      forcing it underneath theirs, reporting `on` **(lab, on the real stylesheet)**
+- [x] asked of the REAL box and the REAL message, never of a copy, before a single attribute
+      of ours is on it - and with the one text that can answer: a line that opens in Latin and
+      turns Urdu. A draft of pure Urdu is never asked with, because it reads right to left on
+      every build ever shipped **(lab)**
+- [x] every layer showing the text has to agree, or there is no answer yet - the caret's layer
+      is live and the layer over it is the host's, a frame behind **(lab)**
+- [x] a build that has fixed all three places ends with **not one attribute of ours anywhere on
+      the page**, and a reader still sees every line the right way round **(lab)**
+- [x] a lamp that has thrown and never once worked says so, instead of `on`; three goes at
+      that condition, and the first two were satisfied by an empty draft succeeding at nothing
+      **(lab, found by breaking each circuit inside Claude Code's own app)**
+- [x] the one piece of code three circuits share can no longer dim them together: each carries
+      on and reports what it measured **(lab, on the real app)**
+- [x] a collapsed message is recognised by what it is - text being held back - as well as by
+      name, so a cap moved into a stylesheet does not get a message let go of that Claude Code
+      meant to keep pinned **(lab)**
+- [x] the answers' pass looks at each block once per batch instead of ten times: 7,023 selector
+      queries over a streamed answer became 1,224, and 85ms of scripting became 42ms **(lab,
+      on the real app)**
+- [x] 2.1.269, published since 0.5.2 and never tested before, booted and put through all three
+      circuits: the box, a sent message and the long-message trap, all as 2.1.268 **(lab, on
+      the real app)**
+- [x] sixteen new tests; `npm test` itself was silently doing nothing on Windows - the shell
+      never expanded `test/*.test.js` - and now runs them **(lab)**
+
+And then the one thing in this whole project where no cost at all is acceptable: the box
+somebody is typing into. Measured properly - one page, the fix injected and taken out again
+between blocks, hundreds of keystrokes a side - because the first two instruments both lied,
+one by a factor of fifteen and one by changing its mind about which way round the answer was.
+decisions.md, section 40.
+
+- [x] **a keystroke costs 0.18ms instead of 1.25ms**, and the part responsible for six
+      sevenths of that was the ANSWERS' part - which has nothing to do with typing, and was
+      being handed every keystroke because it is the only part that listens for
+      `characterData` **(lab, on the real app)**
+- [x] it never looks inside anything editable now, nor at the layer drawn over it: a
+      correctness rule as much as a cost - the day Claude Code gives that box real paragraphs,
+      a block in there would be decided twice over by two lamps, and the answers rule would
+      WIN, parting the caret from the letters. Written as a test for that day, it failed twice
+      more before it passed **(lab)**
+- [x] the question 0.5.3 added - is this box still ours to turn - forced style and layout in
+      the middle of a keystroke: **14.2ms against 4.3ms for the keystrokes either side**. It is
+      asked after the frame now, where the same read is free, and the box turns one frame later
+      on that single keystroke **(lab, on the real app)**
+- [x] and the test for a host that rebuilds a layer caught what that change broke: the question
+      was tied to one record, the record was replaced, and the box never turned at all **(lab)**
+- [x] what remains is 0.187ms a keystroke, almost none of it our code running - it is four
+      separate observers existing at all. One observer would be cheaper and would put four
+      lamps on one fuse **(lab, on the real app)**
+- [x] **every startup: `apply()` went from 197.70ms to 13.64ms.** It read five megabytes of
+      Claude Code's bundle to find out that nothing needed doing; it asks the end of the file
+      first now, as `state()` has since 0.5.0 **(lab)**
+- [x] and the status bar stopped reading that file on every tab change - 13ms, every time
+      anybody switched files - by remembering what it last saw and forgetting it at each of the
+      three moments it could stop being true **(code)**
+- [x] the guard that keeps the two message lamps off each other's text no longer rests on a
+      single name: an answer is markdown and a sent message is not, and that shape says it
+      without a name **(lab)**
+- [x] streaming is unchanged by all of it: 1,224 selector queries and the same wall clock, the
+      same layout, the same style recalculation as an untouched panel **(lab, on the real app)**
+
+Given up on purpose, still: a message that mixes two languages takes one direction as a whole.
+
+Payload: 157,281 bytes - 22,260 more than 0.5.3, for the question every part of
+this is now asked before it does anything, the two roads that need no name, and the reasons
+written beside all of them.
+
 
 ---
 

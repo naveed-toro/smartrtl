@@ -49,6 +49,24 @@
     usingScriptProperties = false;
   }
 
+  /**
+   * The first LETTER in a string, whichever script it belongs to.
+   *
+   * Letters only, on purpose. The browser's own rule calls a digit weak and punctuation
+   * neutral, so "2024 کا سال" is decided by the kaf, not by the 2 - and a rule that
+   * disagreed with the browser about which character is the deciding one would answer the
+   * wrong question below.
+   */
+  // Built the same way as the three above, and for the same reason: on an engine without
+  // Unicode property escapes this falls back to ranges. That fallback was reached once by
+  // accident, through a single missing backslash, and it is broader than the real thing -
+  // it holds these scripts' DIGITS as well as their letters, so it answered that "2024 کا
+  // سال" begins right-to-left. The fallback is letters only now, and usingScriptProperties
+  // says from outside which road was taken.
+  var FIRST_LETTER;
+  try { FIRST_LETTER = new RegExp("\\p{L}", "u"); }
+  catch (e) { FIRST_LETTER = /[A-Za-z\u00C0-\u024F\u05D0-\u05EA\u0620-\u064A\u066E-\u06D3\u0712-\u072F\u0780-\u07A5\u07CA-\u07EA\u0840-\u0858\u08A0-\u08BD\uFB1D-\uFDFB\uFE70-\uFEFC]/; }
+
   /** Any right-to-left character at all, punctuation included. */
   function containsRtl(text) { return ANY.test(String(text || "")); }
 
@@ -57,6 +75,40 @@
 
   /** A single right-to-left letter. Commas and vowel marks do not count. */
   function containsRtlLetter(text) { return LETTER.test(String(text || "")); }
+
+  /**
+   * Which direction the browser would take this text to be, by its own rule.
+   *
+   * `dir="auto"` and `unicode-bidi: plaintext` both take a run's direction from its
+   * FIRST STRONG character, and that is the behaviour this whole project exists to
+   * replace. Naming it here, in the same file as the rule that replaces it, is what
+   * lets anything ask whether the two still disagree.
+   *
+   * @returns {"rtl"|"ltr"|null} null when there is no letter to decide from
+   */
+  function firstStrong(text) {
+    var m = FIRST_LETTER.exec(String(text || ""));
+    if (!m) return null;
+    return ANY.test(m[0]) ? "rtl" : "ltr";
+  }
+
+  /**
+   * Is this the text that tells the two rules apart?
+   *
+   * True only for text where the browser's guess says left-to-right and this rule says
+   * right-to-left: a line that opens with a Latin word and turns Urdu. That text is the
+   * fault, stated as a string - which makes it the only text worth measuring a page with.
+   * A page that lays THIS out right-to-left by itself has the fault fixed and does not
+   * need us; one that lays it out left-to-right still has it.
+   *
+   * Pure Urdu is useless for that question, and quietly so: the browser reads it
+   * right-to-left whether the fault is there or not, so measuring with it would say
+   * "fixed" on every build ever shipped.
+   */
+  function tellsThemApart(text) {
+    var t = String(text || "");
+    return firstStrong(t) === "ltr" && containsRtlLetter(t);
+  }
 
   /**
    * The rule.
@@ -87,6 +139,8 @@
     containsRtl: containsRtl,
     containsRtlWord: containsRtlWord,
     containsRtlLetter: containsRtlLetter,
+    firstStrong: firstStrong,
+    tellsThemApart: tellsThemApart,
     directionFor: directionFor,
     SCRIPTS: SCRIPTS.slice(),
     usingScriptProperties: usingScriptProperties

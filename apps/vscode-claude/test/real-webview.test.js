@@ -13,6 +13,7 @@
  */
 const test = require("node:test");
 const assert = require("node:assert/strict");
+const fs = require("node:fs");
 const real = require("./support/real.js");
 const { lineReads, lineBoxes } = require("./support/lines.js");
 const { play, flips, drift, settled, scrollJump, lag } = require("./support/jitter.js");
@@ -385,6 +386,56 @@ test("closing it again leaves it exactly where it was", { skip }, async () => {
       (el) => Math.round(el.getBoundingClientRect().top));
     assert.ok(Math.abs(after - before) <= 2, `it jumped ${after - before}px when it was closed`);
   } finally { await close(); }
+});
+
+test("the box you type in differs by direction, and by nothing that is not direction", { skip }, async () => {
+  // The same promise section 19 of decisions.md holds answers to, held to the box: every
+  // computed property of every element in it, with the fix and without it, on Claude Code's
+  // own stylesheet. Including a mention chip inside the layer people read - the kind of
+  // element the rule that holds that layer's insides to its direction applies to, and which
+  // it must not change in any other way.
+  const chipClass = (fs.readFileSync(real.installed.css, "utf8").match(/\.(inputMentionChip_[A-Za-z0-9_-]+)/) || [])[1];
+  const read = async (fix) => {
+    const { page, close } = await real.open(real.composer(), { fix });
+    try {
+      return await page.evaluate(([inputCls, mirrorCls, chip]) => {
+        const input = document.querySelector("." + inputCls), mirror = document.querySelector("." + mirrorCls);
+        // what Claude Code itself does when a mention is typed: the text in the box, and
+        // the same text over it with the mention drawn as a chip
+        input.textContent = "دیکھیں @src/engine.js کو";
+        mirror.innerHTML = 'دیکھیں <span class="' + chip + '">@src/engine.js</span> کو';
+        return new Promise((done) => setTimeout(() => {
+          const out = [];
+          for (const el of [input.parentElement, input, mirror, ...mirror.querySelectorAll("*")]) {
+            const cs = getComputedStyle(el), props = {};
+            for (let i = 0; i < cs.length; i++) props[cs[i]] = cs.getPropertyValue(cs[i]);
+            const r = el.getBoundingClientRect();
+            out.push({ cls: el.className, props, box: [r.width, r.height].map(Math.round) });
+          }
+          done(out);
+        }, 100));
+      }, [real.cls.messageInput, real.cls.mentionMirror, chipClass || "chip_x"]);
+    } finally { await close(); }
+  };
+  const off = await read(false), on = await read(true);
+  assert.equal(on.length, off.length, "the fix must not add or remove elements");
+  const differing = new Set();
+  for (let i = 0; i < off.length; i++) {
+    for (const p of Object.keys(off[i].props)) if (off[i].props[p] !== on[i].props[p]) differing.add(p);
+    assert.deepEqual(on[i].box, off[i].box, off[i].cls + " changed size");
+  }
+  // A logical property - padding-inline-start and the like - is only a name for a physical
+  // one, chosen by direction. Claude Code writes the box's padding physically, 14px left and
+  // 36px right for the microphone, so turning the box swaps which of the two is called the
+  // start: the name moves, the pixels do not. That is allowed only while the physical
+  // properties behind it stay exactly as they were, which is asserted too.
+  const logical = (p) => /-inline-(start|end)(-|$)/.test(p);
+  const unexpected = [...differing].filter((p) => !["direction", "unicode-bidi"].includes(p) && !logical(p));
+  assert.deepEqual(unexpected, [], "these are not direction: " + unexpected.join(", "));
+  for (const p of ["padding-left", "padding-right", "margin-left", "margin-right", "left", "right"]) {
+    assert.ok(!differing.has(p), p + " moved - that is a real restyle, not a logical name for an unchanged one");
+  }
+  assert.ok(differing.has("direction"), "and it must actually turn the box");
 });
 
 test("an English draft in their own box is not moved by a pixel", { skip }, async () => {

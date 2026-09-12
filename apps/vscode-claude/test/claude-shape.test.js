@@ -43,10 +43,90 @@ test("the box you type in can still be found by what it is, not only by name", {
     "the layer drawn over the box is no longer aria-hidden, or no longer there - one of two ways to it is gone");
 });
 
+test("the box you type in is still what it has been since 2.0.50", { skip }, (t) => {
+  // Four things the box has said about itself in every build from 2.0.50 to 2.1.268,
+  // through minified class names and a second layer appearing over it. Each is a road to
+  // the box on its own; losing some is a line in the report, losing all of them is not.
+  const s = bundle();
+  const roads = {
+    role: 'role:"textbox"',
+    label: '"aria-label":"Message input"',
+    multiline: '"aria-multiline":"true"',
+    placeholder: '"data-placeholder":'
+  };
+  const left = Object.keys(roads).filter((k) => s.includes(roads[k]));
+  for (const k of Object.keys(roads)) {
+    if (!left.includes(k)) t.diagnostic(k + " is gone from the box; " + (left.join(", ") || "nothing") + " still finds it");
+  }
+  assert.ok(left.length > 0, "none of the four things the box has always been is left - only its class name finds it now");
+});
+
+test("Claude Code does not set the box's direction with !important, or from a cascade layer", { skip }, (t) => {
+  // Not a failure either way: the box's rules sit in a layer declared before any of the
+  // page's, and win over both. But either one is Claude Code starting to decide the box's
+  // direction itself - which is the day to look at __bidiStatus(), and at whether it is
+  // still needed at all.
+  const css = read(real.installed.css);
+  if (/(messageInput|mentionMirror)_[^{}]*\{[^}]*(direction|unicode-bidi|text-align)\s*:[^;}]*!important/.test(css)) {
+    t.diagnostic("the box's own rules now set direction, unicode-bidi or text-align with !important");
+  }
+  if (/@layer\b/.test(css)) t.diagnostic("Claude Code's stylesheet now uses cascade layers");
+  assert.ok(true);
+});
+
+test("a sent message can still be reached - by name, and by the run its text is handed to", { skip }, (t) => {
+  // Two roads to a sent message, and either is enough: the class of the container its text
+  // is in (every build from 2.1.30), and dir="auto" on the run the text sits in (from
+  // 2.1.220). A build with neither has sent messages this fix cannot see at all.
+  const s = bundle();
+  const byName = /[{,]expandableContainer:"expandableContainer_/.test(s) && /[{,]content:"content_/.test(s);
+  const byRun = s.includes('dir:"auto"');
+  if (!byName) t.diagnostic("the sent message's container is no longer named expandableContainer/content; dir=\"auto\" still finds it");
+  if (!byRun) t.diagnostic("a sent message's text is no longer handed to dir=\"auto\"; its class name still finds it");
+  assert.ok(byName || byRun, "neither road to a sent message is left - sent messages will not turn");
+});
+
+test("the heading above a sent message is still kept from deciding anything", { skip }, (t) => {
+  // It is skipped by name, and separately because it is drawn one pixel square - either is
+  // enough. And a message's own row is bounded by name, and by data-transcript-message.
+  const s = bundle();
+  if (!s.includes("screenReaderTurnHeading")) t.diagnostic("the heading above a sent message is no longer named; it is still skipped because nobody can see it");
+  if (!s.includes('"data-transcript-message"')) t.diagnostic("data-transcript-message is gone; a message's row is bounded by its class name alone");
+  const css = read(real.installed.css);
+  if (/(expandableContainer|content)_[^{}]*\{[^}]*(direction|unicode-bidi)\s*:/.test(css)) {
+    t.diagnostic("Claude Code now sets a direction on a sent message itself - the layered rules still win; check __bidiStatus()");
+  }
+  assert.ok(true);
+});
+
 test("a sent message's text is still handed to dir=\"auto\"", { skip }, (t) => {
   const n = (bundle().match(/dir:"auto"/g) || []).length;
   if (n === 0) t.diagnostic("dir=\"auto\" is gone; sent messages now rest on the class names alone");
   assert.ok(n <= 3, `dir="auto" appears ${n} times - it used to be once, on a sent message; check what else it now marks`);
+});
+
+test("a message that heads a turn is still pinned, and the trap under it still reachable by both roads", { skip }, (t) => {
+  // Claude Code's own bug, not a right-to-left one. What the fix for it rests on, read out of
+  // the build: the row is sticky; an opened message has a collapse row as a direct child of
+  // its box; a message taken for a command is drawn with no box at all. None of these is a
+  // failure when it changes - each is the morning to look at __bidiStatus().unpinExpandedMessage.
+  const s = bundle(), css = read(real.installed.css);
+  const sticky = /\.stickyHeader_[A-Za-z0-9_-]+\{[^}]*position:sticky/.test(css);
+  if (!sticky) t.diagnostic("a message that heads a turn is no longer position: sticky - the fix should report \"not needed\" and have come back out");
+  if (!/[{,]stickyHeader:"stickyHeader_/.test(s)) t.diagnostic("stickyHeader is renamed; pinned rows are found by data-transcript-message and dir=\"auto\"");
+  if (!s.includes('"data-transcript-message"')) t.diagnostic("data-transcript-message is gone; pinned rows rest on their class name and dir=\"auto\"");
+  if (!/maxHeight:60\}/.test(s)) t.diagnostic("a user message no longer collapses at 60px - check that a collapsed one is still told apart");
+  if (/isSlashCommand\)return [A-Za-z0-9_$]+\("div",\{className:`\$\{[A-Za-z0-9_$]+\.userMessage\} \$\{[A-Za-z0-9_$]+\.slashCommandMessage\}`/.test(s)) {
+    t.diagnostic("a message taken for a command is still drawn with no collapsed state - measured and let go of when it is taller than half the panel");
+  } else {
+    t.diagnostic("a message taken for a command is no longer drawn bare - Claude Code may have given it a collapsed state of its own");
+  }
+  // and the fix for their bug, landing in their own stylesheet: a height cap on the opened
+  // message, or pinning dropped while it is open
+  if (/\.stickyHeader_[A-Za-z0-9_-]+:has\([^)]*\)\{[^}]*position:(static|relative)/.test(css)) {
+    t.diagnostic("Claude Code now unpins a message itself in some state - the fix may no longer be needed");
+  }
+  assert.ok(true);
 });
 
 test("the stylesheet's first road is still open - and if it is not, the second one is taken", { skip }, (t) => {

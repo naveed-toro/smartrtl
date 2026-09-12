@@ -369,3 +369,71 @@ test("and it is a round trip even when they read to the end of the message first
       `they were put down ${back === null ? "nowhere near it" : (back - readingLine.at) + "px"} from where they were reading`);
   } finally { await close(); }
 });
+
+/* ---------------------------------------------------------------------------- *
+ * Collapsed, recognised by what it IS.
+ *
+ * Whether a message is collapsed is the question that decides whether it is left exactly as
+ * Claude Code designed it. Until 0.5.3 it was answered by two names - a "collapsed_" class,
+ * and an inline max-height - and the day a cap moves into a stylesheet or a custom property,
+ * both answers go quiet at once and a message Claude Code is deliberately holding back gets
+ * let go of.
+ *
+ * So it is also answered by measurement: something inside the message is taller than itself
+ * and is not letting it out. No name, and nothing about HOW the cap is written.
+ *
+ * The message below carries no collapse row, so the road by name cannot reach it at all -
+ * that is the command-shaped message, and it is what makes this a test of the measurement
+ * and not of the name beside it.
+ * ---------------------------------------------------------------------------- */
+
+/** A long message Claude Code pins, with no collapse row of any kind: a command. */
+const noCollapseRow = (text) =>
+  userMessage(text, { expanded: true }).replace(/<div class="buttonContainer_x">[\s\S]*?<\/div>\s*<\/div>/, "</div>");
+
+/**
+ * A cap written in a stylesheet, under a name nothing here knows.
+ *
+ * "hidden" is Claude Code holding text back. "shown" is the same cap letting it out - and it
+ * takes the page's own clipping with it, because the wrapper Claude Code draws around a
+ * message clips on its own account, and while it does, text is being held back whatever the
+ * cap says. That was this test failing once and being right to: the fix read a message as
+ * collapsed, and it was.
+ */
+const CAP = (how) => `<style>
+  .cappedByAClass_x{max-height:400px;overflow:${how === "hidden" ? "hidden" : "visible"}}
+  ${how === "hidden" ? "" : ".userMessage_x,.expandableContainer_x,.contentWrapper_x{overflow:visible!important}"}
+</style>`;
+const capped = (text) => noCollapseRow(text).replace('class="content_x"', 'class="content_x cappedByAClass_x"');
+
+const pinning = (page) => page.evaluate(() => {
+  const row = document.querySelector(".message_x.stickyHeader_x");
+  return {
+    position: getComputedStyle(row).position,
+    letGo: row.hasAttribute("data-bidi-unpin"),
+    height: Math.round(row.getBoundingClientRect().height)
+  };
+});
+
+test("a message capped by a class rather than an inline style is left pinned, as Claude Code meant it", async () => {
+  const { page, errors, close } = await open(CAP("hidden") + turn(capped(LONG), { answerLines: 80 }));
+  try {
+    const p = await pinning(page);
+    assert.ok(p.height > 300, "the row is not tall enough for this test to mean anything: " + p.height);
+    assert.equal(p.letGo, false, "a message whose text is being held back was let go of anyway");
+    assert.equal(p.position, "sticky", "and it stopped being pinned");
+    assert.deepEqual(errors, []);
+  } finally { await close(); }
+});
+
+test("and the same cap that hides nothing is not mistaken for a collapse", async () => {
+  // The discrimination this rests on: a cap that CLIPS text is Claude Code holding something
+  // back, and a cap that lets it overflow is not. Same height, same class, opposite answers.
+  const { page, errors, close } = await open(CAP("shown") + turn(capped(LONG), { answerLines: 80 }));
+  try {
+    const p = await pinning(page);
+    assert.equal(p.letGo, true, "nothing is being held back here, so this one is the trap");
+    assert.equal(p.position, "static");
+    assert.deepEqual(errors, []);
+  } finally { await close(); }
+});

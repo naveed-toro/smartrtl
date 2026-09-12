@@ -47,8 +47,9 @@ first line - `SmartRTLDom.start(SmartRTL, {...})`.
 | `blocks` | selector for the elements that carry text, if the default is wrong |
 | `boxSelector` | hint for "one message", tried first when scoping a decision |
 | `boundary` | the ceiling a decision may never climb past, so one message's answer cannot reach the message beside it |
-| `ownDirAuto` | decide every run of text the page hands to `dir="auto"` by the rule, as one piece. Names no class at all |
-| `composer` | `{ container, input[], mirror[] }` - the box the user types into. Each part is a list tried in order: by name first, then by what the element is |
+| `sent` | `{ text[], runs, not[] }` - messages somebody sent, each decided as one piece: the element holding a message's text by name (`text`), and every run the page hands to `dir="auto"` (`runs`), which names no class at all - but never inside `not`, the text that has a lamp of its own, such as an answer. A circuit of its own inside the engine, like the composer |
+| `skip` | blocks the answers' part must never decide from - text only a screen reader hears, or text that has a lamp of its own |
+| `composer` | `{ container, input[], mirror[] }` - the box the user types into. Each part is a list of roads: by name first, then by what the element is. It runs on a circuit of its own inside the engine - its own observers, stylesheet and status - so an adapter whose answers fail to start still gets its box |
 | `extraCss` | rules the adapter wants in the same stylesheet |
 | `onDecision` | `(block, box)` - run once, when a message is decided |
 | `onCleanup` | `()` - undo the adapter's own work when the escape hatch is pulled |

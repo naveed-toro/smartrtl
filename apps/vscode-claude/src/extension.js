@@ -148,8 +148,30 @@ function claudeCodeFocused() {
   } catch (err) { return null; }
 }
 
+/* What patcher.state() last said, and when.
+
+   refresh() runs on every tab change, every tab-group change and every editor change - and
+   each call read the last 512KB of Claude Code's bundle off the disk, measured at 13ms.
+   Switching between two files paid it twice.
+
+   Nothing but this extension changes that file, so the answer only goes stale when WE change
+   it, or when Claude Code itself is replaced - and both of those clear this by hand. The
+   short life is a safety net for the one case neither covers: somebody editing the file
+   themselves. */
+let lastState = null, lastStateAt = 0;
+const STATE_GOOD_FOR_MS = 30 * 1000;
+
+function forgetState() { lastState = null; }
+
+function currentState() {
+  if (lastState && Date.now() - lastStateAt < STATE_GOOD_FOR_MS) return lastState;
+  lastState = patcher.state();
+  lastStateAt = Date.now();
+  return lastState;
+}
+
 function refresh() {
-  const st = patcher.state();
+  const st = currentState();
 
   // The commands act on what is in the file; the status bar reports whether the fix is
   // actually doing anything. Once a block can be present and expired at the same time
@@ -234,6 +256,7 @@ function turnOn(ctx) {
   ctx.globalState.update(ON_KEY, true);
   ctx.globalState.update(OFF_AT_KEY, undefined);
   const result = patcher.apply(ctx.extensionPath);
+  forgetState();
   refresh();
   if (result.state === "no-target") { vscode.window.showWarningMessage(noTarget()); return; }
 
@@ -250,6 +273,7 @@ function turnOff(ctx) {
   ctx.globalState.update(ON_KEY, false);
   ctx.globalState.update(OFF_AT_KEY, version(ctx));
   const result = patcher.remove();
+  forgetState();
   refresh();
   if (result.state === "no-target") { vscode.window.showWarningMessage(noTarget()); return; }
 
@@ -278,18 +302,20 @@ function syncQuietly(ctx, why) {
   // that decides whether a reload is worth asking for. apply() answers a narrower
   // question - did the file change - and a block whose stamp has run out is still in the
   // file, so it answers "restamped" while the panel on screen runs a dead copy.
-  const before = patcher.state();
+  const before = currentState();
   let result;
   try { result = patcher.apply(ctx.extensionPath); }
   catch (err) {
     // Whatever the bar is showing now, it is no longer the truth. Say so.
     log.appendLine(`[${why}] failed: ${err && err.message ? err.message : err}`);
+    forgetState();
     refresh();
     return;
   }
 
   if (result.install) lastSeen = { dir: result.install.dir, version: result.install.version };
   if (result.state !== "no-target") stampedAt = Date.now();
+  forgetState();                       // we have just been the thing that could change it
   log.appendLine(`[${why}] ${result.state}${result.install ? ` (Claude Code ${result.install.version})` : ""}`);
   refresh();
 
@@ -395,6 +421,7 @@ function activate(context) {
       const install = patcher.findClaudeCode();
       if (!install) return;
       if (lastSeen && lastSeen.dir === install.dir && lastSeen.version === install.version) return;
+      forgetState();                   // a different Claude Code: nothing known about it holds
       syncQuietly(context, "extensions-changed");
     }),
     // the status bar item follows whichever tab you are on - and opening a tab is also
