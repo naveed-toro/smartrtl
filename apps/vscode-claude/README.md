@@ -94,7 +94,7 @@ nothing else.
   same seventeen builds: every one that gives a sent message a road turns it
 
 Each of those, and the formulas and fixes that were tried and rejected first, is written
-up in [docs/decisions.md](https://github.com/naveed-toro/smartrtl/blob/main/docs/decisions.md) - forty-one sections, including
+up in [docs/decisions.md](https://github.com/naveed-toro/smartrtl/blob/main/docs/decisions.md) - forty-two sections, including
 three attempts at per-line direction in the composer that were built, shipped and then
 withdrawn, the measurements that ended each one, the limits that were finally accepted so
 that a Claude Code update is the least likely thing to break it, and the box you type in

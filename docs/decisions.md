@@ -10,7 +10,7 @@ search for, in several languages.
 
 ## What is in here
 
-Forty-one sections, in the order they were written, which is the order the faults were
+Forty-two sections, in the order they were written, which is the order the faults were
 found. The ones worth reading first are marked.
 
  1. [The root cause](#1-the-root-cause)
@@ -53,6 +53,8 @@ found. The ones worth reading first are marked.
 38. [Ten looks at one paragraph, and the cost of the pass nobody had counted](#38-ten-looks-at-one-paragraph-and-the-cost-of-the-pass-nobody-had-counted) ←
 39. [The question only one of the three places was ever asked](#39-the-question-only-one-of-the-three-places-was-ever-asked) ←
 40. [The one place where nothing is allowed to cost anything](#40-the-one-place-where-nothing-is-allowed-to-cost-anything) ←
+41. [The dot is a direction, and the gutter under it was not](#41-the-dot-is-a-direction-and-the-gutter-under-it-was-not)
+42. [The formula, reopened on purpose](#42-the-formula-reopened-on-purpose) ←
 
 ← 6 and 7 are the rule and the design it forced. 13 is what the first live run found.
 25 and 27 are the composer crash and the decision to stop; 28 is what that would have
@@ -64,7 +66,10 @@ done to Claude Code's own long-message bug, and the answer to whether they have 
 what all four of them cost, measured, and what happens when each is broken on purpose. 39 is
 the question two of the three places were never asked - whether Claude Code has fixed this
 itself - and what a lamp says once it has stopped working. 40 is the box you type into held to
-a harder rule than anything else here: that nobody can tell this is installed.
+a harder rule than anything else here: that nobody can tell this is installed. 42 is the
+rule itself reopened on purpose: every proposal ever made for this, measured against the
+five headings and against the stream, and the two questions any future change has to
+answer before its accuracy is even discussed.
 
 ---
 
@@ -3336,3 +3341,197 @@ A message's dot does. A gutter reserved on somebody else's row does not. A statu
 window with no Claude Code in it does not. Asking it of the *thing* rather than of the *property*
 is what separates a direction from a preference, and it is the only question that ends a review,
 because taste has no end.
+
+---
+
+## 42. The formula, reopened on purpose
+
+Sections 2 to 6 found the rule. This section is what happened when it was opened again,
+deliberately, long after it had been shipped and lived with - and it is written down
+because the suggestion that reopened it was a *good* one. Bad suggestions do not need a
+section. Good ones come back, wearing a different hat, roughly once a year, and the only
+defence against re-litigating a settled thing is to have measured it in public once.
+
+### The suggestion, and why it was worth taking seriously
+
+Section 3 ended on an insight: in these lines the Latin words are nouns, and the grammar
+is RTL. The language of a line has nothing to do with how many characters each side
+occupies.
+
+The suggestion took that insight one step further, and it is the right step to want to
+take. If grammar is what decides, then *look for the grammar*. Linguistics has a name for
+this - in a code-switched sentence, the matrix language is the one supplying the function
+words, and the embedded language supplies content words. Urdu as a host brings `میں`,
+`کا`, `ہے`, `جو`. Urdu as a guest brings a noun and nothing else.
+
+So: keep the rule exactly as it is, and add one narrow exception.
+
+> Flip to RTL as always - **unless** the block holds three or fewer RTL words *and* none
+> of them is an RTL function word. Then leave it LTR.
+
+It is small, it is cheap, it needs no threshold to tune, and by construction it can only
+ever fire on the one case section 5 gave up. It looked like a free win.
+
+It is not. It fails three separate ways, and the third one is expensive.
+
+### One: it breaks the five headings
+
+The same five lines that ended the character-ratio formula in section 3. They are real
+headings out of real answers, and they are the reason that formula is not in the code.
+
+| heading | RTL words | function word? | guard fires? | result |
+|---|---|---|---|---|
+| `useMemo اور useCallback` | 1 (`اور`) | yes | no | rtl - correct |
+| `args - اصل arguments` | 1 (`اصل`) | **no** | **yes** | **ltr - wrong** |
+| `children بطور props` | 1 (`بطور`) | *boundary* | ? | ? |
+| `Debounce بمقابلہ Throttle` | 1 (`بمقابلہ`) | *boundary* | ? | ? |
+| `JavaScript میں Debounce فنکشن` | 2 (`میں`) | yes | no | rtl - correct |
+
+One certain regression, and two whose answer depends on a judgement call.
+
+### Two: the boundary is the comma again
+
+`بطور` means "as". `بمقابلہ` means "versus". Are they function words?
+
+There is no answer to that question. They are compound postpositions - grammar by
+behaviour, vocabulary by shape - and whether they go in the list is a decision somebody
+makes while typing the list. Which means the direction of `Debounce بمقابلہ Throttle`
+would be decided by the person who wrote the word list, months earlier, in another file.
+
+Section 5 removed a guard because a line's direction depended on whether the writer typed
+`,` or `،`. This is the same fault. The arbitrariness has only moved: out of the text and
+into a lookup table, where it is harder to see and impossible to measure from the line
+itself. A rule that depends only on the line's own text cannot rot; this one rots
+somewhere else, quietly.
+
+### Three: it costs two thirds of a second on every short answer
+
+This is the one that is not obvious, and it is the expensive one.
+
+The current rule has a property that nothing in it announces: **its answer only ever moves
+one way.** Text is appended and never unwritten, so a block that holds an RTL word will
+hold one for the rest of its life, and the rule's answer for such a block is RTL whatever
+else arrives. The answer can go LTR → RTL. It can never come back.
+
+The whole of the real-time behaviour is built on that. `engine.js` refuses to decide from a
+half-written block everywhere - except here, and the exemption is licensed by exactly that
+property: waiting protects a decision that was never at risk. What the waiting cost was
+measured, on a page with Claude Code's own spinner running:
+
+| | frames before the direction is right |
+|---|---|
+| wait for the block to settle | **42** - two thirds of a second, read backwards |
+| decide on sight | **3** |
+
+`test/jitter.test.js` holds both halves. The 42 is not an average over long answers; it is
+what a *short* reply costs, because a reply of one paragraph never grows the second block
+that would have settled the first.
+
+The guard destroys the property outright. Under it, a block holding one RTL content word is
+*not* RTL - it is RTL only once a fourth RTL word or a function word turns up. The answer
+now moves both ways, the exemption is no longer sound, and the engine has to go back to
+waiting. Forty-two frames of backwards text on every short answer, bought so that one
+sentence shape in a hundred comes out right.
+
+And the shape it protects is not even a common one. Headings are their own blocks, and a
+heading is precisely where Urdu arrives carrying one word. The guard misfires exactly where
+the text lives and helps exactly where it does not.
+
+### Every rule ever proposed for this, put to the same two questions
+
+Reopening the formula was also an occasion to go and read what everybody else had tried,
+back to the beginning. The history is short, and it converges.
+
+The first-strong rule is as old as the algorithm: it is **B1/B2** in the Unicode 2.0-era
+text and was renumbered **P2/P3** by Unicode 3.0.1. It has never been revised. It did not
+need to be, because **HL1** has always said a higher-level protocol may override it -
+Unicode's position is that a paragraph's direction is the application's decision, not a
+property of the text. The door was left open on purpose rather than the heuristic being
+made smarter.
+
+Two serious attempts were made to walk through it, and both are ours in all but name:
+
+- **February 2010** - the W3C BidiProposal, edited by Google's bidi tech lead, names this
+  exact fault: *"it is not uncommon for an RTL phrase to start with an LTR word like a
+  brand name or a technical term, in which case this algorithm fails."* Its remedy is word
+  counting, RTL at a 40% share.
+- **June 2011** - W3C ISSUE-36 proposes a companion `autodirmethod` attribute alongside
+  `dir=auto`, with the values `first-strong`, **`any-rtl`** and `plaintext`. `any-rtl` is
+  this project's rule, proposed fifteen years early. The issue was closed; what shipped was
+  `dir=auto`, which is first-strong. The counting rule survives only inside Google's own
+  libraries, where the threshold is still there in the source as
+  `_RTL_ESTIMATION_THRESHOLD = 0.40`.
+
+Unicode's own answer arrived in **6.3 (2013)**, and it is worth being clear that it is not
+an answer to this question at all: directional isolates (`FSI`, `LRI`, `RLI`, `PDI`) and
+the paired-bracket rule `N0` make a wrongly-guessed direction do less damage. They do not
+guess better. `FSI` is *First* Strong Isolate - the heuristic kept, its blast radius
+reduced.
+
+And the current W3C position, restated in a working draft published on 16 July 2026, is
+that heuristics are the wrong layer entirely: direction *"SHOULD use metadata at the string
+or document level and SHOULD NOT depend on heuristics."* Correct, and unavailable. That
+advice is addressed to whoever is producing the string. Nobody is producing these strings
+for us to annotate; they arrive already written, out of a model that was not asked.
+
+So, every candidate, against the only two questions that matter here:
+
+| rule | where it comes from | survives the five headings? | answer only moves one way? |
+|---|---|---|---|
+| first strong (`P2/P3`, `dir=auto`, `plaintext`) | Unicode 2.0, 1996 | no | **yes** |
+| character ratio | section 3 | no | no |
+| word count at 40% | Lanin 2010; Google's libraries | no | no |
+| per-message context | section 4 | yes, but reads the host's DOM | no |
+| five-word-run guard | section 5 | no | no |
+| function-word guard | this section | no | no |
+| explicit metadata | W3C, 2026 | yes | yes - **but does not exist** |
+| **`any-rtl` - the rule in `core`** | W3C ISSUE-36, 2011; section 6 | **yes** | **yes** |
+
+Two things are worth reading off that table.
+
+The first: **the historical proposals did not fail on streaming. They failed on accuracy.**
+First-strong is perfectly well behaved under a stream - the first strong character is fixed
+the moment it arrives and is never revisited. It is simply wrong about this text. Streaming
+is what kills the *fixes*, not the original.
+
+The second follows from it. Everything that makes a rule better informed - counting,
+ratios, context, word lists - also makes it able to change its mind, and a rule that can
+change its mind cannot be trusted with a half-written block. That is not a coincidence
+about these five candidates. It is the shape of the trade. **Accuracy about the whole line
+is bought with the right to revise, and the right to revise is what we cannot afford.**
+
+### What the one per cent actually buys
+
+Section 5 called the given-up case "a deliberate trade, not an oversight". After this, it
+is worth putting more strongly than that.
+
+The cost of getting an English sentence with one RTL insert wrong is one jump for the
+reader's eye - the sentence splits into two same-direction runs, and it is read with an
+irritation, not a failure. The cost of getting an Urdu line with Latin nouns wrong is a
+jump per insert, and past two the line stops being readable at all. The two errors are not
+the same size, so even if they were equally likely the rule should lean RTL. They are not
+equally likely: in an AI answer, an English sentence carrying a stray Urdu word is close to
+the rarest thing that happens.
+
+And then the third thing, which is the one this section exists to record: **that one per
+cent is not a loss the rule tolerates. It is the price of the property the rest of the
+system is built on.** Giving it up is what makes the answer monotonic; monotonic is what
+licenses deciding on sight; deciding on sight is the 42 frames. Buy back the one per cent
+and all three go.
+
+### The rule this leaves
+
+The formula does not change. What changes is what a proposal has to survive before it is
+allowed near it:
+
+> **First question of any change to the rule: can its answer still only move one way?**
+>
+> A proposal that fails this is finished there. Its accuracy does not need to be
+> discussed, because its cost has already been paid in frames, on every short answer, for
+> every user - and the accuracy it is buying is worth less than that.
+>
+> Second question, and only then: does it survive the five headings in section 3?
+
+Both questions are cheap to ask and both have been answered wrongly by careful people,
+including in this section. That is what makes them worth writing down rather than
+remembering.
