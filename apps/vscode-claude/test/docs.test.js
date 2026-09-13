@@ -48,7 +48,11 @@ test("every relative link in every document resolves", () => {
 });
 
 test("every test file a document names actually exists", () => {
-  const real = new Set(fs.readdirSync(__dirname).filter((f) => f.endsWith(".test.js")));
+  // Every directory that holds tests, not just this one - the formula's tests and the
+  // guard on it live in packages/core, and a document may name either.
+  const DIRS = [__dirname, path.join(ROOT, "packages/core/test")];
+  const real = new Set(DIRS.flatMap((d) =>
+    fs.readdirSync(d).filter((f) => f.endsWith(".test.js"))));
   const missing = [];
   for (const doc of DOCS) {
     for (const m of read(doc).matchAll(/([a-z-]+\.test\.js)/g)) {

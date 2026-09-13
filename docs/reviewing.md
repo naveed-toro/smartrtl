@@ -33,6 +33,24 @@ starts LTR, RTL follows       -> RTL
 Nothing else about Claude Code's panel belongs to us. The line was drawn on the first day
 and has not moved since.
 
+### The formula itself is not under review
+
+It is printed above so you know what the project does, not so you can weigh it. It lives
+in `packages/core/src/direction.js`, and that file and its tests are **frozen**.
+
+Every obvious improvement to it has already been tried and measured: character ratios,
+word counts at a threshold, context from surrounding blocks, a five-word guard, a
+function-word guard. Each is written up in `docs/decisions.md`, with the lines that
+killed it. And accuracy is not even the main reason the rule stands: its answer only ever
+moves one way, which is what lets the engine decide from a half-written block while an
+answer streams - 3 frames instead of 42. A better-informed formula can revise itself, and
+a formula that can revise itself cannot decide on sight.
+
+So a finding about the formula is not a finding. If you believe it should change, say so
+and stop; it is a decision its owner makes deliberately, with evidence, as its own piece
+of work. `docs/decisions.md` section 42 has the two questions such a proposal has to
+answer, and the order they are asked in.
+
 ### What is inside it
 
 A thing is inside the line when it **belongs to the text whose direction is being set**.
@@ -75,6 +93,7 @@ conversation to have, not a change to make.
 | the roads in | every name renamed, every role taken away — each place still found | `test/real-webview.test.js` and the survival suites |
 | the assumptions | which one went, in one line, the morning it goes | `test/claude-shape.test.js` |
 | standing down | a build that has fixed one of these takes that circuit out of the page | the survival suites |
+| the formula | that it is byte for byte what it was - behaviour tests can be updated to match a change, bytes cannot | `packages/core/test/frozen.test.js` |
 
 ## When it is red
 
