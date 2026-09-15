@@ -185,6 +185,44 @@ looks, any estimate is invented.
 Deliberately not in this list yet: publishing to npm and the two marketplaces, and the
 website. Those are one phase, at the end, once there is something worth pointing people at.
 
+### Four things to settle on the day that phase starts, and not before
+
+Written down now only so they are not rediscovered from scratch later. None of them is work
+today, and none of them is a finding about the fix.
+
+1. **Tell Anthropic first.** The bug is one `unicode-bidi: plaintext` declaration in their
+   own `webview/index.css`. This repository is already the evidence for it - the root
+   cause, every rejected attempt with its measurement, and a passing suite. And the most
+   useful thing to hand them: their own bundle with the fix THEY would write, built as a page,
+   and every element and every streamed frame of this fix compared with it
+   (`test/as-claude-would.test.js`, decisions.md section 44). And every part
+   of this fix already stands down by itself on the day they ship one. The best outcome of
+   publishing is that publishing turns out not to be needed.
+
+2. **Ask for consent before the first write.** The patch currently goes in silently on
+   activation. One dialog, once, before the first time anything is written - what it
+   changes, that it can be undone at any time, and that it expires on its own - turns "an
+   extension that modifies another extension" into "an extension somebody asked for". It is
+   the right behaviour on its own terms, and it is the answer to the question a marketplace
+   asks.
+
+3. **Have the second road ready before it is needed.** Open VSX, and a `.vsix` on the site
+   and on GitHub. Not for discovery: the Marketplace is also the UPDATE channel, and this
+   project's whole survival argument is that a new build reaches people the day Claude Code
+   changes something. Losing the listing would cost that, not the downloads.
+
+4. **Say what it does in the listing, plainly.** The description already carries the
+   warning. Leave it there.
+
+What was actually found when this was looked into, so it is not looked into twice: there is
+no clause in the Marketplace Terms of Use or in the extension runtime security documentation
+that forbids one extension from modifying another's files, and `be5invis.vscode-custom-css`
+- which patches VS Code's OWN core files, a larger act than this one - has been listed for
+years with over a million installs. The "installation appears corrupt" warning comes from a
+checksum over VS Code's own files and does not apply to an extension's. What does get
+extensions removed is a different category entirely: malware, credential theft, name
+squatting.
+
 ## Questions the browser will answer
 
 Written down because they are the reasons step 1 comes first, and because they are easy to
