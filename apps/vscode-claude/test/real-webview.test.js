@@ -189,9 +189,16 @@ test("an Urdu answer differs by direction, and by nothing that is not direction"
   // row so that all rows kept one column. That took 30px off the English answers in the
   // same conversation, which is not a direction by any reading. It is only flipped now, on
   // the row whose own message turned, and no row loses anything. decisions.md, 41.
+  //
+  // The same two paddings are also a list's room for its bullets and numbers, which goes to
+  // the side the list reads from - and the margin is an Urdu table going to the edge its
+  // reader starts from. Both are the thing, not a property that happens to be allowed:
+  // a marker belongs to its item, and where a table begins belongs to the table. The test
+  // below says what each of them must look like; this one says nothing ELSE moved.
   const allowed = ["direction", "unicode-bidi",
                    "padding-left", "padding-inline-start",     // the gutter it leaves
-                   "padding-right", "padding-inline-end"];     // the one it moves to
+                   "padding-right", "padding-inline-end",      // the one it moves to
+                   "margin-left", "margin-inline-end"];        // a table, to its reader's edge
   const unexpected = differing.filter((p) => !allowed.includes(p));
   assert.deepEqual(unexpected, [],
     `these are neither the direction nor the message's own dot: ${unexpected.join(", ")}`);
@@ -200,10 +207,82 @@ test("an Urdu answer differs by direction, and by nothing that is not direction"
   // and text-align:start was quietly un-centring every header in an Urdu table
   assert.ok(!differing.includes("text-align"),
     "the fix must not re-align anything the browser or the host aligned");
-  // the one that caught a real restyle: <th> is centred by the BROWSER, not by the
-  // host, and text-align:start was quietly un-centring every header in an Urdu table
-  assert.ok(!differing.includes("text-align"),
-    "the fix must not re-align anything the browser or the host aligned");
+});
+
+test("an Urdu list keeps its bullets and numbers, and an Urdu table its column order", { skip }, async () => {
+  // What somebody installing the builds one after another saw, and fifty-two builds of this
+  // suite did not: every item of an Urdu list turned, and the list itself did not. A list
+  // keeps the room for its markers on its start side and each item draws its marker outside
+  // itself, on the ITEM's start side - so every bullet and every number went out past the
+  // right-hand edge of the answer, which clips, and the room kept for them sat empty on the
+  // left. Measured on Claude Code's own stylesheet, where that room is padding-inline-start.
+  const html = `<p>یہ ایک فہرست ہے۔</p>
+<ul id="u"><li>پہلا نکتہ اردو میں</li><li>npm install</li><li>250–400ms</li></ul>
+<ol id="o"><li>پہلا قدم</li><li><code>npm install</code> کے بعد چلائیں</li></ol>
+<ul id="e"><li>build</li><li>test</li></ul>
+<table id="t"><tr><th>نام</th><th>وقت</th></tr><tr><td>سرچ باکس</td><td>250–400ms</td></tr></table>
+<table id="et"><tr><th>Name</th><th>Time</th></tr><tr><td>Auto-save</td><td>1000ms</td></tr></table>`;
+  const { page, close } = await real.open(real.conversation(real.answer().replace("></div>", ">" + html + "</div>")));
+  try {
+    const seen = await page.evaluate(() => {
+      const md = document.getElementById("md").getBoundingClientRect();
+      const box = (el) => el.getBoundingClientRect();
+      const list = (id) => {
+        const ul = document.getElementById(id), cs = getComputedStyle(ul);
+        return {
+          dir: cs.direction,
+          roomLeft: parseFloat(cs.paddingLeft), roomRight: parseFloat(cs.paddingRight),
+          insideAnswer: box(ul).left >= md.left - 1 && box(ul).right <= md.right + 1,
+          items: [...ul.children].map((li) => {
+            const r = document.createRange();
+            r.selectNodeContents(li);
+            return { dir: getComputedStyle(li).direction, text: li.textContent,
+                     textToMarkerSide: Math.round(getComputedStyle(li).direction === "rtl"
+                       ? box(li).right - r.getBoundingClientRect().right
+                       : r.getBoundingClientRect().left - box(li).left) };
+          })
+        };
+      };
+      // where one character of a text node is drawn, to tell 250–400ms from 400ms–250
+      const at = (li, ch) => {
+        const t = li.firstChild, i = t.nodeValue.indexOf(ch), r = document.createRange();
+        r.setStart(t, i); r.setEnd(t, i + 1);
+        return r.getBoundingClientRect().left;
+      };
+      const numbers = document.querySelector("#u li:last-child");
+      const heads = (id) => [...document.querySelectorAll("#" + id + " th")].map((th) => Math.round(box(th).left));
+      return {
+        u: list("u"), o: list("o"), e: list("e"),
+        numbersInOrder: at(numbers, "2") < at(numbers, "m"),
+        table: { heads: heads("t"), rightGap: Math.round(md.right - box(document.getElementById("t")).right) },
+        englishTable: { heads: heads("et"), leftGap: Math.round(box(document.getElementById("et")).left - md.left) }
+      };
+    });
+
+    // "e" is a list of nothing but English, in the same Urdu answer. 0.5.6 left it on the left,
+    // and that was a rule of ours: had Claude Code fixed this itself - the answer marked
+    // dir="rtl" - everything laid out in the answer would read from the right, that list
+    // included, while its words kept their own order. Measured against exactly that reference.
+    for (const id of ["u", "o", "e"]) {
+      const l = seen[id];
+      assert.equal(l.dir, "rtl", `${id}: a list in an Urdu answer reads from the right`);
+      assert.ok(l.roomRight > 0 && l.roomLeft === 0,
+        `${id}: the room for its markers has to be on the right, where they are drawn (left ${l.roomLeft}, right ${l.roomRight})`);
+      assert.ok(l.insideAnswer, `${id}: and inside the answer, which clips anything past its edge`);
+      for (const item of l.items) {
+        assert.equal(item.dir, "rtl", `${id}: "${item.text}" draws its marker on the other side from its siblings`);
+        assert.ok(Math.abs(item.textToMarkerSide) <= 1,
+          `${id}: "${item.text}" sits ${item.textToMarkerSide}px away from its own marker`);
+      }
+    }
+    assert.ok(seen.numbersInOrder, "an English item in an Urdu list must still read 250–400ms, not 400ms–250");
+
+    assert.ok(seen.table.heads[0] > seen.table.heads[1], "an Urdu table's first column is its rightmost");
+    assert.ok(Math.abs(seen.table.rightGap) <= 1, `and it starts at the answer's right edge, not ${seen.table.rightGap}px from it`);
+    // and an English table in an Urdu answer, the same way the reference lays it out
+    assert.ok(seen.englishTable.heads[0] > seen.englishTable.heads[1], "a table in an Urdu answer orders its columns from the right");
+    assert.ok(seen.englishTable.leftGap > 1, "and starts from the right, not against the left edge");
+  } finally { await close(); }
 });
 
 test("the dot goes with its message, and the English rows beside it keep every pixel", { skip }, async () => {

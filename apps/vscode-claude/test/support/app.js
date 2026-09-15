@@ -47,11 +47,48 @@ const HTML = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
   // message gets no answer at all, which is what every test written before this expects.
   let turns = 0;
   window.__answers = [];
+  // An answer queued as { text, chunk, every } is STREAMED, the way the extension host streams
+  // one when partial messages are on: message_start, a text block, text_delta after text_delta,
+  // then the whole assistant message and the result. The panel assembles it through its own
+  // processStreamEvent. window.__streamed counts the answers that have finished.
+  const usage = { input_tokens: 1, output_tokens: 1, cache_creation_input_tokens: null, cache_read_input_tokens: null, server_tool_use: null };
+  const init = (io, k) => io({ type: "system", subtype: "init", session_id: "s1", model: "claude-test", tools: [], mcp_servers: [],
+                               cwd: "C:/work", permissionMode: "default", apiKeySource: "none", slash_commands: [], uuid: "i" + k });
+  const whole = (io, k, text) => {
+    io({ type: "assistant", uuid: "a" + k, session_id: "s1", parent_tool_use_id: null,
+         message: { id: "msg_" + k, type: "message", role: "assistant", model: "claude-test",
+                    content: [{ type: "text", text }], stop_reason: "end_turn", stop_sequence: null, usage } });
+    io({ type: "result", subtype: "success", is_error: false, result: text, session_id: "s1", uuid: "r" + k,
+         duration_ms: 1, duration_api_ms: 1, num_turns: 1, total_cost_usd: 0, usage });
+  };
+  const streamIt = (io, k, text, chunk, every) => {
+    const ev = (event) => io({ type: "stream_event", event, parent_tool_use_id: null, session_id: "s1", uuid: "e" + k + "_" + Math.random() });
+    init(io, k);
+    ev({ type: "message_start", message: { id: "msg_" + k, type: "message", role: "assistant", model: "claude-test", content: [],
+                                           stop_reason: null, stop_sequence: null, usage } });
+    ev({ type: "content_block_start", index: 0, content_block: { type: "text", text: "" } });
+    let at = 0;
+    const tick = setInterval(() => {
+      if (at < text.length) {
+        ev({ type: "content_block_delta", index: 0, delta: { type: "text_delta", text: text.slice(at, at + chunk) } });
+        at += chunk;
+        return;
+      }
+      clearInterval(tick);
+      ev({ type: "content_block_stop", index: 0 });
+      ev({ type: "message_delta", delta: { stop_reason: "end_turn", stop_sequence: null }, usage });
+      ev({ type: "message_stop" });
+      whole(io, k, text);
+      window.__streamed = k;
+    }, every);
+  };
   window.acquireVsCodeApi = () => ({
     postMessage(m) {
       if (m && m.type === "io_message" && m.message && m.message.type === "user" && window.__answers.length) {
-        const text = window.__answers.shift(), ch = m.channelId, k = ++turns;
+        const queued = window.__answers.shift(), ch = m.channelId, k = ++turns;
         const io = (message) => post({ type: "io_message", channelId: ch, message });
+        if (typeof queued !== "string") { streamIt(io, k, queued.text, queued.chunk || 4, queued.every || 30); return; }
+        const text = queued;
         setTimeout(() => {
           io({ type: "system", subtype: "init", session_id: "s1", model: "claude-test", tools: [], mcp_servers: [],
                cwd: "C:/work", permissionMode: "default", apiKeySource: "none", slash_commands: [], uuid: "i" + k });
@@ -344,4 +381,19 @@ async function openReadClose(page) {
 /** Numbered lines, one paragraph each - markdown joins single newlines into one paragraph. */
 const numbered = (tag, n = 150) => Array.from({ length: n }, (_, i) => tag + (i + 1)).join("\n\n");
 
-module.exports = { ORIGIN, STATE, HTML, BOX, boot, read, send, sentBlock, converse, markTurn, readInto, openReadClose, numbered };
+/**
+ * Sends one line and has the host STREAM the answer back, a few characters at a time, through
+ * Claude Code's own stream assembler - and returns once the whole of it has arrived. Anything
+ * that has to watch the answer being written starts watching before this is called.
+ */
+async function stream(page, line, text, { chunk = 4, every = 30 } = {}) {
+  const before = await page.evaluate(() => window.__streamed || 0);
+  await page.evaluate(([t, c, e]) => window.__answers.push({ text: t, chunk: c, every: e }), [text, chunk, every]);
+  await page.click(BOX);
+  await page.keyboard.type(line, { delay: 2 });
+  await page.keyboard.press("Enter");
+  await page.waitForFunction((b) => (window.__streamed || 0) > b, before, { timeout: 120000 });
+  await page.waitForTimeout(800);
+}
+
+module.exports = { ORIGIN, STATE, HTML, BOX, boot, read, send, sentBlock, converse, stream, markTurn, readInto, openReadClose, numbered };

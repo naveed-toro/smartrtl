@@ -244,7 +244,10 @@ function saysIt(written, reachable) {
 }
 
 test("no message is written for a situation nobody can reach", () => {
-  const reachable = everythingAnybodyCanBeShown();
+  // A notice is shown signed - "SmartRTL 0.5.6: " and then the sentence - and the signature is
+  // added where it is shown, not written into each sentence. What this compares is the
+  // sentence; whether the signature is there is asserted on its own, further down.
+  const reachable = new Set([...everythingAnybodyCanBeShown()].map((m) => m.replace(/^SmartRTL [^:\s]+: /, "")));
   const written = everySentenceInTheSource();
   const orphans = [...written].filter((s) => !saysIt(s, reachable));
   assert.deepEqual(orphans, [],
@@ -298,6 +301,10 @@ test("an update over an older build that was working still asks for a reload", (
   ext.activate(ctx);
   assert.ok(shown.some((m) => /Reload to see it/.test(m)),
     "the new build went into the file and nobody was asked to reload: " + JSON.stringify(shown));
+  // and it says which build of this extension went in. Somebody trying one .vsix after
+  // another was told "Claude Code 2.1.270 is fixed" by every one of them alike.
+  assert.ok(shown.some((m) => m.startsWith("SmartRTL " + pkg.version + ":") && m.includes("2.1.263")),
+    "the notice must name both builds - ours and Claude Code's: " + JSON.stringify(shown));
 });
 
 test.after(() => {

@@ -141,8 +141,16 @@ function offerRetry(again) {
   });
 }
 
+/* Which build of THIS extension is speaking, in front of every notice that says something
+   was fixed. The Claude Code version was added in 0.4.19 so a toast would say what was
+   worked on; it still did not say what did the work, and somebody trying one .vsix after
+   another was told "2.1.270 is fixed" by each of them alike, with no way to tell which of
+   them had just gone in. Set once, in activate(). */
+let ours = "?";
+const signed = (message) => `SmartRTL ${ours}: ${message}`;
+
 function offerReload(message) {
-  vscode.window.showInformationMessage(message, "Reload Window").then((choice) => {
+  vscode.window.showInformationMessage(signed(message), "Reload Window").then((choice) => {
     if (choice === "Reload Window") vscode.commands.executeCommand("workbench.action.reloadWindow");
   });
 }
@@ -449,11 +457,12 @@ function syncQuietly(ctx, why) {
     // just installed something is owed an answer either way. Silence after a deliberate
     // act reads as "did that do anything?", and this extension is silent by design the
     // rest of the time, so there is nothing else for them to go on.
-    vscode.window.showInformationMessage(`Right-to-left text in Claude Code ${v} is fixed.`);
+    vscode.window.showInformationMessage(signed(`Right-to-left text in Claude Code ${v} is fixed.`));
   }
 }
 
 function activate(context) {
+  ours = version(context);
   log = vscode.window.createOutputChannel("SmartRTL");
   status = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
   context.subscriptions.push(log, status);
@@ -475,7 +484,7 @@ function activate(context) {
       const said = statusReport(currentState(), install.version);
       // Called ON vscode.window, never through a reference taken off it: the editor's own
       // methods are not guaranteed to survive being detached from the object they live on.
-      const args = said.action ? [said.message, said.action] : [said.message];
+      const args = said.action ? [signed(said.message), said.action] : [signed(said.message)];
       const shown = said.kind === "warning"
         ? vscode.window.showWarningMessage(...args)
         : vscode.window.showInformationMessage(...args);

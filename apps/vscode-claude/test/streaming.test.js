@@ -29,6 +29,7 @@ test("a streaming answer settles, and no block flips twice", async () => {
     const result = await page.evaluate(async (blocks) => {
       const RTL = /[֐-ࣿיִ-﷿ﹰ-﻿]/, LAT = /[A-Za-z]/;
       const seen = new Map(), changes = new Map();
+      let backwards = 0;                 // right to left, then left to right: the direction the rule never moves in
       const root = document.getElementById("root");
 
       const read = (el) => {
@@ -45,7 +46,10 @@ test("a streaming answer settles, and no block flips twice", async () => {
           if (!el.textContent) continue;
           const now = read(el), before = seen.get(el);
           if (before === undefined) seen.set(el, now);
-          else if (before !== now) { seen.set(el, now); changes.set(el, (changes.get(el) || 0) + 1); }
+          else if (before !== now) {
+            if (before === "rtl") backwards++;
+            seen.set(el, now); changes.set(el, (changes.get(el) || 0) + 1);
+          }
         }
       };
       const frame = () => new Promise((r) => requestAnimationFrame(() => r()));
@@ -61,6 +65,7 @@ test("a streaming answer settles, and no block flips twice", async () => {
       return {
         worstBlock: Math.max(0, ...changes.values()),
         total: [...changes.values()].reduce((a, b) => a + b, 0),
+        backwards,
         final: [...root.children].map((el) => [read(el), el.textContent.slice(0, 32)])
       };
     }, BLOCKS);
@@ -69,11 +74,20 @@ test("a streaming answer settles, and no block flips twice", async () => {
     for (const [dir, text] of result.final.slice(0, 5)) assert.equal(dir, "rtl", text);
     assert.equal(result.final[5][0], "ltr", "the English paragraph stays as it was");
 
-    // and this is the promise the design makes
+    // and this is the promise the design makes - the rule's own, per block.
+    //
+    // It used to also cap the whole answer at two changes. That cap was only reachable by
+    // drawing every later block right to left before anything was known about it, which drew
+    // the English paragraph at the end from the right and threw it left once it was finished:
+    // a change backwards, in the one direction the rule never moves. Measured on Claude Code's
+    // own bundle against the fix it would write for itself, the reference makes no such jump,
+    // and neither does this any more. What a page that writes every block a few characters at a
+    // time then shows is what that reference shows: a line that opens with a Latin word reads
+    // left to right until its first Urdu word exists, and turns, once. decisions.md, 44.
     assert.ok(result.worstBlock <= 1,
       `no block may change direction more than once (worst was ${result.worstBlock})`);
-    assert.ok(result.total <= 2,
-      `the whole answer should settle in at most two visible changes (saw ${result.total})`);
+    assert.equal(result.backwards, 0,
+      "a block went from right to left back to left to right - the one direction the rule never moves in");
   } finally { await close(); }
 });
 

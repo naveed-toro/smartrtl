@@ -23,8 +23,12 @@
  *      and cost nothing.
  *   2. Applied by an attribute plus one CSS rule, never by touching each block
  *      from JavaScript.
- *   3. Nothing is decided from a half-written block. A block counts only once
- *      another block follows it, or the stream has gone quiet.
+ *   3. Every block is looked at the moment it appears, and its answer only ever moves
+ *      one way. A message is decided by the first RTL word in it. Inside a decided
+ *      message, a block with no RTL in it is marked left to right on sight - drawn the
+ *      way it would be had the page fixed this itself - and turns right to left only if
+ *      RTL arrives in it later. Nothing ever goes back from right to left to left to
+ *      right. Section 44.
  *   4. No getComputedStyle in the hot path - it forces a style recalculation, and
  *      this code runs on every batch of mutations while an answer streams. The pass
  *      itself happens before the browser paints, so a decision and the text it was
@@ -1422,6 +1426,40 @@
       // vote, so such a run is told to inherit the decision instead.
       '[data-bidi="rtl"] :is(' + BLOCKS + ') [dir="auto"]{direction:inherit!important;unicode-bidi:isolate!important}';
 
+    /* The message itself reads right to left - what the page would do had it said dir="rtl".
+
+       The measure for everything here is one sentence: it has to look as if the host had
+       fixed right-to-left itself. A host that fixes it at the source marks the message
+       dir="rtl", and the browser's own right-to-left does the rest: a list's bullets and
+       numbers and the room for them go to the right, a table orders its columns from the
+       right and starts at the right-hand edge, a quote and a rule mirror. Put beside that
+       reference on Claude Code's own bundle - its stylesheet, no SmartRTL, the answer's row
+       given dir="rtl" - this is what differed, and it is why this rule exists:
+
+         - turning every block and not the message took every bullet and number of an Urdu
+           list away: an item draws its marker outside itself on its own start side, and the
+           list kept the room for it on the left. 0.5.5 and every build before it.
+         - 0.5.6 turned a list or a table only if something in it was Urdu, and left an
+           English list and an English table in an Urdu answer on the left. That was a rule
+           of ours. The reference has no such rule: the answer reads from the right, and so
+           does everything laid out in it. The words inside keep their own order either way.
+
+       Code is the exception every host makes: a code block reads left to right whatever it
+       sits in. And a block with no RTL in it keeps its own direction, as it always has - an
+       English paragraph starts at the left, "250-400ms" still reads 250-400ms.
+
+       One place differs from the reference on purpose. There, an English item in an Urdu
+       list keeps the page's plaintext, which aligns the words by their own direction: the
+       bullet is on the right and "npm install" is on the far left, a whole line away from it.
+       Nobody fixing this at the source would ship that. The item is laid out from the list's
+       side, beside its marker, and plaintext still keeps its words in their order; `right`
+       is not a side named out of taste, because this only ever matches inside a message that
+       reads from the right. */
+    css += '[data-bidi="rtl"]{direction:rtl!important}' +
+           '[data-bidi="rtl"] pre{direction:ltr!important}' +
+           '[data-bidi="rtl"] li[data-bidi="ltr"],[data-bidi="rtl"] li p[data-bidi="ltr"]' +
+             '{direction:rtl!important;unicode-bidi:plaintext!important;text-align:right!important}';
+
     if (cfg.extraCss) css += cfg.extraCss;
 
     /* Everything above rides on one stylesheet getting in, so how it gets in is not
@@ -1460,32 +1498,6 @@
     var settledBlocks = new WeakSet();   // blocks whose own decision is final
     var pending = new Set();             // blocks skipped because they were still being written
     var quiet = false, quietTimer = null;
-
-    /**
-     * Has this block finished being written?
-     *
-     * Text is appended, so ANYTHING that follows a block inside the same message
-     * was written after it, and its arrival is proof the block is done. Checking
-     * only the block's own next sibling missed the common shape of that: the last
-     * cell of a table row has no sibling, and neither does the last item of a list,
-     * so a cell reading "250-400ms" stayed turned round until the quiet timer
-     * eventually caught it - half a second of a reader looking at "400ms-250".
-     *
-     * The walk stops at the message, and that boundary is not decoration: outside
-     * it sits the rest of the panel, including the spinner, and treating those as
-     * "something followed it" would call every block finished the moment it
-     * appeared - which is precisely the guess this whole function exists to avoid.
-     */
-    function isFinal(el) {
-      if (quiet) return true;
-      var stop = null;
-      if (BOX_HINT) { try { stop = el.closest(BOX_HINT); } catch (e) {} }
-      if (!stop) return !!el.nextElementSibling;
-      for (var n = el; n && n !== stop; n = n.parentElement) {
-        if (n.nextElementSibling) return true;
-      }
-      return false;
-    }
 
     function usable(node) {
       if (!node || node === document.body || node === document.documentElement) return false;
@@ -1544,7 +1556,21 @@
         // Forcing rtl on such a block gains nothing and can reorder content that
         // was already fine: "250-400ms" written with an en dash becomes "400ms-250".
         if (!rule.containsRtl(el.textContent || "")) {
-          if (!isFinal(el)) { pending.add(el); return; }
+          // On sight, not once something follows it - and the direction that came from is the
+          // whole reason.
+          //
+          // This used to wait for the block to be finished, and until then the block read right
+          // to left with its message. An English paragraph in an Urdu answer was therefore drawn
+          // from the right and then thrown to the left once the next block arrived. That is a
+          // change from RTL to LTR, the one direction the rule's answer never moves in. Put to
+          // Claude Code's own bundle with an answer streamed into it: the panel draws a paragraph,
+          // a list item and a cell WHOLE, so there was nothing to wait for - an English item sat
+          // on the wrong side for up to 36 frames, complete. And had the page fixed this itself,
+          // an English line would read from the left from its first letter.
+          //
+          // Marked here, a block with no RTL in it reads left to right the moment it appears; if
+          // RTL arrives in it later, the branch below turns it, once, LTR to RTL. Nothing else in
+          // the message moves: its direction was decided by the evidence, not by this block.
           // Marked, and deliberately NOT settled.
           //
           // The quiet timer now expires DURING a message - a tool runs, and for a

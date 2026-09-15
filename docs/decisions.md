@@ -10,7 +10,7 @@ search for, in several languages.
 
 ## What is in here
 
-Forty-two sections, in the order they were written, which is the order the faults were
+Forty-four sections, in the order they were written, which is the order the faults were
 found. The ones worth reading first are marked.
 
  1. [The root cause](#1-the-root-cause)
@@ -55,6 +55,8 @@ found. The ones worth reading first are marked.
 40. [The one place where nothing is allowed to cost anything](#40-the-one-place-where-nothing-is-allowed-to-cost-anything) ←
 41. [The dot is a direction, and the gutter under it was not](#41-the-dot-is-a-direction-and-the-gutter-under-it-was-not)
 42. [The formula, reopened on purpose](#42-the-formula-reopened-on-purpose) ←
+43. [A bullet, a number and a column are direction too](#43-a-bullet-a-number-and-a-column-are-direction-too)
+44. [As if Claude Code had fixed it itself - built, and compared against](#44-as-if-claude-code-had-fixed-it-itself---built-and-compared-against) ←
 
 ← 6 and 7 are the rule and the design it forced. 13 is what the first live run found.
 25 and 27 are the composer crash and the decision to stop; 28 is what that would have
@@ -69,7 +71,10 @@ itself - and what a lamp says once it has stopped working. 40 is the box you typ
 a harder rule than anything else here: that nobody can tell this is installed. 42 is the
 rule itself reopened on purpose: every proposal ever made for this, measured against the
 five headings and against the stream, and the two questions any future change has to
-answer before its accuracy is even discussed.
+answer before its accuracy is even discussed. 43 is what fifty-two builds of tests never saw
+and one person installing them did: every Urdu list without a single bullet or number. 44 is the
+sentence this project is measured by - as if Claude Code had fixed it itself - built as a page on
+Claude Code's own bundle, and every element and every streamed frame of this fix compared with it.
 
 ---
 
@@ -3535,3 +3540,186 @@ allowed near it:
 Both questions are cheap to ask and both have been answered wrongly by careful people,
 including in this section. That is what makes them worth writing down rather than
 remembering.
+
+---
+
+## 43. A bullet, a number and a column are direction too
+
+Found by the owner, not by the suite: installing the builds one after another and reading
+real answers in them. Every Urdu list had lost its bullets and its numbers. Put to Claude
+Code 2.1.270's own bundle, booted, with an answer streamed into it:
+
+| | untouched | with 0.5.5 |
+|---|---|---|
+| an Urdu list's bullets and numbers | on the left, away from the text | **not drawn at all** |
+| an English item in that list | bullet on the left | bullet on the left, alone |
+| an Urdu table's first column | on the left | on the left |
+| an Urdu table | against the left edge | against the left edge |
+
+### Why nobody could see a single bullet
+
+A list is laid out by its OWN direction, and an item by its own. Claude Code keeps the room
+for a list's markers as `padding-inline-start: 2em` on the list, and an item draws its marker
+outside itself, on the item's start side. Every item was turned; the list never was. So each
+marker went out past the right-hand edge of the answer, which is `overflow-x: hidden`, and
+the room kept for it sat empty on the left.
+
+The rule decided every one of those items correctly. What it was never asked is what the
+items sit in.
+
+### Why fifty-two builds of tests did not see it
+
+Every test of an answer measured blocks: which way each paragraph, heading and item reads.
+All of them were right. The one test that reads everything - every computed property of
+every element, with the fix and without - compares elements, and a marker is not an element.
+It cannot differ in a list nobody enumerated. That is the same lesson as section 18 in a new
+place: the instrument answers exactly the question it was built to ask.
+
+### What was done
+
+Nothing about the rule, and nothing new is decided. The two marks the engine already puts on
+things are read once more, by the stylesheet:
+
+- **a list with any item that is not left-to-right is a right-to-left list.** Its markers
+  and the room for them go to the right. A list of nothing but English is left exactly as
+  the page had it.
+- **an English item in that list keeps its marker beside its siblings' and its text beside
+  its marker.** Three ways were put to the real bundle before one was chosen:
+
+  | the English item | its marker | its text | `250–400ms` |
+  |---|---|---|---|
+  | `direction: rtl` | right | right | **`400ms–250`** - the safety rule, broken |
+  | `rtl`, the page's own `plaintext` | right | **far left** | intact |
+  | `rtl`, `plaintext`, `text-align: right` | right | right | intact |
+
+  The third. `right` is not a side chosen out of taste: that rule only ever matches a list
+  that reads from the right, and in one, right is where every line starts.
+- **a table with any cell that is not left-to-right is a right-to-left table.** Its own
+  direction orders its columns, so the first is rightmost. And it sits against its
+  reader's edge: a table is shrink-to-fit, and nothing but the space beside it says where it
+  begins. That is `margin-left: auto`, and it is the one property on the answers' allow-list
+  that is not a padding or a direction - listed there with the reason beside it.
+
+Code blocks, rules and quotes needed nothing: Claude Code gives them no side.
+
+### What it costs while an answer streams
+
+A list is turned by the same attribute that turns its first item, in the same style pass, so
+there is no frame in which an item reads right to left inside a list that does not - which is
+the frame a marker disappears in. `jitter.test.js` plays a list in an item at a time, English
+items included, and counts both: that frame never happens, and the list changes sides once.
+
+A list of nothing but English inside an Urdu answer is right-to-left until its items are
+known to be English, and then goes back. That is not new - every English paragraph in an Urdu
+answer already does it, section 7 - and it moves one way only.
+
+### The question, asked of the thing again
+
+> Does this belong to the text whose direction we are setting?
+
+A bullet belongs to its item and a number to its step. The column a table starts from belongs
+to the table. All of them are direction; none was ever reached. Section 41 found the dot the
+same way. The difference is that this time it took somebody installing the builds to find it.
+
+### And the notice now says which build is speaking
+
+"Right-to-left text in Claude Code 2.1.270 is fixed" was said by every build alike, so
+somebody trying one `.vsix` after another could not tell which had just gone in. Every notice
+now starts with `SmartRTL` and this extension's own version.
+
+---
+
+## 44. As if Claude Code had fixed it itself - built, and compared against
+
+> Section 43 was right about the bullets and wrong about two things around them, and both were
+> found by what this section describes rather than by anybody's reading. What 43 says about an
+> English list, an English table, and a list "going back" while it streams is superseded here.
+
+The sentence this project has been measured by since its first day - an Urdu reader should feel
+that Claude Code fixed right-to-left on its own - had only ever been checked by asking questions
+of it. Which way does a paragraph read, is the dot mirrored, does a marker show. Every one of
+those was a good question, 0.5.5 passed all of them, and not one Urdu list in it had a visible
+bullet. The owner found that by installing the builds. Then, reading 0.5.6, that Urdu text
+seemed to spread further than Claude's own - and for three rounds that was argued about rather
+than measured, in both directions.
+
+A list of questions can never be complete. So the sentence was built instead.
+
+### The reference
+
+Claude Code's own bundle and stylesheet, booted, with **no SmartRTL in it**, and the fix a
+Claude Code developer would write at the source:
+
+- the Urdu answer's row is given `dir="rtl"`
+- the row's own dot rules are mirrored, with their own values read from their stylesheet
+- a block that holds RTL stops being `plaintext` - that one declaration is the bug
+- code stays left to right
+
+Everything else is the browser's own right-to-left. Then the same answer with SmartRTL, and
+every element compared: its box, where its text is drawn, which side its marker is on, and the
+dot - once it has arrived, and frame by frame while it streams in through Claude Code's own
+stream assembler.
+
+### What it found, finished
+
+| | 0.5.6 | 0.5.7 |
+|---|---|---|
+| elements laid out differently from Claude's own fix (of 72) | 13 | 4, and all four are the one allowed below |
+| the Urdu text's spread | same as the reference | same |
+| an English list in an Urdu answer | on the left | on the right, as the answer reads |
+| an English table in an Urdu answer | on the left, columns left to right | on the right, columns from the right |
+
+**The spread was never ours.** With the dot on the right, Claude's own fix puts Urdu text
+exactly where 0.5.6 did - 20 to 650 in a 700px panel - because Claude Code's text band is 50px
+on the dot's side and 20px on the other. Keeping the left 30px empty instead, which was
+suggested in the middle of the argument, would have been a layout of ours. The instrument
+settled in a minute what reasoning had not in three rounds.
+
+**The English list and table were ours.** 0.5.6 turned a list or a table only if something in
+it was Urdu. The reference has no such rule: the answer reads from the right, so does
+everything laid out in it, and the words keep their own order either way. So now the message
+itself reads right to left - the engine sets `direction: rtl` on the box it decided, which is
+what `dir="rtl"` on it would do - code is held left to right, and a block with no RTL in it keeps
+its own. The list and table rules of 0.5.6 are gone; the browser does what they did.
+
+### What it found, streaming
+
+The panel was found to hold the line being written in a real block - a paragraph, an item, a
+cell, a heading - so what the reader watches grow is what the engine decides.
+
+| streamed through Claude Code's own panel | lines that turned | complete text that jumped | a complete line on the wrong side |
+|---|---|---|---|
+| Claude Code's own fix | 1 - the first heading, after 5 characters | 0 | 0 |
+| 0.5.6 | 3 | 7 | 9, for up to 36 frames |
+| **0.5.7** | **1**, the same one | **0** | **0** |
+
+The jumps were the engine waiting. Inside a message already decided, a block with no RTL in it
+read right to left until something followed it, and only then was marked left to right - so an
+English paragraph was drawn from the right and thrown to the left, and a table of English went
+across the whole panel. That is a change from RTL to LTR: the one direction the rule's answer
+never moves in (section 42). It is marked on sight now. If RTL arrives in it later, it turns
+once, left to right into right to left, which is the rule's own direction.
+
+The one turn left is not avoidable by anybody: until the first Urdu word exists, nothing says
+the answer is Urdu. Claude Code's own fix makes the same turn at the same character.
+
+The page that writes every block a few characters at a time (`jitter.test.js`) sees what that
+costs there: a line that opens with a Latin word reads left to right until its Urdu word
+arrives, then turns - once, within a frame, with one word on screen. It used to demand one
+change for a whole answer; it demands the rule's direction now, and a separate test holds that
+an English line in an Urdu answer is drawn from the left from its first letter.
+
+### The one difference allowed, written down
+
+An English item in an Urdu list. The reference keeps the page's `plaintext` on it, which lays
+its words out from the left while its bullet is on the right - "npm install" a whole line away
+from its own marker. Nobody fixing this at the source would ship that. The item's text sits
+beside its marker, and `plaintext` still keeps its words in their order.
+
+### Held
+
+`test/as-claude-would.test.js`, in `npm run review` and therefore in the daily watch: the
+reference built from whichever Claude Code is installed or downloaded, compared at 700px and at
+420px once the answer has arrived, and frame by frame while it streams. Its allow-list is that
+one difference and nothing else. The morning an update makes this fix look like something other
+than Claude Code's own work, it goes red and says which element.

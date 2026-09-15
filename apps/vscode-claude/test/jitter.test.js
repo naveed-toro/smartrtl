@@ -225,15 +225,50 @@ test("a short reply reads the right way almost at once, and turns only once", as
   } finally { await close(); }
 });
 
-test("a whole answer is still one decision, not one per paragraph", async () => {
-  // Deciding sooner must not mean deciding more often. Five blocks, one change of
-  // direction between them: the first block decides, and the four written after it
-  // are born pointing the right way and never move.
+test("every change a reader sees goes left to right into right to left, once, and early", async () => {
+  // This used to demand ONE change for the whole answer: the first block decided, and every
+  // block after it was born right to left. That held for Urdu lines and cost English ones -
+  // an English line in an Urdu answer was drawn from the right and thrown to the left once
+  // it was finished, which is a change in the one direction the rule's answer never moves in.
+  // Put to Claude Code's own bundle with an answer streamed into it, and to the same answer
+  // with the fix Claude Code would write for itself, the reference has exactly one change and
+  // no jumps; 0.5.6 had three changes, seven jumps and nine complete lines on the wrong side.
+  // test/as-claude-would.test.js holds that.
+  //
+  // What this page does that the real panel does not is write EVERY block a few characters
+  // at a time. There a line that opens with a Latin word reads left to right until its first
+  // Urdu word exists - as it would had Claude Code fixed this itself - and then turns. So the
+  // demand here is the rule's own: each block changes at most once, only from left to right
+  // into right to left, never back, and within a frame of the evidence - while one word is
+  // on screen, not a paragraph.
   const { page, close } = await open(PAGE + WORKING);
   try {
     const trace = await play(page, ANSWER);
     const f = flips(trace);
-    assert.equal(f.total, 1, `the whole answer should cost one change (saw ${f.total})`);
+    for (const [key, p] of f.path) {
+      if (p.length > 1) assert.deepEqual(p, ["ltr", "rtl"], `${key} changed ${p.join(" -> ")}`);
+    }
+    const l = lag(trace);
+    assert.ok(l.worst <= 1, `turned ${l.worst} frames after the evidence arrived`);
+    assert.ok(l.worstMoved <= 24, `a block turned with ${l.worstMoved} characters already on screen - more than a word`);
+    assertCalm(trace, { maxWrongFrames: 10 });
+  } finally { await close(); }
+});
+
+test("an English line in an Urdu answer reads from the left from its first letter", async () => {
+  // The jump 0.5.6 made on every English paragraph, list item and table cell in an Urdu
+  // answer: drawn from the right while it was the last block, thrown to the left once
+  // something followed it. Nothing follows it here, and the model is still working.
+  const { page, close } = await open(PAGE + WORKING);
+  try {
+    const trace = await play(page, [
+      ["block", "p", "فرض کریں ایک سرچ باکس ہے جو ہر حرف پر کال کرتا ہے۔"],
+      ["block", "p", "The build tool comparison is documented upstream and stays in English."]
+    ]);
+    const f = flips(trace);
+    const english = trace.order[1];
+    assert.deepEqual(f.path.get(english) || ["ltr"], ["ltr"],
+      "the English paragraph was drawn from the right at some point: " + JSON.stringify(f.path.get(english)));
     assertCalm(trace, { maxWrongFrames: 10 });
   } finally { await close(); }
 });
@@ -295,6 +330,43 @@ test("resizing the panel afterwards does not disturb a line of it", async () => 
     await page.setViewportSize({ width: 1200, height: 700 });
     await page.waitForTimeout(600);
     assert.deepEqual(await directions(page, "#root p, #root h3, #root li"), read, "wider again");
+  } finally { await close(); }
+});
+
+test("a list arriving item by item never hides its own markers, and turns once", async () => {
+  // A list is laid out by its own direction and its items by theirs. For as long as the two
+  // disagree - items turned, list not - every marker is drawn outside the answer's edge and
+  // nobody sees a bullet or a number. So the question for a list that is still being written
+  // is not only whether it ends up right, but whether there is a single frame where an item
+  // reads right to left inside a list that does not.
+  const { page, close } = await open(
+    `<div class="message timelineMessage_x"><div class="root" id="root"><ul id="list"></ul></div></div>` + WORKING);
+  try {
+    const trace = await page.evaluate(async (items) => {
+      const list = document.getElementById("list");
+      const frame = () => new Promise((r) => requestAnimationFrame(() => r()));
+      const seen = [];
+      const note = () => seen.push({
+        list: getComputedStyle(list).direction,
+        items: [...list.children].map((li) => getComputedStyle(li).direction)
+      });
+      for (const text of items) {
+        const li = document.createElement("li");
+        list.appendChild(li);
+        for (let i = 1; i <= text.length; i += 3) { li.textContent = text.slice(0, i); await frame(); note(); }
+        li.textContent = text; await frame(); note();
+      }
+      for (let i = 0; i < 40; i++) { await frame(); note(); }
+      return seen;
+    }, ["useMemo اور useCallback کا فرق", "npm install", "250–400ms", "تیسرا نکتہ"]);
+
+    const hidden = trace.findIndex((f) => f.items.includes("rtl") && f.list !== "rtl");
+    assert.equal(hidden, -1, `frame ${hidden}: an item reads right to left inside a list that does not, so its marker is off the edge`);
+    const changes = trace.filter((f, i) => i && f.list !== trace[i - 1].list).length;
+    assert.ok(changes <= 1, `the list changed sides ${changes} times while it was being written`);
+    const last = trace[trace.length - 1];
+    assert.equal(last.list, "rtl");
+    assert.deepEqual(last.items, ["rtl", "rtl", "rtl", "rtl"], "and every marker ends on the list's side, English items included");
   } finally { await close(); }
 });
 
