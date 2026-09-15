@@ -1,4 +1,4 @@
-# The fifty-two builds, and what each one actually contained
+# The fifty-four builds, and what each one actually contained
 
 Compiled by opening every `.vsix` and reading what is inside it, not from memory. The
 second table was rebuilt the same way after the fact, which is why some of its rows say
@@ -141,57 +141,63 @@ and six tests cover it - the first of which is simply that it loads.
 Read out of the packaged `.vsix` the same way, months later. `·` means the build carried
 it; a blank means it did not.
 
-| | 0.1.0-4 | 0.1.5 | 0.1.6-7 | 0.2.0 | 0.3.0 | 0.3.1 | 0.3.2 | 0.3.3 | 0.3.4 | 0.4.0 | 0.4.1 | 0.4.2 | 0.4.3 | 0.4.4 | 0.4.5 | 0.4.6 | 0.4.7 | 0.4.8 | 0.4.9 | 0.4.10 | 0.4.11 | 0.4.12 | 0.4.13 | 0.4.14 | 0.4.15 | 0.4.16 | 0.4.17 | 0.4.18 | 0.4.19 | 0.4.20 | 0.4.21 | 0.4.22 | 0.5.0 | 0.5.1 | 0.5.2 | 0.5.3 | 0.5.4 | 0.5.5 |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| answers read right-to-left | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| your own messages read right-to-left | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| a sent message decided line by line | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | |  |  |  |  |  |
-| ... **as a copy, moving nothing of theirs** | | | | | | | | | | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | |  |  |  |  |  |
-| the composer takes one direction | · | · | · | · | · | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| the composer decided **per line** | | | | | · | | | · | | | | | | | | | | | | | | | | | | | | | | | | | |  |  |  |  |  |
-| ... by `unicode-bidi: plaintext` | | | | | | · | · | | | | | | | | | | | | | | | | | | | | | | | | | | |  |  |  |  |  |
-| ... with a third, "mixed" state | | | | | | | · | | | | | | | | | | | | | | | | | | | | | | | | | | |  |  |  |  |  |
-| a clone of React's mirror | | | | | | | | · | | | | | | | | | | | | | | | | | | | | | | | | | |  |  |  |  |  |
-| its own undo stack | | | | | · | | | · | | | | | | | | | | | | | | | | | | | | | | | | | |  |  |  |  |  |
-| **a sent message decided as one, found twice over** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · | · | · | · | · |
-| **the composer sets `unicode-bidi` too** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · | · | · | · | · |
-| **the composer found by what it is, not only its name** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · | · | · | · | · |
-| **text put in the box from code turns it too** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · | · | · | · | · |
-| **the status reports what was measured** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · | · | · | · | · |
-| the timeline dot | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| an expanded message unpinned | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| the view follows the message | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| **closing gives back the reader's line** | | | | | | | | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| the block expires on its own | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| **a fault stops where it happens** | | | | | | | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| **a fuse box, and `__bidiStatus()`** | | | | | | | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| **stands down if Claude Code fixes it** | | | | | | | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
-| **a keystroke costs 0.18ms, and the answers' part is out of the box entirely** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · |
-| **every startup answers from the end of the bundle, not five megabytes of it** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · |
-| **the answers' part never looks inside anything editable** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · | · |
-| **... asked of the box you type in and of a sent message too, of the real thing** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · | · |
-| **a lamp that has thrown and never worked stops saying it is on** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · | · |
-| **a collapsed message recognised by what it is, not only by name** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · | · |
-| **the box you type in on a circuit of its own** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · | · | · | · |
-| **no stylesheet can overrule the box: first layer, `!important`** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · | · | · | · |
-| **the box found five ways, its layers by what is drawn over it** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · | · | · | · |
-| **the payload parsed as a module before it ships** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · | · | · | · |
-| **a sent message on a circuit of its own, found by name and by `dir="auto"`** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · | · | · |
-| **the answers' part never decides from text nobody can see** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · | · | · |
-| **the long-message fix on a circuit of its own: first layer, `!important`, asked of every row** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · | · |
-| **a long message taken for a command is not pinned over its answer** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · | · |
-| **a sent message is never looked for inside an answer** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · | · |
-| **crashed the panel** | | | | | **✗** | | | | | | | | | | | | | | | | | | | | | | | | | | | | |  |  |  |  |  |
-| **typed blank spaces** | | | | | **✗** | | | | | | | | | | | | | | | | | | | | | | | | | | | | |  |  |  |  |  |
-| **every keystroke one late** | | | | | | | | **✗** | | | | | | | | | | | | | | | | | | | | | | | | | |  |  |  |  |  |
-| **the file the panel loads found three ways, not one** |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | · |
-| **each window writes its own file beside the bundle** |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | · |
-| **a bundle somebody has open is waited for, never written under** |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | · |
-| **a write that could not happen is said, not swallowed** |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | · |
-| **Show status answers whether it is working, not whether a block is there** |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | · |
-| **a message's dot mirrored, taking width from no other row** |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | · |
-| **the line, and what it shows anybody, held as measurements** |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | · |
-| payload, bytes | 28,975 | 30,998 | 31,371 | 35,485 | 59,047 | 51,513 | 54,185 | 71,979 | 51,754 | 66,147 | 69,798 | 70,554 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 80,092 | 100,249 | 113,430 | 157,281 | 157,281 | 158,808 |
+| | 0.1.0-4 | 0.1.5 | 0.1.6-7 | 0.2.0 | 0.3.0 | 0.3.1 | 0.3.2 | 0.3.3 | 0.3.4 | 0.4.0 | 0.4.1 | 0.4.2 | 0.4.3 | 0.4.4 | 0.4.5 | 0.4.6 | 0.4.7 | 0.4.8 | 0.4.9 | 0.4.10 | 0.4.11 | 0.4.12 | 0.4.13 | 0.4.14 | 0.4.15 | 0.4.16 | 0.4.17 | 0.4.18 | 0.4.19 | 0.4.20 | 0.4.21 | 0.4.22 | 0.5.0 | 0.5.1 | 0.5.2 | 0.5.3 | 0.5.4 | 0.5.5 | 0.5.6 | 0.5.7 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| answers read right-to-left | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| your own messages read right-to-left | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| a sent message decided line by line | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | |  |  |  |  |  |  |  |
+| ... **as a copy, moving nothing of theirs** | | | | | | | | | | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | |  |  |  |  |  |  |  |
+| the composer takes one direction | · | · | · | · | · | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| the composer decided **per line** | | | | | · | | | · | | | | | | | | | | | | | | | | | | | | | | | | | |  |  |  |  |  |  |  |
+| ... by `unicode-bidi: plaintext` | | | | | | · | · | | | | | | | | | | | | | | | | | | | | | | | | | | |  |  |  |  |  |  |  |
+| ... with a third, "mixed" state | | | | | | | · | | | | | | | | | | | | | | | | | | | | | | | | | | |  |  |  |  |  |  |  |
+| a clone of React's mirror | | | | | | | | · | | | | | | | | | | | | | | | | | | | | | | | | | |  |  |  |  |  |  |  |
+| its own undo stack | | | | | · | | | · | | | | | | | | | | | | | | | | | | | | | | | | | |  |  |  |  |  |  |  |
+| **a sent message decided as one, found twice over** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · | · | · | · | · | · | · |
+| **the composer sets `unicode-bidi` too** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · | · | · | · | · | · | · |
+| **the composer found by what it is, not only its name** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · | · | · | · | · | · | · |
+| **text put in the box from code turns it too** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · | · | · | · | · | · | · |
+| **the status reports what was measured** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · | · | · | · | · | · | · |
+| the timeline dot | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| an expanded message unpinned | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| the view follows the message | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| **closing gives back the reader's line** | | | | | | | | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| the block expires on its own | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| **a fault stops where it happens** | | | | | | | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| **a fuse box, and `__bidiStatus()`** | | | | | | | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| **stands down if Claude Code fixes it** | | | | | | | | | | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · | · |
+| **a keystroke costs 0.18ms, and the answers' part is out of the box entirely** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · | · | · |
+| **every startup answers from the end of the bundle, not five megabytes of it** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · | · | · |
+| **the answers' part never looks inside anything editable** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · | · | · | · |
+| **... asked of the box you type in and of a sent message too, of the real thing** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · | · | · | · |
+| **a lamp that has thrown and never worked stops saying it is on** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · | · | · | · |
+| **a collapsed message recognised by what it is, not only by name** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · | · | · | · |
+| **the box you type in on a circuit of its own** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · | · | · | · | · | · |
+| **no stylesheet can overrule the box: first layer, `!important`** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · | · | · | · | · | · |
+| **the box found five ways, its layers by what is drawn over it** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · | · | · | · | · | · |
+| **the payload parsed as a module before it ships** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · | · | · | · | · | · |
+| **a sent message on a circuit of its own, found by name and by `dir="auto"`** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · | · | · | · | · |
+| **the answers' part never decides from text nobody can see** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · | · | · | · | · |
+| **the long-message fix on a circuit of its own: first layer, `!important`, asked of every row** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · | · | · | · |
+| **a long message taken for a command is not pinned over its answer** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · | · | · | · |
+| **a sent message is never looked for inside an answer** | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | · | · | · | · | · |
+| **crashed the panel** | | | | | **✗** | | | | | | | | | | | | | | | | | | | | | | | | | | | | |  |  |  |  |  |  |  |
+| **typed blank spaces** | | | | | **✗** | | | | | | | | | | | | | | | | | | | | | | | | | | | | |  |  |  |  |  |  |  |
+| **every keystroke one late** | | | | | | | | **✗** | | | | | | | | | | | | | | | | | | | | | | | | | |  |  |  |  |  |  |  |
+| **the file the panel loads found three ways, not one** |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | · | · | · |
+| **each window writes its own file beside the bundle** |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | · | · | · |
+| **a bundle somebody has open is waited for, never written under** |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | · | · | · |
+| **a write that could not happen is said, not swallowed** |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | · | · | · |
+| **Show status answers whether it is working, not whether a block is there** |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | · | · | · |
+| **a message's dot mirrored, taking width from no other row** |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | · | · | · |
+| **the line, and what it shows anybody, held as measurements** |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | · | · | · |
+| payload, bytes | 28,975 | 30,998 | 31,371 | 35,485 | 59,047 | 51,513 | 54,185 | 71,979 | 51,754 | 66,147 | 69,798 | 70,554 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 75,495 | 80,092 | 100,249 | 113,430 | 157,281 | 157,281 | 158,808 | 161,327 | 161,479 |
+| **a list turns with its items: bullets, numbers and the room for them** |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | · | · |
+| **a table turns with its cells: column order, and the edge it starts from** |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | · | · |
+| **every notice names this extension's own version** |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | · | · |
+| **an answer compared, element by element and frame by frame, with Claude Code's own fix built on its own bundle** |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | · |
+| **a block with no RTL reads left to right on sight, never drawn from the right first** |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | · |
+| **an English list or table in an Urdu answer reads from the right, as the answer does** |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | · |
 
 The byte count is worth reading as a line of its own. It climbs while the composer is
 being fought over — 35K to 59K to 72K — and comes back down to 51K when that was given
@@ -1004,6 +1010,68 @@ of once it is taller than **half** the panel, not only once it is taller than al
 Payload: 135,021 bytes - 21,591 more than 0.5.2, for the long-message fix
 becoming a part of its own, a second way into the same trap, and the reasons written beside
 both.
+
+### 0.5.7 — as if Claude Code had fixed it itself
+
+Built as a page and compared against, rather than argued: Claude Code's own bundle with the fix
+its developers would write at the source, beside the same answer with this build, every element
+and every frame. decisions.md, 44.
+
+- [x] **an English list and an English table in an Urdu answer read from the right, as the rest
+      of the answer does** — 0.5.6 left them on the left; that was a rule of ours, and Claude
+      Code's own fix has no such rule. The words keep their own order **(lab, 2.1.270's own
+      bundle, against the reference)**
+- [x] **finished, an answer is laid out as Claude Code's own fix lays it out** — 72 elements of
+      an answer holding every kind of block, at 700px and at 420px: 13 differed in 0.5.6, 4 do
+      now, and all four are the one difference written down below **(lab)**
+- [x] **the spread of Urdu text is Claude Code's own** — with the dot on the right, the reference
+      puts the text exactly where this does **(lab)**
+- [x] **while it streams, nothing already written is thrown about** — streamed through Claude
+      Code's own stream assembler: 0.5.6 drew English lines from the right and threw them left
+      once something followed, seven jumps and nine complete lines on the wrong side for up to 36
+      frames. Now none, and one line turns while being written, the same one Claude Code's own
+      fix turns **(lab)**
+- [x] **an English item in an Urdu list keeps its text beside its bullet** — the one deliberate
+      difference from the reference, which puts the words a line away from their own marker
+      **(lab)**
+- [x] **the comparison is a test, and in the review** — `as-claude-would.test.js`, run against
+      whichever Claude Code is installed, and by the daily watch against each new release
+      **(lab)**
+
+### 0.5.6 — a bullet, a number and a column
+
+> Superseded in part by 0.5.7: the English list and English table below stayed on the left, and a
+> list of English was drawn from the right while it streamed. Do not install this build.
+
+Found by installing the builds one after another and reading real answers in them, not by
+the suite. Nothing about the rule changed and nothing new is decided: the marks the engine
+already puts on things are read once more. decisions.md, 43.
+
+- [x] **an Urdu list shows its bullets and its numbers, on the right** — every build before
+      this turned each item and not the list, so every marker was drawn past the right-hand
+      edge of the answer, which clips, and the room kept for it sat empty on the left. Not
+      one bullet or number of an Urdu list was visible in 0.5.5 **(lab, Claude Code 2.1.270's
+      own bundle, booted)**
+- [x] **an English item in an Urdu list keeps its bullet beside the others, and its text
+      beside its bullet** — `npm install` and `250–400ms` stay in their own order. Three ways
+      were put to the real bundle; one broke `250–400ms` into `400ms–250`, one left the text at
+      the far side from its bullet **(lab)**
+- [x] **a list of nothing but English is left exactly as it was** **(lab)**
+- [x] **an Urdu table reads its first column on the right, and sits against the right edge**
+      — its cells turned before; its column order and where it begins did not. An English
+      table is left where it was **(lab)**
+- [x] **and while it streams, no frame hides a marker** — a list is turned in the same style
+      pass as its first item, so there is no frame with an item reading right to left in a
+      list that does not; the list changes sides once. `jitter.test.js` plays it in an item at
+      a time **(lab)**
+- [x] **the big dot beside a message was checked on 2.1.270 too** — left of an English answer,
+      right of an Urdu one, as in 0.5.5 **(lab)**
+- [x] **every notice says which build of SmartRTL is speaking** — "SmartRTL 0.5.6: Right-to-left
+      text in Claude Code 2.1.270 is fixed. Reload to see it." Every build before said the same
+      sentence, so trying one `.vsix` after another could not tell them apart **(lab)**
+
+Payload: 161,327 bytes - 2,519 more than 0.5.5, for the list and table rules and the reasons
+written beside them.
 
 ### 0.5.5 — the last thing here with one road, and one line drawn round the rest
 
