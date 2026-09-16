@@ -1061,7 +1061,7 @@ to a boundary rather than to Claude Code's own fix. decisions.md, 45.
       splits in two. The test asserts the corruption too, so the day it stops the rule stops
       earning its place **(lab)**
 - [x] **one tape measure per thing** — section 44's hand-written reference for numbers 3 and 4 is
-      retired; `as-claude-would.test.js` keeps numbers 1 and 2 **(lab)**
+      retired; the as-claude-would suite keeps numbers 1 and 2 **(lab)**
 - [x] **the box you type into is measured the same way, and it found a real fault** — a rule of
       ours flattened every descendant of a turned layer, so a span the host marks `dir="ltr"`
       - what a file path in a mention chip wants - came out right to left. Narrowed to silence
@@ -1075,6 +1075,17 @@ to a boundary rather than to Claude Code's own fix. decisions.md, 45.
       element, and the layer people read is a single text node. In a browser composer the
       editor makes an element per line, which is why the same formula goes per line there
       **(lab)**
+- [x] **a sent message is measured the same way, and it had the same fault** — the rule
+      flattened every direct child of a turned message, so a span the host marks `dir="ltr"`
+      came out right to left and 64px from where the host put it. Narrowed the same way
+      **(lab, 2.1.270)**
+- [x] **and all four places are now held to one tape measure** — `the-mirror.test.js`, against a
+      reference with nobody's judgement in it. The hand-written comparison beside it is
+      deleted rather than kept: two instruments for one thing drift, and then disagree on the
+      morning the question is whether an update broke something **(lab)**
+- [x] **and here too a line is not a thing to point at** — a three-line message is one
+      `<span dir="auto">` holding one text node. Per line is out for the same reason it is out
+      in the box **(lab)**
 - [ ] installed and read in the real panel **(unseen)**
 
 Given up on purpose, still: the box's reference is the whole box, not a line at a time. Claude
@@ -1104,7 +1115,7 @@ and every frame. decisions.md, 44.
 - [x] **an English item in an Urdu list keeps its text beside its bullet** — the one deliberate
       difference from the reference, which puts the words a line away from their own marker
       **(lab)**
-- [x] **the comparison is a test, and in the review** — `as-claude-would.test.js`, run against
+- [x] **the comparison is a test, and in the review** — the as-claude-would suite, run against
       whichever Claude Code is installed, and by the daily watch against each new release
       **(lab)**
 

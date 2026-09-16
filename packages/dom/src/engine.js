@@ -1102,9 +1102,35 @@
 
   var SENT = "data-bidi-sent";    // on the element that holds a sent message's text: "rtl", or absent
 
+  /* Telling a sent message which way it reads, and nothing beyond that.
+     -------------------------------------------------------------------
+     Two incomplete things are stopped here, and both are the same mistake as the one in the
+     answers and in the box you type into:
+
+       dir="auto"          the browser's first-strong-character guess, written as an attribute.
+                           It is the rule this project exists to replace, and inside a message
+                           already decided it must not get a second vote.
+
+       text-align: left    a physical side hardcoded where a direction belongs. Claude Code
+                           writes it on a sent message's row, and it is inherited all the way
+                           down to the text, so the words come out in the right order and every
+                           line still hugs the left edge. `start` is the honest value.
+
+     AND ONE THING THAT USED TO BE STOPPED AND HAD NO RIGHT TO BE
+
+       This used to read `[SENT="rtl"] > *`, which flattened EVERY direct child - including one
+       the host had marked itself. Measured on 2.1.270: a span with dir="ltr" in a turned
+       message, which is what a file path wants, came out right to left and 64px from where the
+       host had put it. Silencing a guess is the job; overruling somebody who knows is not.
+
+       :not([dir])         anything the host has not given a direction to may not decide one for
+                           itself, however it was told to - by `dir="auto"` or by a class that
+                           sets `unicode-bidi: plaintext`.
+       [dir="auto"]        the guess, written as an attribute, at any depth. */
   var SENT_CSS = "@layer smartrtl-sent{" +
     "[" + SENT + '="rtl"]{direction:rtl!important;unicode-bidi:isolate!important;text-align:start!important}' +
-    "[" + SENT + '="rtl"] > *,[' + SENT + '="rtl"] [dir="auto"]{direction:inherit!important;unicode-bidi:isolate!important;text-align:inherit!important}' +
+    "[" + SENT + '="rtl"] :not([dir]){unicode-bidi:isolate!important;text-align:inherit!important}' +
+    "[" + SENT + '="rtl"] [dir="auto"]{direction:inherit!important;unicode-bidi:isolate!important;text-align:inherit!important}' +
     "}";
 
   /** A sent-message part that never started, and says why. */

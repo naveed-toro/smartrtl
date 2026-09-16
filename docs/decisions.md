@@ -10,7 +10,7 @@ search for, in several languages.
 
 ## What is in here
 
-Forty-seven sections, in the order they were written, which is the order the faults were
+Forty-eight sections, in the order they were written, which is the order the faults were
 found. The ones worth reading first are marked.
 
  1. [The root cause](#1-the-root-cause)
@@ -60,6 +60,7 @@ found. The ones worth reading first are marked.
 45. [The two promises, held in all four places](#45-the-two-promises-held-in-all-four-places) ←
 46. [The mirror, with nobody's judgement left in it](#46-the-mirror-with-nobodys-judgement-left-in-it) ←
 47. [We tell. We do not build. — and what that found in the box you type into](#47-we-tell-we-do-not-build--and-what-that-found-in-the-box-you-type-into) ←
+48. [The same fault in the message you sent, and the last hand-written reference retired](#48-the-same-fault-in-the-message-you-sent-and-the-last-hand-written-reference-retired) ←
 
 ← 6 and 7 are the rule and the design it forced. 13 is what the first live run found.
 25 and 27 are the composer crash and the decision to stop; 28 is what that would have
@@ -3721,7 +3722,7 @@ beside its marker, and `plaintext` still keeps its words in their order.
 
 ### Held
 
-`test/as-claude-would.test.js`, in `npm run review` and therefore in the daily watch: the
+The as-claude-would suite, in `npm run review` and therefore in the daily watch: the
 reference built from whichever Claude Code is installed or downloaded, compared at 700px and at
 420px once the answer has arrived, and frame by frame while it streams. Its allow-list is that
 one difference and nothing else. The morning an update makes this fix look like something other
@@ -3980,7 +3981,7 @@ because the burst carries the Urdu in with the Latin.
 ### Held
 
 `test/the-mirror.test.js`, in `npm run review` and therefore in the daily watch. Section 44's
-numbers 3 and 4 are gone from `as-claude-would.test.js`, which keeps numbers 1 and 2 - one tape
+numbers 3 and 4 are gone from the as-claude-would suite, which keeps numbers 1 and 2 - one tape
 measure per thing, because two of them drift and then disagree in somebody's face.
 
 ## 47. We tell. We do not build. — and what that found in the box you type into
@@ -4097,6 +4098,93 @@ became a thing, it would be pointed at like any other.
 
 ### Held
 
-`test/the-mirror.test.js` carries numbers 1, 3 and 4 now. `as-claude-would.test.js` keeps only
+`test/the-mirror.test.js` carries numbers 1, 3 and 4 now. The as-claude-would suite keeps only
 number 2, a sent message, which is the last place still resting on a reference written by hand -
-said in the file rather than left to be found.
+said in the file rather than left to be found. Section 48 finishes it and retires that suite.
+
+## 48. The same fault in the message you sent, and the last hand-written reference retired
+
+Section 47 fixed the box you type into and left one place still being compared against a
+reference somebody here had written out by hand. This finishes it, and the two facts it rested
+on were measured rather than remembered.
+
+### A line is not a thing here either
+
+A three-line message, read out of the real panel:
+
+```
+<div .userMessage_>              ltr / isolate / left / pre-wrap
+  <div .expandableContainer_>
+    <div .content_>
+      <span dir="auto">                       one run
+        #text "npm install کے بعد …\nRun the buil…"     one text node, \n between the lines
+```
+
+So per line is out here for the same reason it is out in the box: there is nothing to point at,
+and building one is not ours to do. One message, one direction - which is what ships.
+
+### And here the incompleteness is written twice
+
+| | what it is | why it is the same mistake |
+|---|---|---|
+| `dir="auto"` on the run | the browser's first-strong-character guess, written as an attribute | it is the rule this project exists to replace |
+| `text-align: left` on the row | a physical side hardcoded where a direction belongs | the words come out in the right order and every line still hugs the left edge; and it is inherited all the way down to the text |
+
+So the reference deletes the second and replaces the first **in the very place the guess was
+written**: `dir="auto"` becomes what the formula says. Nothing else.
+
+### What it found: the same fault as the box, one level narrower
+
+```
+[data-bidi-sent="rtl"] > * { direction: inherit !important }
+```
+
+This flattened every DIRECT child of a turned message, including one the host had marked
+itself. Measured on 2.1.270: a span with `dir="ltr"` - what a file path in a message wants -
+came out right to left and **64px from where the host had put it**.
+
+Narrowed the same way as section 47, and now the whole engine makes one distinction in all four
+places: **silence the guess, respect a direction the host wrote.**
+
+```
+:not([dir])     may not decide a direction for itself, however it was told to - by dir="auto"
+                or by a class that sets unicode-bidi: plaintext
+[dir="auto"]    the guess, written as an attribute, at any depth
+```
+
+### What it says now
+
+| | |
+|---|---|
+| a sent message holding Urdu, 700px and 420px | every box and every piece of ink **identical** to what the browser draws when told |
+| a sent message with no Urdu in it | **identical** to Claude Code untouched, and not marked at all |
+| a child the host marks `dir="ltr"` | keeps its own direction |
+
+Two differences from the reference are kept, both named in the test file, and **neither is
+drawn**:
+
+- **text-align.** The reference deletes the host's rule, so every level of the message computes
+  `start`. We stop the physical side on the element that HOLDS the text and leave the rest of
+  the page's cascade alone. The levels in between carry no text of their own.
+- **direction.** The reference marks the RUN, because that is where the guess happened to be
+  written. We mark the MESSAGE, because that is the unit the formula decided about - the day the
+  host puts a second run beside the first, marking one run would leave the other undecided.
+
+Every box and every piece of ink is compared regardless of both, so neither can hide anything.
+
+### One tape measure, four places
+
+`test/the-mirror.test.js` now carries all four, against a reference with nobody's judgement in
+it. The as-claude-would suite is deleted rather than left beside it: two instruments for one
+thing drift, and then they disagree in somebody's face on a morning when the question is
+whether an update broke something.
+
+What that leaves, and it is worth saying plainly because it is the whole of what this project
+now claims about how it looks:
+
+| | measured against |
+|---|---|
+| 1, the box you type into | what the browser draws when told, caret included |
+| 2, the message you sent | what the browser draws when told |
+| 3, an answer arriving | what a reader goes through - no line ever drawn from the wrong side, at five rhythms |
+| 4, an answer that has arrived | what the browser draws when told, 96 elements, no allow-list |

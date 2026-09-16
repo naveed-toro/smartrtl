@@ -101,8 +101,7 @@ conversation to have, not a change to make.
 | | what it holds | where |
 |---|---|---|
 | the line | every computed property of every element, with the fix and without it, against a named list of what may differ | `test/the-line.test.js` |
-| the mirror | an answer and a draft, compared with what the BROWSER draws when it is told - Claude Code's own bundle with the incomplete rule deleted and the formula's answer said plainly. 96 elements of an answer, no allow-list, at two widths; the box and its caret, identical when told and identical to untouched Claude Code when there is no Urdu in it; and while an answer streams, at five rhythms, no line holding right-to-left text drawn from the left in any frame | `test/the-mirror.test.js` |
-| a sent message | the last place still held to a reference written by hand - said in the file, and the next one to put right | `test/as-claude-would.test.js` |
+| the mirror, all four places | compared with what the BROWSER draws when it is told - Claude Code's own bundle with the incomplete rule DELETED and the formula's answer said plainly. An answer: 96 elements, no allow-list, at two widths. The box you type into and a message you sent: every box and every piece of ink, the caret included, and identical to untouched Claude Code when there is no Urdu in them. An answer while it streams: five rhythms, and no line holding right-to-left text drawn from the left in any frame | `test/the-mirror.test.js` |
 | the dot | the same three distances on both sides, or "that is two designs, not one mirrored" - and still found with its class renamed, its test id renamed, or neither left | `test/rendering.test.js` and `test/timeline-survival.test.js` |
 | what we show | one item, only while Claude Code is in front of you | `test/status-bar.test.js` |
 | what we cost | no write and no whole-file read on an ordinary start; a tab change touches the disk not at all | `test/startup-cost.test.js` |

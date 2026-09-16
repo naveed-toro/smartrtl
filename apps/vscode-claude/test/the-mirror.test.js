@@ -674,3 +674,188 @@ test("and untouched, the box is the fault: a line that opens in English is drawn
     assert.equal(side, "ltr", "without the fix a draft opening with npm should be drawn from the left");
   } finally { await run.close(); }
 });
+
+/* ---------------------------------------------------------------------------------------- *
+ * NUMBER 2: a message you sent.
+ *
+ * Same standard, same method. Two incomplete things are stopped, and both are the same mistake
+ * as the ones in the answer and in the box:
+ *
+ *   dir="auto"         the browser's first-strong-character guess, written as an attribute. The
+ *                      reference replaces it with what the formula says, in the very place the
+ *                      guess was written.
+ *   text-align: left   a physical side hardcoded where a direction belongs. Claude Code writes
+ *                      it on a sent message's row and it is inherited all the way down, so the
+ *                      words come out in the right order and every line still hugs the left
+ *                      edge. The reference DELETES the declaration - `start` is what is left.
+ *
+ * And nothing else.
+ *
+ * A LINE IS NOT A THING HERE EITHER. Measured: a three-line message is one `<span dir="auto">`
+ * holding one text node with `\n` in it, under `white-space: pre-wrap`. So per line is out for
+ * the same reason it is out in the box - there is nothing to point at, and building one is not
+ * ours to do. decisions.md 47. One message, one direction, which is what ships.
+ *
+ * TWO DIFFERENCES FROM THE REFERENCE ARE KEPT, BOTH NAMED, NEITHER OF THEM DRAWN
+ *
+ *   text-align   the reference deletes the host's rule, so every level of the message computes
+ *                `start`. We stop the physical side on the element that HOLDS the text and
+ *                leave the rest of the page's own cascade alone. The levels in between carry no
+ *                text of their own, so nothing drawn differs.
+ *   direction    the reference marks the RUN, because that is where the guess happened to be
+ *                written. We mark the MESSAGE, because that is the unit the formula decided
+ *                about - the day the host puts a second run beside the first, marking one run
+ *                would leave the other undecided.
+ *
+ * Every box and every piece of ink must still match exactly, and that is asserted below rather
+ * than waved at.
+ * ---------------------------------------------------------------------------------------- */
+
+/** The physical side, unwritten. */
+const UNWRITE_SENT = (s) => s.replace(/(\.userMessageContainer_[A-Za-z0-9_-]+\{)text-align:left;/g, "$1");
+
+/** And the guess replaced by the answer, where the guess was written. */
+const TOLD_SENT = () => {
+  const WORD = /[֐-ࣿיִ-﷿ﹰ-﻿]{2,}/;
+  const apply = () => {
+    for (const run of document.querySelectorAll('[class*="userMessage_"] [dir="auto"]')) {
+      if (WORD.test(run.textContent || "")) run.setAttribute("dir", "rtl");
+    }
+  };
+  apply();
+  new MutationObserver(apply).observe(document.documentElement, { childList: true, subtree: true, characterData: true });
+};
+
+/** A direct child the host marks itself - what a file path in a message wants. */
+const PUT_A_CHILD = () => {
+  const body = document.querySelector('[class*="expandableContainer_"] [class*="content_"]');
+  if (!body) return false;
+  const span = document.createElement("span");
+  span.setAttribute("dir", "ltr");
+  span.setAttribute("data-test-child", "");
+  span.textContent = "src/app/main.ts";
+  body.appendChild(span);
+  return true;
+};
+
+/** Every element of a sent message's row: where it is, where its ink falls, how it reads. */
+const READ_SENT = () => {
+  const out = [];
+  const inkOf = (el) => {
+    const rg = document.createRange(); rg.selectNodeContents(el);
+    const t = [...rg.getClientRects()].filter((x) => x.width > 1);
+    return t.length ? [Math.min(...t.map((x) => x.left)), Math.max(...t.map((x) => x.right))] : null;
+  };
+  const row = document.querySelector('[class*="userMessageContainer_"]');
+  if (!row) return [];
+  const b0 = row.getBoundingClientRect();
+  for (const el of [row, ...row.querySelectorAll("*")]) {
+    if (el.closest("svg")) continue;
+    const r = el.getBoundingClientRect(), cs = getComputedStyle(el), ink = inkOf(el);
+    out.push({
+      key: el.tagName + "|" + String(el.className || "").split(" ")[0].replace(/_[A-Za-z0-9]+$/, "") +
+           "|" + (el.textContent || "").trim().replace(/\s+/g, " ").slice(0, 24),
+      marked: el.getAttribute("data-bidi-sent") === "rtl",
+      child: el.hasAttribute("data-test-child"),
+      box: [r.left - b0.left, r.right - b0.left, r.top - b0.top, r.bottom - b0.top].map(Math.round),
+      ink: ink ? [Math.round(ink[0] - b0.left), Math.round(ink[1] - b0.left)] : null,
+      dir: cs.direction, align: cs.textAlign
+    });
+  }
+  return out;
+};
+
+/** Which side the first character of the message is drawn on. */
+const SENT_SIDE = () => {
+  const el = document.querySelector('[class*="expandableContainer_"] [class*="content_"]');
+  if (!el) return null;
+  const n = document.createTreeWalker(el, NodeFilter.SHOW_TEXT).nextNode();
+  if (!n) return null;
+  const r = document.createRange(); r.setStart(n, 0); r.setEnd(n, 1);
+  const a = r.getBoundingClientRect(), b = el.getBoundingClientRect();
+  return b.width && a.width ? ((a.left - b.left) > b.width / 2 ? "rtl" : "ltr") : null;
+};
+
+const SENT_URDU = ["npm install کے بعد پروجیکٹ چلائیں", "Run the build", "یہ آخری سطر ہے"];
+const SENT_PLAIN = ["Run the build and check the output", "second line, still English"];
+
+async function sent(how, lines, width, { child = false } = {}) {
+  const run = await app.boot(WEBVIEW, how === "ours" ? { fix: true } : { fix: false, css: how === "told" ? UNWRITE_SENT : undefined });
+  try {
+    await run.page.setViewportSize({ width, height: 700 });
+    if (how === "told") await run.page.evaluate(TOLD_SENT);
+    await app.send(run.page, lines);
+    await run.page.waitForTimeout(400);
+    if (child) {
+      assert.ok(await run.page.evaluate(PUT_A_CHILD), "the message's body was not found");
+      await run.page.waitForTimeout(250);
+    }
+    const out = { read: await run.page.evaluate(READ_SENT), side: await run.page.evaluate(SENT_SIDE) };
+    assert.ok(out.read.length > 2, "the sent message was not found to measure");
+    assert.deepEqual(run.errors, [], "something reached the page uncaught");
+    assert.equal(await run.pane(), "", "Claude Code's own error pane is not empty");
+    return out;
+  } finally { await run.close(); }
+}
+
+/**
+ * Everything drawn must match. `text-align` is not compared - the reference deletes the host's
+ * rule everywhere and we stop it where the text is - and `direction` is not compared on the
+ * element we marked, for the reason in the banner. Both are named there, and neither of them
+ * can hide a difference, because every box and every piece of ink is compared regardless.
+ */
+function sentDiff(want, got) {
+  const out = [];
+  if (want.read.length !== got.read.length) return ["elements " + got.read.length + " vs " + want.read.length];
+  for (let i = 0; i < want.read.length; i++) {
+    const a = want.read[i], b = got.read[i], parts = [];
+    if (a.key !== b.key) { out.push("the readings stop lining up at " + i + ": " + b.key); break; }
+    if (far(a.box, b.box)) parts.push("box " + b.box + ", wanted " + a.box);
+    if (far(a.ink, b.ink)) parts.push("ink " + b.ink + ", wanted " + a.ink);
+    if (!b.marked && a.dir !== b.dir) parts.push("reads " + b.dir + ", wanted " + a.dir);
+    if (parts.length) out.push(b.key + "\n        " + parts.join("\n        "));
+  }
+  return out;
+}
+
+for (const width of [700, 420]) {
+  test("number 2, at " + width + "px: a sent message holding Urdu is what the browser draws when it is told", { skip }, async (t) => {
+    const told = await sent("told", SENT_URDU, width), ours = await sent("ours", SENT_URDU, width);
+    assert.equal(told.side, "rtl", "the reference did not turn the message - the instrument is wrong, not the fix");
+    assert.equal(ours.side, "rtl", "SmartRTL did not turn the message");
+    assert.deepEqual(sentDiff(told, ours), [], "a sent message is not what the browser draws when it is told");
+    // and the physical side is stopped where the text actually is
+    const mark = ours.read.find((x) => x.marked);
+    assert.ok(mark, "nothing in the message was marked");
+    assert.equal(mark.dir, "rtl");
+    assert.ok(mark.align === "start" || mark.align === "right",
+      "the message's own text is still aligned to a named side: " + mark.align);
+    t.diagnostic(ours.read.length + " elements, marked " + mark.key);
+  });
+
+  test("number 2, at " + width + "px: a sent message with no Urdu in it is left exactly as Claude Code drew it", { skip }, async () => {
+    const untouched = await sent("untouched", SENT_PLAIN, width), ours = await sent("ours", SENT_PLAIN, width);
+    assert.deepEqual(sentDiff(untouched, ours), [], "an English message was touched");
+    assert.equal(ours.read.some((x) => x.marked), false, "an English message was marked");
+    assert.equal(ours.read.every((x) => x.dir === "ltr"), true, "something in an English message was turned");
+  });
+}
+
+test("a child the host marks itself keeps its own direction inside a turned message", { skip }, async () => {
+  // The rule used to read `[data-bidi-sent="rtl"] > *` and flattened every direct child,
+  // including one the host had marked. Measured on 2.1.270: a span with dir="ltr" came out
+  // right to left. Silencing a guess is the job; overruling somebody who knows is not.
+  const told = await sent("told", SENT_URDU, 700, { child: true });
+  const ours = await sent("ours", SENT_URDU, 700, { child: true });
+  const childOf = (r) => r.read.find((x) => x.child);
+  assert.ok(childOf(told) && childOf(ours), "the child was not drawn");
+  assert.equal(childOf(told).dir, "ltr", "the reference did not keep the child's own direction - the instrument is wrong");
+  assert.equal(childOf(ours).dir, "ltr", "SmartRTL overruled a direction the host wrote itself");
+});
+
+test("and untouched, a sent message is the fault: its first line is drawn from the left", { skip }, async () => {
+  // The instrument proves it can see the fault before it is trusted to say the fault is gone.
+  const untouched = await sent("untouched", SENT_URDU, 700);
+  assert.equal(untouched.side, "ltr",
+    "without the fix a message whose line opens with npm should be drawn from the left");
+});

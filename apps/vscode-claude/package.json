@@ -86,7 +86,7 @@
     "vscode:uninstall": "node ./src/uninstall.js",
     "build": "node build/bundle-payload.js",
     "test": "npm run build && node --test test/",
-    "review": "npm run build && node --test test/the-line.test.js test/status-bar.test.js test/startup-cost.test.js test/rendering.test.js test/claude-shape.test.js test/real-bundle.test.js test/real-webview.test.js test/as-claude-would.test.js test/the-mirror.test.js test/composer-survival.test.js test/sent-survival.test.js test/timeline-survival.test.js test/pinned-message.test.js test/independent-lamps.test.js ../../packages/core/test/direction.test.js ../../packages/core/test/frozen.test.js"
+    "review": "npm run build && node --test test/the-line.test.js test/status-bar.test.js test/startup-cost.test.js test/rendering.test.js test/claude-shape.test.js test/real-bundle.test.js test/real-webview.test.js test/the-mirror.test.js test/composer-survival.test.js test/sent-survival.test.js test/timeline-survival.test.js test/pinned-message.test.js test/independent-lamps.test.js ../../packages/core/test/direction.test.js ../../packages/core/test/frozen.test.js"
   },
   "devDependencies": {
     "playwright": "^1.56.0"

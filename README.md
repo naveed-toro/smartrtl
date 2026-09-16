@@ -82,7 +82,7 @@ rule, and every wrong turn is written down rather than quietly dropped.
 | | |
 |---|---|
 | [docs/reviewing.md](docs/reviewing.md) | the two questions this project has, and the one command that answers them - read before reviewing anything here |
-| [docs/decisions.md](docs/decisions.md) | forty-seven sections: every rule and fix that was tried, measured and rejected, including the two that crashed, the one that was too slow, the limits that were finally accepted, and how what was left was made to outlast the next update |
+| [docs/decisions.md](docs/decisions.md) | forty-eight sections: every rule and fix that was tried, measured and rejected, including the two that crashed, the one that was too slow, the limits that were finally accepted, and how what was left was made to outlast the next update |
 | [docs/versions.md](docs/versions.md) | what was actually inside each build, read out of the `.vsix` rather than remembered |
 | [docs/roadmap.md](docs/roadmap.md) | what a new surface has to provide, the four rules an adapter obeys, and what order the rest gets built in |
 | [docs/claude-code-bug.md](docs/claude-code-bug.md) | the Claude Code bug on its own terms, with no RTL attached |

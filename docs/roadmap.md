@@ -195,7 +195,7 @@ today, and none of them is a finding about the fix.
    cause, every rejected attempt with its measurement, and a passing suite. And the most
    useful thing to hand them: their own bundle with the fix THEY would write, built as a page,
    and every element and every streamed frame of this fix compared with it
-   (`test/as-claude-would.test.js`, decisions.md section 44). And every part
+   (`test/the-mirror.test.js`, decisions.md sections 46 to 48). And every part
    of this fix already stands down by itself on the day they ship one. The best outcome of
    publishing is that publishing turns out not to be needed.
 
