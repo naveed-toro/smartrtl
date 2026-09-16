@@ -10,7 +10,7 @@ search for, in several languages.
 
 ## What is in here
 
-Forty-six sections, in the order they were written, which is the order the faults were
+Forty-seven sections, in the order they were written, which is the order the faults were
 found. The ones worth reading first are marked.
 
  1. [The root cause](#1-the-root-cause)
@@ -59,6 +59,7 @@ found. The ones worth reading first are marked.
 44. [As if Claude Code had fixed it itself - built, and compared against](#44-as-if-claude-code-had-fixed-it-itself---built-and-compared-against) ←
 45. [The two promises, held in all four places](#45-the-two-promises-held-in-all-four-places) ←
 46. [The mirror, with nobody's judgement left in it](#46-the-mirror-with-nobodys-judgement-left-in-it) ←
+47. [We tell. We do not build. — and what that found in the box you type into](#47-we-tell-we-do-not-build--and-what-that-found-in-the-box-you-type-into) ←
 
 ← 6 and 7 are the rule and the design it forced. 13 is what the first live run found.
 25 and 27 are the composer crash and the decision to stop; 28 is what that would have
@@ -3981,3 +3982,121 @@ because the burst carries the Urdu in with the Latin.
 `test/the-mirror.test.js`, in `npm run review` and therefore in the daily watch. Section 44's
 numbers 3 and 4 are gone from `as-claude-would.test.js`, which keeps numbers 1 and 2 - one tape
 measure per thing, because two of them drift and then disagree in somebody's face.
+
+## 47. We tell. We do not build. — and what that found in the box you type into
+
+The owner asked a question that nobody here had thought to answer with a measurement:
+
+> The browser extension applies the formula to **every new line**, on Shift+Enter. It is a box
+> you type into there and a box you type into here. **How are the two boxes different?**
+
+### The measurement, and it settles it in one line
+
+| | what a line is | can it be told its direction |
+|---|---|---|
+| a browser composer | an element - the editor makes a `<p>` or `<div>` per line | **yes** - `dir="rtl"` on it, and the browser does the rest |
+| Claude Code in VS Code | a `\n` **character** | **no** - an attribute does not go on a newline |
+
+Read out of the real panel, three lines typed with Shift+Enter between them:
+
+```
+input   contenteditable="plaintext-only"
+        #text "one"   #text "\n"   #text "two"        three text nodes, no elements
+mirror  #text "one\ntwo"                              one text node, white-space: pre-wrap
+```
+
+`contenteditable="plaintext-only"` is an instruction to the browser: **never make an element.**
+It is why the box behaves like a `<textarea>` - paste stays plain, no formatting creeps in -
+which is a sensible thing to want in a prompt box. It is also exactly what removes the thing a
+direction could be hung on. And the layer anybody actually reads is a second one, into which
+React writes the whole draft as a single text node.
+
+So it is not the formula that cannot go per line here. **There is no line here to point at.**
+
+### The rule, which is bigger than this box
+
+> **We tell. We do not build.**
+>
+> If there is a thing to point at, point at it and let the browser draw. If there is not,
+> making one is the job of whoever owns that DOM - not ours.
+
+And read back with that rule in hand, the two old failures stop looking like bad luck:
+
+- **0.3.0** built an element per line inside React's mirror. React's nodes went, the box typed
+  blank spaces, and the next `removeChild` took the panel down.
+- **0.3.3** drew a copy of the mirror instead. Safe, and every keystroke reached the screen one
+  keystroke late.
+
+Both tried to BUILD the thing to point at. Both died at the same place. Sections 25 to 28 wrote
+them up as two experiments; they were one line crossed twice.
+
+This rule now applies before any new surface is even started: *is there something here to point
+at?* If there is not, the conversation ends there.
+
+### Then the same standard was turned on the box's own three declarations
+
+The-mirror's method (section 46) pointed at place 1: Claude Code's own bundle with
+`unicode-bidi: plaintext` **deleted** from the box's two layers, and `dir="rtl"` on the element
+they share. Nothing else. It found one thing wrong and corrected one thing this file had wrong
+about itself.
+
+**`* { direction: inherit }` had no right to be there.** The rule flattened EVERY descendant of
+a turned layer. Measured: put a `<span dir="ltr">` in the layer - which is exactly what a file
+path in a mention chip wants - and it came out right to left. That is not telling the browser
+something it did not know; it is overruling somebody who did. And it was the one place outside
+the distinction the rest of the engine already makes - answers and sent messages both silence
+only `dir="auto"`, the guess, and leave a written direction alone.
+
+It is now:
+
+```
+[layer] :not([dir])    { unicode-bidi: normal }   nothing decides its own direction from its
+                                                  first strong character inside a turned layer
+[layer] [dir="auto"]   { direction: inherit }     the guess, written as an attribute
+```
+
+Anything the host has marked itself is left entirely alone, its bidi handling included.
+
+**And `text-align: start` was called inert here, wrongly.** Claude Code writes no `text-align`
+on this box today, and `start` is the initial value, so it was removed as doing nothing. Four
+tests in `composer-survival` went red within the minute: they hold the day a host writes
+`text-align: left`, and Claude Code already writes exactly that on a sent message's row. It was
+put back, and the reason is now stated properly rather than assumed: **`left` is a physical side
+hardcoded where a direction belongs, which is the same kind of incompleteness as
+`plaintext`.** Stopping it is telling, not adding. The tests were right and this file was wrong,
+which is what they are for.
+
+### What it says now
+
+| | |
+|---|---|
+| a draft holding Urdu, 700px and 420px | **identical** to what the browser draws when told - every element, its box, its ink, and the caret |
+| a draft with no Urdu in it | **identical** to Claude Code untouched. Not one pixel, not one attribute |
+| a run the host marks `dir="ltr"` | keeps its own direction, in ours and in the reference |
+
+One difference from the reference is kept on purpose, and it is a **narrowing**: the reference
+puts `dir="rtl"` on the element the two layers share, which also turns anything else that
+element ever holds. This turns the two layers of TEXT and nothing else. Today that element holds
+nothing but those layers, so nothing drawn differs; the day it holds an icon, an icon is not
+text and is not ours.
+
+### The limit that stays, with its cause named
+
+**Per line is not possible from outside this box**, and the cause is not our formula: it is
+`contenteditable="plaintext-only"` plus a single-text-node mirror. Claude Code's own developers
+do not have this limit - they own that component and could render a span per line while keeping
+`plaintext-only` on the input. This is the one place in the project where "as if Claude Code had
+fixed it itself" cannot be reached from where we stand, and the reason is being a guest rather
+than anything about the rule.
+
+It also makes a very small, very clear thing to ask for upstream, beside the pinned-message bug
+in `docs/claude-code-bug.md`: **draw the mirror one element per line.** A few lines for them, and
+after it every right-to-left fix - theirs or anybody's - can be per line. Nothing here would need
+changing on the day they did it: the engine already decides from blocks, so the moment a line
+became a thing, it would be pointed at like any other.
+
+### Held
+
+`test/the-mirror.test.js` carries numbers 1, 3 and 4 now. `as-claude-would.test.js` keeps only
+number 2, a sent message, which is the last place still resting on a reference written by hand -
+said in the file rather than left to be found.

@@ -1062,6 +1062,19 @@ to a boundary rather than to Claude Code's own fix. decisions.md, 45.
       earning its place **(lab)**
 - [x] **one tape measure per thing** — section 44's hand-written reference for numbers 3 and 4 is
       retired; `as-claude-would.test.js` keeps numbers 1 and 2 **(lab)**
+- [x] **the box you type into is measured the same way, and it found a real fault** — a rule of
+      ours flattened every descendant of a turned layer, so a span the host marks `dir="ltr"`
+      - what a file path in a mention chip wants - came out right to left. Narrowed to silence
+      only the guess and leave a written direction alone, the way answers and sent messages
+      already did **(lab, 2.1.270)**
+- [x] **and a draft now matches what the browser draws when told, caret included** — every
+      element at 700px and 420px; and a draft with no Urdu in it is identical to untouched
+      Claude Code, not one pixel and not one attribute **(lab)**
+- [x] **why per line is not possible in that box, measured rather than remembered** — it is
+      `contenteditable="plaintext-only"`, so Shift+Enter inserts a `\n` character and not an
+      element, and the layer people read is a single text node. In a browser composer the
+      editor makes an element per line, which is why the same formula goes per line there
+      **(lab)**
 - [ ] installed and read in the real panel **(unseen)**
 
 Given up on purpose, still: the box's reference is the whole box, not a line at a time. Claude

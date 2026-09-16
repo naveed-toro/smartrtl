@@ -426,9 +426,46 @@
   var NOT_TEXT = { IMG: 1, CANVAS: 1, VIDEO: 1, AUDIO: 1, IFRAME: 1, BUTTON: 1, INPUT: 1,
                    SELECT: 1, TEXTAREA: 1, OBJECT: 1, EMBED: 1, PICTURE: 1 };
 
+  /* Telling the box which way it reads, and nothing beyond that.
+     -------------------------------------------------------------
+     Measured against Claude Code's own bundle with `unicode-bidi: plaintext` deleted from the
+     box's two layers - the incomplete rule simply not written - and the element they share
+     given dir="rtl".
+
+     TWO KINDS OF INCOMPLETENESS ARE SILENCED, AND BOTH ARE THE SAME MISTAKE
+
+       unicode-bidi: plaintext   "take the direction from the first strong character" - the rule
+                                 this whole project exists to replace. It cannot be left on: it
+                                 means "ignore the direction you were told", so telling the
+                                 browser a direction while leaving it on is telling it nothing.
+
+       text-align: left          a physical side hardcoded where a direction belongs. The words
+                                 then come out in the right order and every line still hugs the
+                                 left edge. `start` is the honest value, because it follows
+                                 whatever direction was decided rather than naming a side.
+                                 Claude Code writes no text-align on this box today - it does
+                                 write one on a sent message's row - and four tests in
+                                 composer-survival hold the day it starts.
+
+     AND ONE THING THAT USED TO BE SILENCED AND HAD NO RIGHT TO BE
+
+       This rule used to read `[LAYER] * { direction: inherit }` - flattening EVERY descendant,
+       including one the host had marked itself. Measured: put a span with dir="ltr" in the
+       layer, which is exactly what a file path in a mention chip wants, and it came out right
+       to left. That is not telling the browser something it did not know. It is overruling
+       somebody who did know, and it is the one place in this engine that was outside the
+       distinction the rest of it already makes:
+
+         :not([dir])      anything the host has not given a direction to may not decide one for
+                          itself - inside a turned layer that would put the caret on one side
+                          and the glyph on the other. Anything the host HAS given a direction to
+                          is left entirely alone, its bidi handling included.
+
+         [dir="auto"]     the guess, written as an attribute. It gets no second vote. */
   var COMPOSER_CSS = "@layer smartrtl-composer{" +
     "[" + TURN + '="rtl"] [' + LAYER + "]{direction:rtl!important;unicode-bidi:isolate!important;text-align:start!important}" +
-    "[" + TURN + '="rtl"] [' + LAYER + "] *{direction:inherit!important;unicode-bidi:normal!important;text-align:inherit!important}" +
+    "[" + TURN + '="rtl"] [' + LAYER + "] :not([dir]){unicode-bidi:normal!important;text-align:inherit!important}" +
+    "[" + TURN + '="rtl"] [' + LAYER + '] [dir="auto"]{direction:inherit!important;unicode-bidi:normal!important}' +
     "}";
 
   /** A composer part that never started, and says why. */

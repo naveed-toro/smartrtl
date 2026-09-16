@@ -72,6 +72,20 @@ Both mistakes have been made. The dot was removed once as "decoration" — wrong
 direction. A gutter was reserved on every row to keep columns aligned — wrong, that is
 layout. `docs/decisions.md` section 41 has both.
 
+### We tell. We do not build.
+
+If there is a thing to point at - an element - point at it and let the browser draw. The
+browser has always known how to draw right-to-left; the only thing it was missing is which
+piece is right-to-left, and that is the whole of what this project supplies.
+
+If there is **no** thing to point at, making one is the job of whoever owns that DOM. It is
+not a gap to be filled here. The box you type into is where this bites: it is
+`contenteditable="plaintext-only"`, so a new line is a `\n` character rather than an element,
+and the layer people read is one text node. Per line there was built twice and died twice -
+the panel came down, then every keystroke arrived late. `docs/decisions.md` section 47.
+
+So a finding that begins "we could build" is answered by this line, not by weighing it.
+
 ### The one crossing
 
 Claude Code's own bug: a message that heads a turn is pinned, and expanded it has no height
@@ -87,8 +101,8 @@ conversation to have, not a change to make.
 | | what it holds | where |
 |---|---|---|
 | the line | every computed property of every element, with the fix and without it, against a named list of what may differ | `test/the-line.test.js` |
-| the mirror | an answer, arriving and arrived, compared with what the BROWSER draws when it is told - Claude Code's own bundle with the incomplete rule deleted and the formula's answer said plainly. 96 elements, no allow-list, at two widths; and while it streams, at five rhythms, no line holding right-to-left text drawn from the left in any frame | `test/the-mirror.test.js` |
-| and the other two places | a draft in the box and a sent message, against a reference written by hand - the one claim here weaker than the line above | `test/as-claude-would.test.js` |
+| the mirror | an answer and a draft, compared with what the BROWSER draws when it is told - Claude Code's own bundle with the incomplete rule deleted and the formula's answer said plainly. 96 elements of an answer, no allow-list, at two widths; the box and its caret, identical when told and identical to untouched Claude Code when there is no Urdu in it; and while an answer streams, at five rhythms, no line holding right-to-left text drawn from the left in any frame | `test/the-mirror.test.js` |
+| a sent message | the last place still held to a reference written by hand - said in the file, and the next one to put right | `test/as-claude-would.test.js` |
 | the dot | the same three distances on both sides, or "that is two designs, not one mirrored" - and still found with its class renamed, its test id renamed, or neither left | `test/rendering.test.js` and `test/timeline-survival.test.js` |
 | what we show | one item, only while Claude Code is in front of you | `test/status-bar.test.js` |
 | what we cost | no write and no whole-file read on an ordinary start; a tab change touches the disk not at all | `test/startup-cost.test.js` |

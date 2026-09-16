@@ -1,5 +1,5 @@
 /**
- * AS IF CLAUDE CODE HAD FIXED IT ITSELF - the box you type into, and the message you sent.
+ * AS IF CLAUDE CODE HAD FIXED IT ITSELF - a message you sent.
  *
  * Numbers 3 and 4, an answer arriving and an answer that has arrived, used to be measured here
  * too, against a reference somebody here wrote out by hand: mark the row dir="rtl", mirror the
@@ -12,11 +12,15 @@
  * said the plainest way anyone would say it, and whatever the browser then draws taken as the
  * answer. That is strictly the stronger claim, so it is the only one made.
  *
- * What is left here is numbers 1 and 2, which the-mirror does not cover: a draft in the box,
- * and a message somebody sent. Both were held only to "they differ by direction and by nothing
- * that is not direction" - a boundary, which says what we did NOT do and nothing about whether
- * what we did looks like their work. Both halves of that promise are needed: 0.5.5 passed every
- * boundary in this suite while no Urdu list had a visible bullet.
+ * Number 1, the box you type into, has gone the same way and for the same reason.
+ *
+ * What is left here is number 2, a message somebody sent. It was held only to "it differs by
+ * direction and by nothing that is not direction" - a boundary, which says what we did NOT do
+ * and nothing about whether what we did looks like their work. Both halves of that promise are
+ * needed: 0.5.5 passed every boundary in this suite while no Urdu list had a visible bullet.
+ *
+ * This is the last place still resting on a reference written by hand, and it is the next one
+ * to put right.
  */
 const test = require("node:test");
 const assert = require("node:assert/strict");
@@ -32,43 +36,17 @@ const COLOURS = "*{--app-secondary-foreground:#777!important;--app-primary-borde
                 "--app-input-border:#bbb!important;--app-code-background:#eee!important}";
 
 /* ---------------------------------------------------------------------------------------- *
- * The reference on Claude Code's own bundle, for each of the two: its stylesheet and its running
- * app with nothing of ours in them, plus the fix its developers would write.
+ * The reference, on Claude Code's own bundle: its stylesheet and its running app with nothing
+ * of ours in them, plus the fix its developers would write - the row's `text-align: left`
+ * becomes a `start`, and the message's own text is given dir="rtl" instead of being left to
+ * dir="auto" to guess at.
  *
- *   the box      the two layers stop being `plaintext` - that declaration IS the bug - and the
- *                element they share is given dir="rtl" while the draft holds RTL.
- *   the message  the row's `text-align: left` becomes a `start`, and the message's own text is
- *                given dir="rtl" instead of being left to dir="auto" to guess at.
- *
- * WHY THE BOX'S REFERENCE IS THE WHOLE BOX AND NOT A LINE AT A TIME. A line of a draft is a
- * newline inside one text node: to give lines their own directions, something has to make an
- * element per line, inside React's own mirror. That was built twice - the box typed blank
- * spaces, then every keystroke arrived one keystroke late - and given up deliberately in
- * decisions.md 25 to 28 and 34. Claude Code's developers own that renderer and could split it
- * where a guest in their DOM cannot, so this reference is the fix they would reach for first
- * rather than the best one they could possibly build. That, and the fact that these two still
- * carry a reference written by hand rather than the-mirror's, are the two claims here that are
- * weaker than the one the-mirror makes - written down rather than left to be discovered.
- * ---------------------------------------------------------------------------------------- */
+ * The second half of that is a declaration stopped, which is honest. The first half is a
+ * declaration CHANGED, which is a decision made here - so this is a weaker claim than the one
+ * the-mirror makes, and putting it right is the next piece of work.
+ * --------------------------------------------------------------------------------------- */
 
-/** The box's own bug, fixed where it lives. */
-const BOX_REFERENCE = () => {
-  const LETTER = /[֐-ࣿיִ-﷿ﹰ-﻿]/;
-  const st = document.createElement("style");
-  st.textContent = '[class*="messageInput_"],[class*="mentionMirror_"]{unicode-bidi:normal}';
-  document.head.appendChild(st);
-  const apply = () => {
-    for (const box of document.querySelectorAll('[class*="messageInputContainer_"]')) {
-      if (LETTER.test(box.textContent || "")) box.setAttribute("dir", "rtl");
-      else box.removeAttribute("dir");
-    }
-  };
-  apply();
-  new MutationObserver(apply).observe(document.documentElement, { childList: true, subtree: true, characterData: true });
-  return "";
-};
-
-/** A sent message's, the same way. */
+/** A sent message's own bug, fixed where it lives. */
 const SENT_REFERENCE = () => {
   const WORD = /[֐-ࣿיִ-﷿ﹰ-﻿]{2,}/;
   const st = document.createElement("style");
@@ -164,25 +142,6 @@ function bothTurned(reference, ours, what) {
 }
 
 for (const width of [700, 420]) {
-  test("number 1, at " + width + "px: a draft in the box is laid out as Claude Code's own fix lays it out", { skip }, async () => {
-    const read = (fix) => withPanel(fix, BOX_REFERENCE, async (page) => {
-      await page.setViewportSize({ width, height: 900 });
-      await page.click(app.BOX);
-      for (let i = 0; i < DRAFT.length; i++) {
-        if (i) await page.keyboard.press("Shift+Enter");
-        await page.keyboard.type(DRAFT[i], { delay: 2 });
-      }
-      await page.waitForTimeout(400);
-      return { list: await page.evaluate(BOXES, '[class*="messageInputContainer_"]'),
-               side: await page.evaluate(SIDE, '[class*="mentionMirror_"]') };
-    });
-    const reference = await read(false), ours = await read(true);
-    assert.ok(ours.list.length > 2, "the box was not found to measure");
-    bothTurned(reference, ours, "the box you type into");
-    assert.deepEqual(differences(reference.list, ours.list), [],
-      "the box does not look the way it would had Claude Code fixed this itself");
-  });
-
   test("number 2, at " + width + "px: a sent message is laid out as Claude Code's own fix lays it out", { skip }, async () => {
     const read = (fix) => withPanel(fix, SENT_REFERENCE, async (page) => {
       await page.setViewportSize({ width, height: 900 });
@@ -199,35 +158,12 @@ for (const width of [700, 420]) {
   });
 }
 
-test("and untouched, both of them are the bug: the first line is drawn from the left", { skip }, async () => {
+test("and untouched, a sent message is the bug: its first line is drawn from the left", { skip }, async () => {
   // The instrument proves it can see the fault before it is trusted to say the fault is gone.
-  const sides = await withPanel(false, () => "", async (page) => {
-    await page.click(app.BOX);
-    await page.keyboard.type(DRAFT[0], { delay: 2 });
-    await page.waitForTimeout(300);
-    const drafted = await page.evaluate((sel) => {
-      const el = document.querySelector(sel.replace("messageInput_", "mentionMirror_")) || document.querySelector(sel);
-      const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
-      const n = w.nextNode();
-      if (!n) return null;
-      const r = document.createRange(); r.setStart(n, 0); r.setEnd(n, 1);
-      const a = r.getBoundingClientRect(), b = el.getBoundingClientRect();
-      return b.width && a.width ? ((a.left - b.left) > b.width / 2 ? "rtl" : "ltr") : null;
-    }, '[class*="messageInput_"]');
+  const sent = await withPanel(false, () => "", async (page) => {
     await app.send(page, DRAFT);
     await page.waitForTimeout(300);
-    const sent = await page.evaluate(() => {
-      const el = document.querySelector('[class*="expandableContainer_"] [class*="content_"]');
-      if (!el) return null;
-      const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
-      const n = w.nextNode();
-      if (!n) return null;
-      const r = document.createRange(); r.setStart(n, 0); r.setEnd(n, 1);
-      const a = r.getBoundingClientRect(), b = el.getBoundingClientRect();
-      return b.width && a.width ? ((a.left - b.left) > b.width / 2 ? "rtl" : "ltr") : null;
-    });
-    return { drafted, sent };
+    return await page.evaluate(SIDE, '[class*="expandableContainer_"] [class*="content_"]');
   });
-  assert.equal(sides.drafted, "ltr", "without the fix a draft that opens with npm should be drawn from the left");
-  assert.equal(sides.sent, "ltr", "and so should the message it is sent as");
+  assert.equal(sent, "ltr", "without the fix a message whose line opens with npm should be drawn from the left");
 });

@@ -467,3 +467,210 @@ test("and without the fix, that same stream is the fault, in frame after frame",
     t.diagnostic(j.fromTheLeftFrames + " frames drew a line holding Urdu from the left");
   } finally { await run.close(); }
 });
+
+/* ---------------------------------------------------------------------------------------- *
+ * NUMBER 1: the box you type into.
+ *
+ * Same standard, same method. The reference is Claude Code's own bundle with the incomplete
+ * rule DELETED from the box's own two layers - not overridden, deleted - and the element those
+ * layers share given dir="rtl". Nothing else.
+ *
+ * WHAT THERE IS TO POINT AT, AND WHAT THERE IS NOT
+ *
+ * In an answer a line is an element - a <p>, an <li> - so a line can be told its direction. In
+ * this box it is not. Measured: the box is `contenteditable="plaintext-only"`, which tells the
+ * browser never to make an element, so Shift+Enter inserts a `\n` CHARACTER; and the layer
+ * people actually read is a second one, into which React writes the whole draft as a single
+ * text node. Three lines, three text nodes in the caret's layer and one in the layer over it,
+ * and not an element among them.
+ *
+ * So the only thing there is to point at is the box, and the box is what is told. Per line here
+ * would mean BUILDING the thing to point at - an element per line inside React's own mirror -
+ * and that is not this project's job and has twice been proved not to be possible from outside:
+ * 0.3.0 took React's nodes away and the panel came down, 0.3.3 drew a copy and every keystroke
+ * arrived one keystroke late. decisions.md 25 to 28, 34, and 47.
+ *
+ * THE BOX IS TWO LAYERS AND BOTH ARE TOLD. The caret is in one and every glyph anybody reads is
+ * in the other. Telling one is telling half, and the reader then types on one side and watches
+ * letters appear on the other.
+ *
+ * ONE DIFFERENCE FROM THE REFERENCE, AND IT IS A NARROWING. The reference puts dir="rtl" on the
+ * element the layers share - which also turns anything else that element ever holds. This turns
+ * the two layers of TEXT and nothing else. Today the element holds nothing but those two layers,
+ * so nothing drawn differs; the day it holds an icon, the icon is not text and is not ours.
+ * ---------------------------------------------------------------------------------------- */
+
+/** The incomplete rule, unwritten, on the box's own two layers. */
+const UNWRITE_BOX = (s) => s
+  .replace(/(\.messageInput_[A-Za-z0-9_-]+\{[^}]*?)unicode-bidi:plaintext;/g, "$1")
+  .replace(/(\.mentionMirror_[A-Za-z0-9_-]+\{)unicode-bidi:plaintext;/g, "$1");
+
+/** And what the formula says about the box: one answer, for the whole of it, live. */
+const TOLD_BOX = () => {
+  const LETTER = /[֐-ࣿיִ-﷿ﹰ-﻿]/;
+  const apply = () => {
+    const input = document.querySelector('[class*="messageInput_"]');
+    if (!input || !input.parentElement) return;
+    const shared = input.parentElement;
+    if (LETTER.test(shared.textContent || "")) shared.setAttribute("dir", "rtl");
+    else shared.removeAttribute("dir");
+  };
+  apply();
+  new MutationObserver(apply).observe(document.documentElement, { childList: true, subtree: true, characterData: true });
+};
+
+/** A chip the host marks itself, the way a file path wants to be marked. */
+const PUT_A_CHIP = () => {
+  const mirror = document.querySelector('[class*="mentionMirror_"]');
+  if (!mirror) return false;
+  const span = document.createElement("span");
+  span.setAttribute("dir", "ltr");
+  span.setAttribute("data-test-chip", "");
+  span.textContent = "src/app/main.ts";
+  mirror.appendChild(span);
+  return true;
+};
+
+/** Every element of the box: where it is, where its ink falls, and which way it reads. */
+const READ_BOX = () => {
+  const out = [];
+  const inkOf = (el) => {
+    const rg = document.createRange(); rg.selectNodeContents(el);
+    const t = [...rg.getClientRects()].filter((x) => x.width > 1);
+    return t.length ? [Math.min(...t.map((x) => x.left)), Math.max(...t.map((x) => x.right))] : null;
+  };
+  const input = document.querySelector('[class*="messageInput_"]');
+  const box = document.querySelector('[class*="messageInputContainer_"]') || input.parentElement;
+  const b0 = box.getBoundingClientRect();
+  for (const el of [box, ...box.querySelectorAll("*")]) {
+    if (el.closest("svg")) continue;
+    const r = el.getBoundingClientRect(), cs = getComputedStyle(el), ink = inkOf(el);
+    out.push({
+      key: el.tagName + "|" + String(el.className || "").split(" ")[0].replace(/_[A-Za-z0-9]+$/, "") +
+           "|" + (el.textContent || "").trim().replace(/\s+/g, " ").slice(0, 24),
+      isBox: el === box,
+      chip: el.hasAttribute("data-test-chip"),
+      box: [r.left - b0.left, r.right - b0.left, r.top - b0.top, r.bottom - b0.top].map(Math.round),
+      ink: ink ? [Math.round(ink[0] - b0.left), Math.round(ink[1] - b0.left)] : null,
+      dir: cs.direction
+    });
+  }
+  return out;
+};
+
+/** Where the caret sits, and where the last glyph anybody can see is drawn. */
+const CARET = () => {
+  const input = document.querySelector('[class*="messageInput_"]');
+  const mirror = document.querySelector('[class*="mentionMirror_"]') || input;
+  const sel = window.getSelection();
+  if (!sel.rangeCount) return null;
+  const r = sel.getRangeAt(0).cloneRange();
+  r.collapse(false);
+  const c = r.getClientRects()[0] || r.getBoundingClientRect();
+  const walk = document.createTreeWalker(mirror, NodeFilter.SHOW_TEXT);
+  let last = null;
+  for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+    const v = n.nodeValue || "";
+    for (let i = 0; i < v.length; i++) {
+      if (!/\S/.test(v[i])) continue;
+      const rg = document.createRange(); rg.setStart(n, i); rg.setEnd(n, i + 1);
+      const q = rg.getBoundingClientRect();
+      if (q.width || q.height) last = q;
+    }
+  }
+  const b = mirror.getBoundingClientRect();
+  return { caret: Math.round(c.left - b.left),
+           lastGlyph: last ? [Math.round(last.left - b.left), Math.round(last.right - b.left)] : null };
+};
+
+const MIXED = ["npm install کے بعد پروجیکٹ چلائیں", "Run the build", "یہ آخری سطر ہے"];
+const PLAIN = ["Run the build and check the output", "second line, still English"];
+
+async function box(how, lines, width, { chip = false } = {}) {
+  const run = await app.boot(WEBVIEW, how === "ours" ? { fix: true } : { fix: false, css: how === "told" ? UNWRITE_BOX : undefined });
+  try {
+    await run.page.setViewportSize({ width, height: 700 });
+    if (how === "told") await run.page.evaluate(TOLD_BOX);
+    await run.page.click(app.BOX);
+    for (let i = 0; i < lines.length; i++) {
+      if (i) await run.page.keyboard.press("Shift+Enter");
+      await run.page.keyboard.type(lines[i], { delay: 3 });
+    }
+    await run.page.waitForTimeout(350);
+    if (chip) {
+      assert.ok(await run.page.evaluate(PUT_A_CHIP), "the layer people read was not found");
+      await run.page.waitForTimeout(250);
+    }
+    const out = { read: await run.page.evaluate(READ_BOX), caret: await run.page.evaluate(CARET) };
+    assert.deepEqual(run.errors, [], "something reached the page uncaught");
+    assert.equal(await run.pane(), "", "Claude Code's own error pane is not empty");
+    return out;
+  } finally { await run.close(); }
+}
+
+/** Everything the two readings disagree about, except the box's own direction - see above. */
+function boxDiff(want, got) {
+  const out = [];
+  if (want.read.length !== got.read.length) return ["elements " + got.read.length + " vs " + want.read.length];
+  for (let i = 0; i < want.read.length; i++) {
+    const a = want.read[i], b = got.read[i], parts = [];
+    if (a.key !== b.key) { out.push("the readings stop lining up at " + i + ": " + b.key); break; }
+    if (far(a.box, b.box)) parts.push("box " + b.box + ", wanted " + a.box);
+    if (far(a.ink, b.ink)) parts.push("ink " + b.ink + ", wanted " + a.ink);
+    if (!b.isBox && a.dir !== b.dir) parts.push("reads " + b.dir + ", wanted " + a.dir);
+    if (parts.length) out.push(b.key + "\n        " + parts.join("\n        "));
+  }
+  return out;
+}
+
+for (const width of [700, 420]) {
+  test("number 1, at " + width + "px: a draft that holds Urdu is what the browser draws when it is told", { skip }, async (t) => {
+    const told = await box("told", MIXED, width), ours = await box("ours", MIXED, width);
+    assert.deepEqual(boxDiff(told, ours), [], "the box is not what the browser draws when it is told");
+    assert.deepEqual(ours.caret, told.caret, "the caret is not where it would be");
+    // the narrowing, asserted rather than assumed: the text layers turn, the box itself does not
+    assert.equal(ours.read.find((x) => x.isBox).dir, "ltr", "the box itself was turned, and it is not text");
+    assert.ok(ours.read.filter((x) => !x.isBox && x.dir === "rtl").length >= 2, "both layers of text must turn");
+    t.diagnostic(ours.read.length + " elements, caret at " + ours.caret.caret + ", last glyph " + ours.caret.lastGlyph);
+  });
+
+  test("number 1, at " + width + "px: a draft with no Urdu in it is left exactly as Claude Code drew it", { skip }, async () => {
+    const untouched = await box("untouched", PLAIN, width), ours = await box("ours", PLAIN, width);
+    assert.deepEqual(boxDiff(untouched, ours), [], "an English draft was touched");
+    assert.deepEqual(ours.caret, untouched.caret, "the caret moved in an English draft");
+    assert.equal(ours.read.every((x) => x.dir === "ltr"), true, "something in an English draft was turned");
+  });
+}
+
+test("a run the host marks itself keeps its own direction inside a turned box", { skip }, async () => {
+  // This is the one that was wrong. The rule used to flatten EVERY descendant of a turned
+  // layer, so a span the host had marked dir="ltr" - which is exactly what a file path in a
+  // mention chip wants - came out right to left. Silencing a guess is our job; overruling
+  // somebody who knows is not.
+  const told = await box("told", MIXED, 700, { chip: true });
+  const ours = await box("ours", MIXED, 700, { chip: true });
+  const chipOf = (r) => r.read.find((x) => x.chip);
+  assert.ok(chipOf(told) && chipOf(ours), "the chip was not drawn");
+  assert.equal(chipOf(told).dir, "ltr", "the reference did not keep the chip's own direction - the instrument is wrong");
+  assert.equal(chipOf(ours).dir, "ltr", "SmartRTL overruled a direction the host wrote itself");
+  assert.deepEqual(boxDiff(told, ours), [], "the box with a marked chip in it is not what the browser draws when told");
+});
+
+test("and untouched, the box is the fault: a line that opens in English is drawn from the left", { skip }, async () => {
+  // The instrument proves it can see the fault before it is trusted to say the fault is gone.
+  const run = await app.boot(WEBVIEW, { fix: false });
+  try {
+    await run.page.setViewportSize({ width: 700, height: 700 });
+    await run.page.click(app.BOX);
+    await run.page.keyboard.type(MIXED[0], { delay: 3 });
+    await run.page.waitForTimeout(300);
+    const side = await run.page.evaluate(() => {
+      const m = document.querySelector('[class*="mentionMirror_"]') || document.querySelector('[class*="messageInput_"]');
+      const n = document.createTreeWalker(m, NodeFilter.SHOW_TEXT).nextNode();
+      const r = document.createRange(); r.setStart(n, 0); r.setEnd(n, 1);
+      const a = r.getBoundingClientRect(), b = m.getBoundingClientRect();
+      return (a.left - b.left) > b.width / 2 ? "rtl" : "ltr";
+    });
+    assert.equal(side, "ltr", "without the fix a draft opening with npm should be drawn from the left");
+  } finally { await run.close(); }
+});
