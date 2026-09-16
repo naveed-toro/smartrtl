@@ -87,7 +87,9 @@ conversation to have, not a change to make.
 | | what it holds | where |
 |---|---|---|
 | the line | every computed property of every element, with the fix and without it, against a named list of what may differ | `test/the-line.test.js` |
-| the dot | the same three distances on both sides, or "that is two designs, not one mirrored" | `test/rendering.test.js` |
+| the mirror | an answer, arriving and arrived, compared with what the BROWSER draws when it is told - Claude Code's own bundle with the incomplete rule deleted and the formula's answer said plainly. 96 elements, no allow-list, at two widths; and while it streams, at five rhythms, no line holding right-to-left text drawn from the left in any frame | `test/the-mirror.test.js` |
+| and the other two places | a draft in the box and a sent message, against a reference written by hand - the one claim here weaker than the line above | `test/as-claude-would.test.js` |
+| the dot | the same three distances on both sides, or "that is two designs, not one mirrored" - and still found with its class renamed, its test id renamed, or neither left | `test/rendering.test.js` and `test/timeline-survival.test.js` |
 | what we show | one item, only while Claude Code is in front of you | `test/status-bar.test.js` |
 | what we cost | no write and no whole-file read on an ordinary start; a tab change touches the disk not at all | `test/startup-cost.test.js` |
 | the roads in | every name renamed, every role taken away — each place still found | `test/real-webview.test.js` and the survival suites |

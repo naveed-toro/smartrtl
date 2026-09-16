@@ -10,7 +10,7 @@ search for, in several languages.
 
 ## What is in here
 
-Forty-four sections, in the order they were written, which is the order the faults were
+Forty-six sections, in the order they were written, which is the order the faults were
 found. The ones worth reading first are marked.
 
  1. [The root cause](#1-the-root-cause)
@@ -57,6 +57,8 @@ found. The ones worth reading first are marked.
 42. [The formula, reopened on purpose](#42-the-formula-reopened-on-purpose) ←
 43. [A bullet, a number and a column are direction too](#43-a-bullet-a-number-and-a-column-are-direction-too)
 44. [As if Claude Code had fixed it itself - built, and compared against](#44-as-if-claude-code-had-fixed-it-itself---built-and-compared-against) ←
+45. [The two promises, held in all four places](#45-the-two-promises-held-in-all-four-places) ←
+46. [The mirror, with nobody's judgement left in it](#46-the-mirror-with-nobodys-judgement-left-in-it) ←
 
 ← 6 and 7 are the rule and the design it forced. 13 is what the first live run found.
 25 and 27 are the composer crash and the decision to stop; 28 is what that would have
@@ -3723,3 +3725,259 @@ reference built from whichever Claude Code is installed or downloaded, compared 
 420px once the answer has arrived, and frame by frame while it streams. Its allow-list is that
 one difference and nothing else. The morning an update makes this fix look like something other
 than Claude Code's own work, it goes red and says which element.
+
+## 45. The two promises, held in all four places
+
+Section 44 built the sentence this project is measured by instead of asking questions of it,
+and it did that for **answers**. Reading the whole of it back afterwards, the owner asked the
+only question that matters about a fix living inside somebody else's product: is it a mirror
+everywhere, and will it still be one after the next update. Two gaps came out of that reading,
+and both were of the same kind - a promise kept in the places that had been looked at hardest,
+and not in the places beside them.
+
+### Gap one: the dot had a single road to it
+
+Everything else here is found two ways or more, for a reason written up in sections 29 and 38:
+a class name hashed per build is a name that will one day be a different name. The box you type
+into has five roads, a sent message two, a pinned row three, the panel's own file three.
+
+The dot had one. `[class*="timelineMessage_"]`, and nothing else.
+
+What that costs on the day it goes is worse than it sounds. The dot does not vanish - **every
+word of an Urdu answer still turns, and the dot stays on the left**. A message reading one way
+with its own marker on the other side is exactly the "somebody bolted this on" look the whole
+project exists to avoid, and section 41 already settled that the dot is a direction rather than
+decoration. Losing it silently is losing the point.
+
+Three roads now, each enough on its own:
+
+| | how it finds a row |
+|---|---|
+| 1 | `timelineMessage_`, the class, as in every build from 2.0.50 to 2.1.270 |
+| 2 | `data-testid="assistant-message"` - the SAME element, and an attribute no restyle renames. Carried since 2.1.59 |
+| 3 | what a row **is**: the nearest ancestor that reserves a gutter and draws something absolutely positioned **inside** that gutter. No name at all |
+
+**Road 3 is not a precaution against an imagined future.** 2.0.50 was downloaded and booted to
+check it, and that build has neither `timelineMessage_` in its stylesheet - its class names are
+minified single letters - nor an `assistant-message` test id, which arrived in 2.1.59. Roads 1
+and 2 both find nothing there. So **the dot has never once been mirrored in 2.0.50 by any build
+of this extension**, and nobody noticed, because nothing measured it. With road 3 it is
+mirrored, and to that build's own numbers rather than to today's: 8 / 16 / 30, where 2.1.270 is
+9 / 14 / 30.
+
+**`data-transcript-message` was the obvious third name and is deliberately not used.** A SENT
+message carries it too, and a sent message has no dot - Claude Code draws it in
+`userMessageContainer_`, which has no gutter and no `::before`. Moving a gutter on a row that
+never had one is a layout change of ours, not a direction, which is the mistake section 41 is
+about. Road 3 asks for the shape instead, and the shape is what excludes it.
+
+Three smaller things went with it, each its own small fault:
+
+- **The stylesheet now names nothing of Claude Code's.** Its rules used to read
+  `[class*="timelineMessage_"][data-bidi-row="rtl"]`; they read `[data-bidi-row="rtl"]`. The
+  class in the selector never won anything - the rules sit in a cascade layer declared ahead of
+  all of the page's with every declaration `!important` - and it was one more thing a restyle
+  could make stale.
+- **It measures the row it is about to turn**, not whichever row was first on the page.
+- **It no longer gives up after one answer.** Reading a gutter that is not there yet looks
+  exactly like reading a build that has no gutter, and the old code latched on the first
+  reading either way: one early answer and the dot never moved again for the life of that
+  panel. It asks up to a dozen rows before it settles.
+- **A row is only turned while it is still drawn the way the measured one was**, so nothing on
+  the page can be handed a gutter it did not already have.
+- And a sent message no longer answers for the dot's lamp at all. It has no dot, so it has
+  nothing to report, and a lamp that answers about something it never looked at is the thing
+  the fuse box in section 38 exists to prevent.
+
+Held by `test/timeline-survival.test.js`, in `npm run review`: Claude Code's own bundle and
+stylesheet with the class renamed, then with the test id renamed as well, then with the dot
+taken away altogether - and in each case the three distances of section 41 measured on both
+sides, 9 / 14 / 30, an Urdu row against an English one in the same conversation.
+
+And by `history.test.js`, which now puts the dot to every build in a folder the way it already
+puts the box and a sent message to them - the thing whose absence let 2.1.267 break the box
+unnoticed. It finds rows by shape rather than by either name, so it is a second opinion on road
+3 rather than the same selector asked twice, and it runs on builds from before either name
+existed.
+
+### Gap two: two of the four places were held only to a boundary
+
+Numbers 3 and 4 - an answer arriving, an answer streaming - are compared box for box with the
+fix Claude Code's own developers would write. Numbers 1 and 2 - the box you type into and the
+message you sent - were held only to *they differ by direction and by nothing that is not
+direction* (`the-line.test.js`, `real-webview.test.js`).
+
+That is a real promise and it is the wrong half. It says what we did **not** do. It says nothing
+about whether what we **did** looks like their work - and 0.5.5 passed every boundary in this
+suite while no Urdu list had a visible bullet. Both halves are needed, in all four places.
+
+So the same instrument, pointed at the other two. The reference, again on Claude Code's own
+bundle with nothing of ours in it:
+
+- **the box** - the two layers stop being `plaintext`, and the element they share is given
+  `dir="rtl"` while the draft holds RTL
+- **the message** - the row's `text-align: left` becomes a `start`, and the message's text is
+  given `dir="rtl"` instead of being left to `dir="auto"` to guess at
+
+Then every element of each, at 700px and at 420px: its box, and where its ink actually falls.
+**Zero differences**, at both widths, with no allow-list at all.
+
+#### The reference was vacuous first, and said so
+
+Written the obvious way - `dir="rtl"` on the message's text container - the comparison passed
+immediately, at both widths, with nothing allowed. It was wrong. Claude Code hands a sent
+message's text to a `<span dir="auto">` **inside** that container, and `dir="auto"` on a child
+is not overruled by `dir="rtl"` on its parent: the reference had not turned the message at all,
+and was being compared against an unfixed page that it matched perfectly.
+
+It was caught because each comparison now asks the reference the same question it asks the fix
+— *is the first character a person sees on the right?* — before it is allowed to compare
+anything. Two identical readings prove nothing if neither of them turned anything. That guard
+is the reason this section can quote a zero.
+
+#### What the box's reference does not claim
+
+It is the whole box, not a line at a time, and that is a weaker claim than numbers 3 and 4 make.
+A line of a draft is a newline inside one text node; giving lines their own directions means an
+element per line inside React's own mirror, which was built twice and killed the box both times
+(sections 25 to 28, and 34). Claude Code's developers own that renderer and could split it where
+a guest in their DOM cannot. So this reference is the fix they would reach for first, not the
+best one they could possibly build - and that sentence is in the test file, where somebody
+reading a green result will see it.
+
+## 46. The mirror, with nobody's judgement left in it
+
+> Supersedes section 44's reference, and only its reference. What 44 found is unchanged; how
+> it was measured is not good enough, and this says why.
+
+The owner stopped the work to ask whether the assistant had understood the job at all. The
+answer was no, twice, in the same way both times: **it kept building the thing that already
+exists.**
+
+### The job, as the owner states it
+
+Claude Code is not drawing right-to-left text wrongly. **It does not know.** Its rule is
+`unicode-bidi: plaintext` - take a line's direction from its FIRST STRONG CHARACTER - so a
+line opening with `npm` is drawn left to right however much Urdu follows. The rule is
+incomplete, not broken.
+
+Our formula supplies exactly the one fact it lacks: which pieces are right-to-left.
+
+And then - this is the part that was missed - **the correct rendering is not ours to invent.**
+The browser has always known how to draw right-to-left. Hold a mirror to the marked piece and
+it reads correctly; the mirror is not something anyone here computes, it is what the browser
+does when it is told. So our code's whole job is:
+
+> the marked piece, drawn as the browser draws it when told - **not a grain more, not a grain less**
+
+"More" means anything anybody could point at and call an addition: a compensation, a width
+changed, an unmarked thing moved, a layer. "As if Claude Code fixed it itself" means precisely
+that if their own team had this formula, they would tell the browser the one fact and stop.
+
+### Where the measuring went wrong, twice
+
+**Section 44's reference was written by hand here.** Mark the row `dir="rtl"`, mirror the dot
+rules, stop `plaintext`, keep code left to right. Every one of those is a decision this project
+made - so the comparison was our work against our own idea of the right answer. It cannot fail
+in the one way that matters.
+
+**And then the second attempt defined right-to-left itself** - runs reversed, lines flush to
+the right edge - and was wrong three times over before the instrument was even trusted: it
+split a run at every space, so `تیسرا قدم` came out as two pieces to be swapped; it grouped
+lines by exact pixel top, so inline code at a different size read as a line of its own; and it
+demanded a flush right edge of a `<pre>`. Each was the same mistake in a new place.
+
+### The reference that has nothing of ours in it
+
+Claude Code's own bundle, and:
+
+| | |
+|---|---|
+| the stylesheet | `unicode-bidi: plaintext` **deleted** from the markdown root's rule - not overridden, deleted, as if it had never been typed. It ships three times, once per engine prefix; all three go |
+| the message | `dir="rtl"` |
+| its RTL blocks | `dir="rtl"` |
+| everything else | nothing. What the formula calls left to right needs nothing done |
+
+No `text-align`, no `!important`, no rule of ours, nothing about the dot. Whatever the browser
+then draws - where the bullets go, which way the columns run, where a quote's bar sits, how the
+lines break - **is** the answer.
+
+### What it says, measured on 2.1.270
+
+Three readings of the same conversation - Claude Code untouched, Claude Code told, and this
+build - at 700px and at 420px, on an answer holding six heading levels, a list nested three
+deep, a loose list, a task list, a quote inside a quote, a three-column table, an English
+table, code with an Urdu comment, Hebrew, Arabic, Persian, a link, a date and a percentage:
+
+| | |
+|---|---|
+| elements compared | **96**, and the same 96 in all three readings |
+| exactly what the browser draws when told | **70** |
+| exactly where Claude Code drew them, untouched | **24** |
+| code, untouched | **2** |
+| anything else | **0** |
+
+There is no allow-list. Every element falls under one of the three lines, and each line is an
+equality.
+
+### The two places where "untouched" is a decision, and why
+
+**Code.** Told the message is right-to-left and left to the browser, a code block is
+**corrupted** - measured, not argued:
+
+```
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));     what Claude Code draws
+;                                                              what the browser draws when told
+const wait = (ms) => new Promise((r) => setTimeout(r, ms))
+```
+
+The `;` ending the line is drawn at the FRONT of it, and `if (a[0] !== b[1])` splits into `i`
+and `f (a[0] !== b[1])`. Those are neutral characters resolving to the paragraph's direction,
+which is exactly right for prose and exactly wrong for code. Keeping a code block left to right
+is not taste; it is the safety rule - never change anybody's text. The test asserts the
+corruption as well, so the day a browser stops doing it, the rule stops earning its place and
+says so.
+
+**A block holding no right-to-left character at all** - an English paragraph, an English table
+cell. It keeps the side Claude Code drew it on, because the formula calls it left to right and
+what is left to right needs nothing done. A list ITEM is the exception to that exception: it is
+drawn from its marker's side, so that `npm install` is not a whole line away from its own
+bullet.
+
+That second one is the only genuinely open question in the whole comparison, and it is written
+in `the-mirror.test.js` as a named switch rather than hidden in a tolerance - flip
+`KEEPS_ITS_OWN_SIDE` and the test says, element by element, what the panel would look like the
+other way.
+
+### Number 3, which is the whole point
+
+Number 4 is insurance. If it ever has work to do, a reader has already seen the wrong thing.
+So number 3 is stated as what a reader goes through, and it needs no reference at all:
+
+- no line holding right-to-left text is ever drawn from the left - **not for one frame**
+- nothing already on screen moves sideways, and nothing re-wraps
+- no bullet or number is ever on the other side from its own list
+- a line turns at most once, with a word on screen rather than a sentence
+- the dot moves at most once
+
+At five rhythms, because a real stream is not one rhythm - and until now it was measured at
+exactly one, four characters every 30ms:
+
+| | frames | lines that turned | drawn from the left |
+|---|---|---|---|
+| a character at a time | 2,150 | 1, at 7 characters | 0 |
+| four at a time | 750 | 1, at 5 characters | 0 |
+| bursty (60 at a time) | 216 | **0** | 0 |
+| whole paragraphs at once | 234 | **0** | 0 |
+| bursty, narrow panel | 222 | **0** | 0 |
+| **the same stream, no fix** | | | **4,959 frames** |
+
+The one line that turns is the first heading, and it turns at its first Urdu word - the moment
+nobody, Claude Code included, could have known any earlier. At bursty rhythms even that goes,
+because the burst carries the Urdu in with the Latin.
+
+### Held
+
+`test/the-mirror.test.js`, in `npm run review` and therefore in the daily watch. Section 44's
+numbers 3 and 4 are gone from `as-claude-would.test.js`, which keeps numbers 1 and 2 - one tape
+measure per thing, because two of them drift and then disagree in somebody's face.

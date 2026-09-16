@@ -1011,6 +1011,63 @@ Payload: 135,021 bytes - 21,591 more than 0.5.2, for the long-message fix
 becoming a part of its own, a second way into the same trap, and the reasons written beside
 both.
 
+### 0.5.8 — the dot gets its other roads, and the other two places get the mirror
+
+Nothing a reader sees changes here. Two gaps found by reading the whole of 0.5.7 back: the one
+part of the fix that had a single road to it, and the two of the four places that were held only
+to a boundary rather than to Claude Code's own fix. decisions.md, 45.
+
+- [x] **the message's dot is found three ways, where it had one** — its class, the test id an
+      answer has carried since 2.1.59, and, with both gone, what a row is: a gutter with
+      something drawn inside it. Put to Claude Code's own bundle with the class renamed, then
+      with the test id renamed as well **(lab, 2.1.270)**
+- [x] **and the three distances still match on both sides in every one of those** — 9 / 14 / 30,
+      an Urdu row against an English one in the same conversation **(lab)**
+- [x] **the third road turns out to be the only one that works in 2.0.50** — that build has no
+      `timelineMessage_` class and no `assistant-message` test id, so its dot has never once been
+      mirrored by any build of this extension and nothing measured it. Mirrored now, to that
+      build's own numbers: 8 / 16 / 30 **(lab, 2.0.50 downloaded and booted)**
+- [x] **the dot is put to every build in a folder now, as the box and a sent message already
+      were** — the missing measurement of that kind is how 2.1.267 broke the box unnoticed
+      **(lab, 2.0.50 and 2.1.270)**
+- [x] **the day Claude Code draws no dot at all, no row is given a gutter** — nothing marked,
+      nothing padded, and the lamp says so rather than claiming a dot it never moved **(lab)**
+- [x] **the dot's rules name nothing of Claude Code's any more** — `[data-bidi-row="rtl"]` and
+      no class, so a restyle can only break the search, never the stylesheet **(lab)**
+- [x] **it no longer gives up on the dot after one answer** — a gutter that is not there yet read
+      the same as a build with no gutter, and one early answer used to end it for the life of the
+      panel. It asks up to a dozen rows **(lab)**
+- [x] **a sent message stops answering for a dot it does not have** — its row is drawn without
+      one, so it says nothing about that lamp **(lab)**
+- [x] **the box you type into and a sent message are now compared with Claude Code's own fix,
+      box for box** — every element at 700px and at 420px, zero differences, no allow-list.
+      They were held only to "differ by direction and by nothing that is not direction", which
+      says what we did not do and nothing about whether what we did looks like their work
+      **(lab)**
+- [x] **and the reference is asked whether it turned anything before it is compared** — written
+      the obvious way it had not, and matched an unfixed page perfectly. Two identical readings
+      prove nothing if neither of them turned anything **(lab)**
+- [x] **the mirror is now measured against the BROWSER, not against a fix we imagined** — Claude
+      Code's own bundle with `unicode-bidi: plaintext` deleted, the message told dir="rtl", and
+      whatever it then draws taken as the answer. 96 elements at 700px and 420px: 70 exactly what
+      the browser draws when told, 24 exactly where Claude Code drew them, 2 code. No allow-list
+      **(lab, 2.1.270)**
+- [x] **number 3 is measured at five rhythms, where it was measured at one** — a character at a
+      time through whole paragraphs at once, and in a narrow panel: no line holding Urdu drawn
+      from the left in any frame, nothing already on screen moved or re-wrapped, at most one line
+      turned. Without the fix the same stream drew Urdu from the left in 4,959 frames **(lab)**
+- [x] **a code block is proved to need its own rule** — left to the browser inside a turned
+      message the code is corrupted: the `;` ending a line is drawn at the front of it and `if`
+      splits in two. The test asserts the corruption too, so the day it stops the rule stops
+      earning its place **(lab)**
+- [x] **one tape measure per thing** — section 44's hand-written reference for numbers 3 and 4 is
+      retired; `as-claude-would.test.js` keeps numbers 1 and 2 **(lab)**
+- [ ] installed and read in the real panel **(unseen)**
+
+Given up on purpose, still: the box's reference is the whole box, not a line at a time. Claude
+Code's own developers could split their mirror per line; a guest in their DOM cannot, and both
+ways of trying killed the box (sections 25 to 28, and 34).
+
 ### 0.5.7 — as if Claude Code had fixed it itself
 
 Built as a page and compared against, rather than argued: Claude Code's own bundle with the fix
