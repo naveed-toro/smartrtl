@@ -148,3 +148,86 @@ test("a long message, pinned, in every build in the folder", { skip }, async (t)
     });
   }
 });
+
+/**
+ * And a message's own dot, in each of them.
+ *
+ * The box and a sent message are put to every build here because 2.1.267 changed the box
+ * underneath a fix that had been measured on one build. The dot was never put to any build but
+ * the installed one - and it is the one part of this a reader sees as a shape rather than as
+ * text, so it is the one part whose failure looks like a design decision somebody made.
+ *
+ * Rows are found here the way road three finds them, by SHAPE and by no name at all: an element
+ * that reserves a gutter and draws something absolutely positioned inside it. That is what makes
+ * this runnable against a build from before the class or the test id existed - and it is a
+ * second opinion on the road the payload takes, rather than the same selector asked twice.
+ *
+ * The claim is not "the dot is on the right". It is section 41's: the same three distances from
+ * each row's own reading edge, an Urdu row against an English one in the same conversation, and
+ * every row keeping the width it had.
+ */
+const DOT_ROWS = () => {
+  const px = /^(\d+(?:\.\d+)?)px$/;
+  const out = [];
+  for (const el of document.querySelectorAll("div")) {
+    const d = getComputedStyle(el, "::before");
+    if (d.content === "none" || d.position !== "absolute" || !px.test(d.width)) continue;
+    const cs = getComputedStyle(el), row = el.getBoundingClientRect();
+    const rtl = el.getAttribute("data-bidi-row") === "rtl";
+    const near = rtl ? d.right : d.left, pad = rtl ? cs.paddingRight : cs.paddingLeft;
+    if (!px.test(near) || !px.test(pad) || parseFloat(pad) <= 0) continue;
+    const kid = el.firstElementChild;
+    const t = kid && kid.getBoundingClientRect();
+    if (!t || !t.width || !row.width) continue;
+    const w = parseFloat(d.width);
+    const dotL = rtl ? row.right - parseFloat(near) - w : row.left + parseFloat(near);
+    out.push({
+      rtl,
+      edgeToDot: Math.round(rtl ? row.right - (dotL + w) : dotL - row.left),
+      dotToText: Math.round(rtl ? dotL - t.right : t.left - (dotL + w)),
+      edgeToText: Math.round(rtl ? row.right - t.right : t.left - row.left),
+      width: Math.round(t.width)
+    });
+  }
+  return out;
+};
+
+test("a message's dot, mirrored exactly, in every build in the folder", { skip }, async (t) => {
+  for (const version of builds) {
+    await t.test(version, async () => {
+      const { page, errors, pane, close } = await boot(path.join(FOLDER, version, "extension", "webview"));
+      try {
+        await converse(page, ["English please"], "Plain English answer, and a second line under it.");
+        await converse(page, ["اردو میں"], "یہ ایک اردو جواب ہے اور اس کی سمت دائیں سے بائیں ہے۔");
+        await page.waitForTimeout(400);
+        const rows = await page.evaluate(DOT_ROWS);
+        const lamp = await page.evaluate(() => window.__bidiStatus().timelineDot);
+        const urdu = rows.filter((r) => r.rtl), english = rows.filter((r) => !r.rtl);
+
+        if (!rows.length) {
+          // A build that draws no dot at all is not a failure - there is then no direction in a
+          // gutter to mirror. What would be a failure is claiming to have moved one.
+          assert.ok(!lamp || lamp.indexOf("on") !== 0, version + ": the dot's lamp says " + lamp + " on a build that draws no dot");
+          assert.equal(await page.$$eval("[data-bidi-row]", (n) => n.length), 0,
+            version + ": a row was turned round although there is no dot in it to turn");
+          t.diagnostic(version + " - draws no dot; lamp " + lamp);
+          return;
+        }
+
+        assert.ok(urdu.length, version + ": no row turned right to left");
+        assert.ok(english.length, version + ": no English row left to compare it with");
+        for (const key of ["edgeToDot", "dotToText", "edgeToText"]) {
+          assert.equal(urdu[0][key], english[0][key],
+            version + ": " + key + " is " + urdu[0][key] + " for an Urdu row and " + english[0][key] +
+            " for an English one - that is two designs, not one mirrored");
+        }
+        assert.equal(new Set(rows.map((r) => r.width)).size, 1,
+          version + ": a row lost width to another row's dot - " + rows.map((r) => r.width).join(", "));
+        assert.equal(lamp, "on", version + ": the dot's own lamp says " + lamp);
+        assert.deepEqual(errors, [], version + ": something reached the page");
+        assert.equal(await pane(), "", version + ": Claude Code's own error pane is not empty");
+        t.diagnostic(version + " - " + urdu[0].edgeToDot + " / " + urdu[0].dotToText + " / " + urdu[0].edgeToText);
+      } finally { await close(); }
+    });
+  }
+});

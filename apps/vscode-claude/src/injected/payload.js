@@ -73,7 +73,17 @@
     var IN_BOX = '[class*="messageInputContainer_"]';
     var IN_TXT = '[class*="messageInput_"]';
     var IN_MIR = '[class*="mentionMirror_"]';
-    var ROW_SEL = '[class*="timelineMessage_"]';
+    /* An answer's own row - the element that draws that message's dot - by name, and by the
+       test id every answer has carried since 2.1.59, which no restyle renames. The two are
+       the same element in every build from 2.1.59 to 2.1.270.
+
+       Deliberately NOT data-transcript-message, which would have been the obvious third
+       name: a SENT message carries it too, and a sent message has no dot. Moving a gutter
+       on a row that never had one is a layout change of ours, not a direction. */
+    var ROW_BY_NAME = '[class*="timelineMessage_"]';
+    var ROW_SEL = ROW_BY_NAME + ',[data-testid="assistant-message"]';
+    var ROW_MARK = '[data-bidi-row="rtl"]';   // ours, and the only name the rules below use
+    var PX = /^(\d+(?:\.\d+)?)px$/;
 
     /* Each of these can be turned off on its own without touching anything else. */
     var STICKY = '[class*="stickyHeader_"]';
@@ -114,39 +124,111 @@
        is. decisions.md, 8 and 41.
 
        The three offsets are read from the page at runtime rather than copied, so a
-       restyle upstream cannot leave them stale. If any of them is not a plain pixel
-       number, nothing is done at all - moving a gutter without moving the dot in it
-       would be worse than leaving both alone. And the rules sit in a cascade layer
-       declared ahead of all of the page's, every declaration !important, the same as
-       every other part of this file.
+       restyle upstream cannot leave them stale. If the gutter or the dot in it is not a
+       plain pixel number, nothing is done at all - moving a gutter without moving the dot
+       in it would be worse than leaving both alone. The connector is the one part that is
+       optional: Claude Code draws none on a message that stands alone in its turn, so a
+       row whose ::after has no place of its own gets the dot mirrored and no more.
+
+       And the rules sit in a cascade layer declared ahead of all of the page's, every
+       declaration !important, the same as every other part of this file. They name
+       nothing of Claude Code's: the only selector in them is our own attribute, so a
+       restyle cannot make the STYLESHEET stale either, only the search that finds a row.
+
+       WHICH IS FOUND THREE WAYS, AND WAS FOUND ONE WAY UNTIL 0.5.8
+
+       Everything else in this file has two roads or more, because a name hashed per build
+       is a name that will one day be a different name. This had one - the row's class -
+       and losing it would have taken the dot off the side its message reads from while
+       every word of that message turned: the one state where this project looks like a
+       thing somebody bolted on. Now: the class; the test id an answer has carried since
+       2.1.59, on the same element; and, with both gone, what a row IS - the nearest
+       ancestor that reserves a gutter and draws something absolutely positioned inside
+       it. The last needs no name at all, and is what rowByShape asks.
+
+       MEASURED FROM THE ROW IT IS ABOUT TO TURN, not from whatever row was first on the
+       page. Same element, same numbers, and it cannot be handed the wrong row's gutter.
+
+       AND NEVER GIVEN UP ON AFTER ONE ANSWER. Reading a gutter that is not there yet
+       looks exactly like reading a build that has no gutter, and this used to latch on
+       the first reading either way - one early answer and the dot never moved again for
+       the life of that panel. It asks up to a dozen rows before it settles.
     ------------------------------------------------------------------ */
-    var timelineDone = false, timelineSheet = null;
-    function mirrorTimeline() {
+    var timelineDone = false, timelineSheet = null, timelineTries = 0, gutter = "", unlike = 0;
+
+    /**
+     * The row a decided block belongs to: by name, by test id, and - with both gone - by
+     * what a row is. Null for anything that has no row of its own, a sent message included.
+     * @param {Element} el
+     * @returns {Element|null}
+     */
+    function theRow(el) {
+      try {
+        var named = el.closest(ROW_SEL);
+        if (named) return named;
+      } catch (e) {}
+      return rowByShape(el);
+    }
+
+    /**
+     * A row, by what it is and by no name: the nearest ancestor that reserves a gutter down
+     * one side and draws something absolutely positioned INSIDE that gutter. The "inside" is
+     * what makes it the row rather than any padded ancestor that happens to draw a corner
+     * ornament - a dot in a gutter is the one shape a timeline has.
+     *
+     * Only reached on a build where both names have gone, so it costs nothing today.
+     */
+    function rowByShape(el) {
+      try {
+        for (var x = el.parentElement, hops = 0; x && x !== document.body && hops < 12; x = x.parentElement, hops++) {
+          var pad = getComputedStyle(x).paddingLeft;
+          if (!PX.test(pad) || parseFloat(pad) <= 0) continue;
+          var dot = getComputedStyle(x, '::before');
+          if (dot.content === 'none' || dot.position !== 'absolute') continue;
+          if (!PX.test(dot.left) || !PX.test(dot.width)) continue;
+          if (parseFloat(dot.left) + parseFloat(dot.width) <= parseFloat(pad)) return x;
+        }
+      } catch (e) {}
+      return null;
+    }
+
+    /** @param {Element} row  a row nothing of ours is on yet */
+    function mirrorTimeline(row) {
       if (!MIRROR_TIMELINE || timelineDone) return;
       try {
-        var row = document.querySelector(ROW_SEL + ':not([data-bidi-row])');
-        if (!row) return;                       // nothing pristine to measure yet
         var pad  = getComputedStyle(row).paddingLeft;
         var dot  = getComputedStyle(row, '::before').left;
         var line = getComputedStyle(row, '::after').left;
-        var px = /^(\d+(?:\.\d+)?)px$/;
-        if (!px.test(pad) || !px.test(dot) || !px.test(line)) { timelineDone = true; return; }
-        if (parseFloat(pad) <= 0) { timelineDone = true; return; }
+        if (!PX.test(pad) || parseFloat(pad) <= 0 || !PX.test(dot)) { askAnotherRow(); return; }
         timelineSheet = SmartRTLDom.layeredSheet('smart-rtl-timeline',
           '@layer smartrtl-timeline{' +
-          ROW_SEL + '[data-bidi-row="rtl"]{padding-left:0!important;padding-right:' + pad + '!important}' +
-          ROW_SEL + '[data-bidi-row="rtl"]::before{left:auto!important;right:' + dot + '!important}' +
-          ROW_SEL + '[data-bidi-row="rtl"]::after{left:auto!important;right:' + line + '!important}' +
+          ROW_MARK + '{padding-left:0!important;padding-right:' + pad + '!important}' +
+          ROW_MARK + '::before{left:auto!important;right:' + dot + '!important}' +
+          (PX.test(line) ? ROW_MARK + '::after{left:auto!important;right:' + line + '!important}' : '') +
           '}', function () {});
+        gutter = pad;
         timelineDone = true;
-      } catch (e) { timelineDone = true; }
+      } catch (e) { askAnotherRow(); }
     }
 
-    function markRow(el) {
-      if (!MIRROR_TIMELINE) return;
+    /** A reading that said nothing. Settled only once enough rows have said the same. */
+    function askAnotherRow() {
+      if (++timelineTries >= 12) timelineDone = true;
+    }
+
+    /** @param {Element} row */
+    function markRow(row) {
+      if (!MIRROR_TIMELINE || !timelineSheet || !row) return;
       try {
-        var row = el.closest(ROW_SEL);
-        if (row && !row.hasAttribute('data-bidi-row')) row.setAttribute('data-bidi-row', 'rtl');
+        if (row.hasAttribute('data-bidi-row')) return;
+        /* Turned round only while it is still drawn the way the row we measured was.
+           Nothing on this page is ever given a gutter it did not already have, and no row
+           is handed another row's numbers - "the dot is on the right" was never the claim;
+           the same distances on both sides is. A row drawn some other way is left exactly
+           as the page had it AND COUNTED: its text turns while its dot does not, which is
+           the one state this is all meant to avoid, so it must not read as "on". */
+        if (getComputedStyle(row).paddingLeft !== gutter) { unlike++; return; }
+        row.setAttribute('data-bidi-row', 'rtl');
       } catch (e) {}
     }
 
@@ -156,6 +238,9 @@
       var rows = document.querySelectorAll('[data-bidi-row]');
       for (var k = 0; k < rows.length; k++) rows[k].removeAttribute('data-bidi-row');
       timelineDone = false;
+      timelineTries = 0;
+      gutter = "";
+      unlike = 0;
     }
 
     /* ------------------------------------------------------------------
@@ -1117,18 +1202,26 @@
         // puts on every message in the transcript, which no restyle renames
         boundary: '[class*="message_"],[data-transcript-message]',
         onDecision: function (block) {
+          // A sent message has no dot of its own, so it has no row here and says nothing
+          // about this lamp - it used to answer for one, which is how a page of nothing
+          // but sent messages reported on a dot that was never drawn.
+          var row = null;
+          try { row = theRow(block); } catch (e) {}
+          if (!row) return;
           lamp('timelineDot', function () {
-            mirrorTimeline();   // measure + install, once, before any row is marked
-            if (!timelineDone || !timelineSheet) return null;
+            mirrorTimeline(row);   // measure + install, once, from a row nothing of ours is on
+            if (!timelineSheet) return timelineDone ? null : "off - the row's dot has not been read yet";
             /* And what the SHEET says, not merely that one was asked for. A page that
                refuses every way of adding a stylesheet is handed a sheet that is not
                there and answers questions about itself honestly - so the lamp above a
                dot that never moved must not say "on". Every other circuit in this file
                reports sheet.road(); this one used to report that it had a variable. */
             var road = timelineSheet.road();
-            return road.indexOf("off") === 0 ? road : true;
+            if (road.indexOf("off") === 0) return road;
+            markRow(row);       // this row's dot belongs on the side its message reads from
+            return unlike ? "not working - " + unlike + " row(s) are drawn with a different gutter " +
+                            "and were left alone rather than given this one's" : true;
           });
-          markRow(block);       // this row's dot belongs on the side its message reads from
         },
         onCleanup: undoTimeline
       });

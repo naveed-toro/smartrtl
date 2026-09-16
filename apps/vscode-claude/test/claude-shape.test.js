@@ -156,6 +156,37 @@ test("the heading above a sent message is still kept from deciding anything", { 
   assert.ok(true);
 });
 
+test("a message's own row can still be found, and the dot in it still measured", { skip }, (t) => {
+  // Three roads to the row whose dot is mirrored: its class, the test id an answer has carried
+  // since 2.1.59 - the SAME element - and, with both gone, what a row is. Losing one is a line
+  // in the report. Losing the gutter itself is not a breakage at all: there is then no
+  // direction in it to mirror, and the dot's lamp says so.
+  const s = bundle(), css = read(real.installed.css);
+  const byName = /\.timelineMessage_[A-Za-z0-9_-]+\s*\{[^}]*padding-left:\s*[1-9]/.test(css);
+  const byId = s.includes('"data-testid":"assistant-message"');
+  if (!byName) t.diagnostic("the row's class no longer reserves a gutter; the test id and the row's own shape still find it");
+  if (!byId) t.diagnostic("the assistant-message test id is gone; the class and the row's own shape still find it");
+  // The shape road needs a dot drawn INSIDE the gutter the row reserves. If Claude Code stops
+  // drawing one, nothing here is a failure - but it is the morning to read __bidiStatus().timelineDot.
+  const dot = /\.timelineMessage_[A-Za-z0-9_-]+::?before\s*\{[^}]*position:\s*absolute/.test(css);
+  if (!dot) t.diagnostic("a message's row no longer draws an absolutely positioned dot - the dot's lamp should report \"off\" and nothing should be padded");
+  assert.ok(byName || byId || dot,
+    "nothing names or shapes a message's row any more: an Urdu answer would turn with its dot left on the other side");
+});
+
+test("a sent message is still drawn in a row with no dot of its own", { skip }, (t) => {
+  // Why data-transcript-message is not a road to the row, although it is on the same element
+  // for an answer: a SENT message carries it too, and its row reserves no gutter. The day that
+  // stops being true is the day using it would start padding rows that never had a gutter.
+  const css = read(real.installed.css);
+  const sent = (css.match(/\.userMessageContainer_[A-Za-z0-9_-]+\s*\{[^}]*\}/g) || []).join("");
+  if (!sent) return t.skip("this build has no userMessageContainer_ rules to read");
+  if (/padding-left:\s*[1-9]/.test(sent)) {
+    t.diagnostic("a sent message's row now reserves a gutter - check whether it draws a dot, and whether it should mirror with the message");
+  }
+  assert.ok(true);
+});
+
 test("a sent message's text is still handed to dir=\"auto\"", { skip }, (t) => {
   const n = (bundle().match(/dir:"auto"/g) || []).length;
   if (n === 0) t.diagnostic("dir=\"auto\" is gone; sent messages now rest on the class names alone");
