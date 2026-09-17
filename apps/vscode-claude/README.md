@@ -73,10 +73,9 @@ nothing else.
   exists to replace, applied by the extension itself in the one place the engine could
   not see. The body div is named as a block, and the engine tells any `dir="auto"`
   inside a decided block to inherit that decision
-- **the timeline dot** - a message's own dot moves to the side that message reads from, at
-  the same distances: 9px from the row's edge, 14px from the text, exactly as Claude Code
-  draws it on the other side. No other row pays for it - an English answer in the same
-  conversation is identical to the pixel
+- **the timeline dot is left exactly where Claude Code draws it** - told only the direction,
+  the browser does not move it, so neither does this. It is a timeline and a status light,
+  not text. Until 0.5.9 it was moved to the right by hand; that was a wish, not the work
 - **the composer** - the box you type in is two stacked layers, an invisible
   contenteditable over a visible mirror; one flag on the container they share turns both,
   so the caret can never sit on one side while the glyph sits on the other. Nothing of
@@ -94,7 +93,7 @@ nothing else.
   same seventeen builds: every one that gives a sent message a road turns it
 
 Each of those, and the formulas and fixes that were tried and rejected first, is written
-up in [docs/decisions.md](https://github.com/naveed-toro/smartrtl/blob/main/docs/decisions.md) - forty-eight sections, including
+up in [docs/decisions.md](https://github.com/naveed-toro/smartrtl/blob/main/docs/decisions.md) - forty-nine sections, including
 three attempts at per-line direction in the composer that were built, shipped and then
 withdrawn, the measurements that ended each one, the limits that were finally accepted so
 that a Claude Code update is the least likely thing to break it, and the box you type in
@@ -191,7 +190,8 @@ Every case is a line that came out of a real answer, and several are the exact l
 that broke an earlier version.
 
 - `rendering.test.js` - direction per block, the safety rule, all four RTL languages,
-  the timeline dot, and the composer's two layers staying in step
+  the timeline dot staying where Claude Code draws it, and the composer's two layers staying
+  in step
 - `streaming.test.js` / `jitter.test.js` - sample every animation frame while an answer
   arrives character by character, and hold the design to its promise: at most one change
   per block, and never back and forth

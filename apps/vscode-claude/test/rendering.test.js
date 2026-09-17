@@ -69,50 +69,25 @@ test("every right-to-left language, not just Arabic script", async () => {
   }
 });
 
-test("a message's dot is mirrored exactly, not merely moved", async () => {
-  // The whole test, in one sentence: the two sides have to be the SAME behaviour.
-  //
-  //   english   [row edge] --9-- (dot) --14-- text starts...
-  //   urdu      ...text ends --14-- (dot) --9-- [row edge]
-  //
-  // If those numbers ever stop matching, a reader in Urdu is looking at a second design
-  // rather than at their own one, and the whole point of this project - that it should
-  // feel like Claude Code always did this - is gone. It is not enough for the dot to be
-  // "on the right"; it has to sit where its own reader expects it, at the same distances.
+test("a message's dot stays exactly where the page draws it", async () => {
+  // Not text. Told only the direction, the browser leaves a dot drawn at `left: 9px` in a
+  // gutter of `padding-left: 30px` where it is, and so does this - on an Urdu row as much as on
+  // an English one. Moving it was a wish forced by hand, and it is gone. decisions.md, 49.
   const urdu = message("<p>یہ اردو کا جواب ہے اور اس کی سمت دائیں سے بائیں ہے۔</p>");
   const eng  = message("<p>This answer is in English and reads left to right.</p>");
-  const { page, close } = await open(urdu + eng + urdu);
+  const read = (page) => page.$$eval(".timelineMessage_x", (els) => els.map((el) => {
+    const d = getComputedStyle(el, "::before"), t = el.firstElementChild.getBoundingClientRect();
+    return { dot: d.left + " " + d.right, pad: getComputedStyle(el).paddingLeft + " " + getComputedStyle(el).paddingRight,
+             box: [t.left, t.right].map(Math.round) };
+  }));
+  const before = await open(urdu + eng + urdu, { fix: false });
+  const after = await open(urdu + eng + urdu);
   try {
-    const rows = await page.$$eval(".timelineMessage_x", (els) =>
-      els.map((el) => {
-        const row = el.getBoundingClientRect();
-        const t = el.firstElementChild.getBoundingClientRect();
-        const d = getComputedStyle(el, "::before");
-        const w = parseFloat(d.width) || 0;
-        const dotL = d.left === "auto" ? row.right - parseFloat(d.right) - w : row.left + parseFloat(d.left);
-        const rtl = el.getAttribute("data-bidi-row") === "rtl";
-        return {
-          rtl,
-          edgeToDot: Math.round(rtl ? row.right - (dotL + w) : dotL - row.left),
-          dotToText: Math.round(rtl ? dotL - t.right : t.left - (dotL + w)),
-          edgeToText: Math.round(rtl ? row.right - t.right : t.left - row.left),
-          width: Math.round(t.width)
-        };
-      }));
-    assert.equal(rows.length, 3);
-    assert.ok(rows[0].rtl && rows[2].rtl, "the Urdu rows should be marked");
-    assert.ok(!rows[1].rtl, "the English row should not be");
-
-    // the mirror, measured from each row's own reading edge
-    for (const key of ["edgeToDot", "dotToText", "edgeToText"]) {
-      assert.equal(rows[0][key], rows[1][key],
-        `${key} is ${rows[0][key]} for an Urdu row and ${rows[1][key]} for an English one - that is two designs, not one mirrored`);
-    }
-
-    // and nobody pays for anybody else's gutter: every row keeps the width it had
-    assert.equal(new Set(rows.map((r) => r.width)).size, 1,
-      "a row lost width to another row's dot: " + rows.map((r) => r.width).join(", "));
-  } finally { await close(); }
+    const a = await read(before.page), b = await read(after.page);
+    assert.equal(b.length, 3);
+    assert.deepEqual(b, a, "a dot, its gutter or a row's text box moved");
+    assert.equal(await after.page.$$eval('[data-bidi="rtl"]', (n) => n.length) > 0, true, "and the Urdu rows really were turned");
+  } finally { await before.close(); await after.close(); }
 });
 
 test("the composer's two layers can never drift apart", async () => {

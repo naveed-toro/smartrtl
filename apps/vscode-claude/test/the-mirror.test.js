@@ -41,9 +41,17 @@
  * and exactly wrong for code. Keeping a code block left to right is not taste. It is the same
  * rule as the safety rule: never change anybody's text.
  *
- * The dot is not text and is not measured here - everything is read from each page's own
- * CONTENT box, so the dot's gutter cancels. It has rendering.test.js and
- * timeline-survival.test.js to itself.
+ * THE DOT IS MEASURED, AND IT MUST NOT MOVE. Everything is read from each row's own box, the
+ * row's padding and its dot included. Told only the direction, the browser leaves a dot drawn at
+ * `left: 9px` in a gutter of `padding-left: 30px` exactly where it is - it is not text, it is a
+ * timeline and a status light - so ours has to leave it there too. Until 0.5.9 it was moved to
+ * the right by hand, and this file cancelled the gutter out of every reading to hide that. That
+ * was a wish, not the work. decisions.md, 49.
+ *
+ * A NARRATION SUMMARY IS IN THE ANSWER, LONG AND SHORT. It is the row the owner's screenshot
+ * caught: Claude Code draws its markdown root INLINE inside a div, so a tag given to the root
+ * reached the words and never the lines - every line still started at the left edge. The tag
+ * now goes to the block that owns the lines.
  */
 const test = require("node:test");
 const assert = require("node:assert/strict");
@@ -83,6 +91,7 @@ The build tool comparison is documented upstream and stays in English, and it is
 - \`useMemo\` اور \`useCallback\`
 - npm install
 - 250–400ms
+- v1.2 (beta), 3 items
 - ایک نکتہ جس کے دو پیراگراف ہیں
 
   دوسرا پیراگراف اسی نکتے کا۔
@@ -159,9 +168,9 @@ const TOLD = () => {
 };
 
 /**
- * Every element of every answer: where its box is and where its ink falls, both measured
- * from the message's own CONTENT box so that the dot's gutter cannot show up as a
- * difference in the text. Plus, for a block, whether our formula marked it.
+ * Every element of every answer: where its box is and where its ink falls, measured from the
+ * row's own box - so the row's gutter and its dot are in the reading, and have to match too.
+ * Plus, for a block, what the formula says about it.
  */
 const READ = () => {
   const WORD = /[֐-ࣿיִ-﷿ﹰ-﻿]{2,}/;
@@ -173,7 +182,16 @@ const READ = () => {
   };
   for (const msg of document.querySelectorAll('[data-testid="assistant-message"]')) {
     const cs = getComputedStyle(msg), mb = msg.getBoundingClientRect();
-    const x0 = mb.left + parseFloat(cs.borderLeftWidth) + parseFloat(cs.paddingLeft);
+    const x0 = mb.left;
+    const dot = getComputedStyle(msg, "::before"), line = getComputedStyle(msg, "::after");
+    out.push({
+      key: "ROW|" + (msg.textContent || "").trim().replace(/\s+/g, " ").slice(0, 36),
+      row: true, inUrduAnswer: false, blockHasRtl: false, inList: false, code: false,   // the row: never ours to move
+      box: [0, mb.width, 0, mb.height].map(Math.round),
+      ink: [parseFloat(cs.paddingLeft) || 0, parseFloat(cs.paddingRight) || 0,
+            dot.left === "auto" ? -1 : parseFloat(dot.left), dot.right === "auto" ? -1 : parseFloat(dot.right),
+            line.left === "auto" ? -1 : parseFloat(line.left)].map(Math.round)
+    });
     for (const el of msg.querySelectorAll("*")) {
       if (el.closest("svg")) continue;
       const r = el.getBoundingClientRect();
@@ -182,6 +200,24 @@ const READ = () => {
          <code> inside an Urdu heading holds no Urdu itself and still moves, because it is
          part of a line that does; asking the piece is asking the wrong thing. */
       const block = el.closest("p,li,h1,h2,h3,h4,h5,h6,blockquote,td,th,pre") || el;
+      /* The characters of a leaf block in the order the eye meets them, left to right, line by
+         line. Two boxes can be identical to the pixel while the text inside one of them reads
+         `400ms–250` - which is exactly what the tag alone does to `250–400ms` in an Urdu list,
+         and what a comparison of boxes could never see. */
+      let order = null;
+      if (/^(P|LI|H\d|TD|TH|BLOCKQUOTE)$/.test(el.tagName) && !el.querySelector("p,li,td,th,pre")) {
+        const chars = [];
+        const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+        for (let n = w.nextNode(); n; n = w.nextNode()) {
+          for (let i = 0; i < n.nodeValue.length; i++) {
+            if (!/\S/.test(n.nodeValue[i])) continue;
+            const rg = document.createRange(); rg.setStart(n, i); rg.setEnd(n, i + 1);
+            const q = rg.getBoundingClientRect();
+            if (q.width) chars.push({ c: n.nodeValue[i], x: q.left, y: Math.round((q.top + q.bottom) / 12) });
+          }
+        }
+        order = chars.sort((a, b) => a.y - b.y || a.x - b.x).map((c) => c.c).join("");
+      }
       out.push({
         key: el.tagName + "|" + (el.textContent || "").trim().replace(/\s+/g, " ").slice(0, 44),
         inUrduAnswer: WORD.test(msg.textContent || ""),
@@ -189,23 +225,58 @@ const READ = () => {
         inList: block.tagName === "LI" || !!block.closest("li"),
         code: el.tagName === "PRE" || !!el.closest("pre"),
         box: [r.left - x0, r.right - x0, r.top - mb.top, r.bottom - mb.top].map(Math.round),
-        ink: ink ? [Math.round(ink[0] - x0), Math.round(ink[1] - x0)] : null
+        ink: ink ? [Math.round(ink[0] - x0), Math.round(ink[1] - x0)] : null,
+        order
       });
     }
   }
   return out;
 };
 
-/** One conversation - an English answer and an Urdu one - in a panel of the given width. */
+/**
+ * A narration summary: Claude Code draws a thinking block that way when its signature carries,
+ * in field 2 > field 1 > field 8, the word "narration". Built the way Claude Code reads it.
+ */
+const pbField = (field, bytes) => Buffer.concat([Buffer.from([(field << 3) | 2, bytes.length]), bytes]);
+const NARRATION = pbField(2, pbField(1, pbField(8, Buffer.from("narration")))).toString("base64");
+const NARRATION_LONG = "میں نے پایا کہ خانہ، بھیجا پیغام اور pinned سب `@layer` میں ہیں، لیکن جواب کا stylesheet `smart-rtl-direction` ان میں شامل نہیں اور اس کے لیے کوئی ٹیسٹ موجود نہیں کہ میزبان `!important` سے زبردستی کرے تو کیا ہوتا ہے۔ اب میں خود ناپ کر تصدیق کروں گا۔";
+const NARRATION_SHORT = "اب ناپ کر دیکھتا ہوں۔";
+
+/** The channel the panel answers on, caught off the first message it receives. */
+const LISTEN = () => window.addEventListener("message", (e) => {
+  const m = e.data && e.data.message;
+  if (m && m.type === "io_message" && m.channelId) window.__ch = m.channelId;
+});
+
+/** More rows for the same turn, each its own row, the way the extension host sends them. */
+const PUSH_ROWS = ([blocks]) => new Promise((done) => {
+  const io = (m) => window.postMessage({ type: "from-extension", message: { type: "io_message", channelId: window.__ch, message: m } }, "*");
+  const usage = { input_tokens: 1, output_tokens: 1, cache_creation_input_tokens: null, cache_read_input_tokens: null, server_tool_use: null };
+  blocks.forEach((content, k) => io({ type: "assistant", uuid: "n" + k, session_id: "s1", parent_tool_use_id: null,
+    message: { id: "msg_n" + k, type: "message", role: "assistant", model: "claude-test", content: [content],
+               stop_reason: "end_turn", stop_sequence: null, usage } }));
+  io({ type: "result", subtype: "success", is_error: false, result: "done", session_id: "s1", uuid: "rn",
+       duration_ms: 1, duration_api_ms: 1, num_turns: 1, total_cost_usd: 0, usage });
+  setTimeout(done, 900);
+});
+
+/** One conversation - an English answer, an Urdu one, and two narration summaries. */
 async function panel(how, width) {
   const run = await app.boot(WEBVIEW, how === "ours" ? { fix: true } : { fix: false, css: how === "told" ? UNWRITE : undefined });
   try {
     await run.page.setViewportSize({ width, height: 2400 });
     await run.page.addStyleTag({ content: COLOURS });
     if (how === "told") await run.page.evaluate(TOLD);
+    await run.page.evaluate(LISTEN);
     await app.converse(run.page, ["English please"], ENGLISH);
     await app.converse(run.page, ["اردو میں"], URDU);
+    await run.page.evaluate(PUSH_ROWS, [[
+      { type: "thinking", thinking: NARRATION_LONG, signature: NARRATION },
+      { type: "thinking", thinking: NARRATION_SHORT, signature: NARRATION }
+    ]]);
     await run.page.waitForTimeout(800);
+    assert.ok(await run.page.$$eval('[class*="narrationSummary_"]', (n) => n.length) >= 2,
+      "the narration summaries were not drawn - the signature that asks for them has changed");
     const read = await run.page.evaluate(READ);
     assert.deepEqual(run.errors, [], "something reached the page uncaught");
     assert.equal(await run.pane(), "", "Claude Code's own error pane is not empty");
@@ -243,7 +314,7 @@ for (const width of [700, 420]) {
     assert.equal(ours.length, untouched.length, "the reference itself added or removed an element");
 
     const wrong = [];
-    let mirrored = 0, left = 0, code = 0;
+    let mirrored = 0, left = 0, code = 0, rows = 0;
     for (let i = 0; i < ours.length; i++) {
       const u = untouched[i], d = told[i], b = ours[i];
       if (u.key !== b.key || d.key !== b.key) { wrong.push(`the three readings stop lining up at ${i}: ${b.key}`); break; }
@@ -251,7 +322,7 @@ for (const width of [700, 420]) {
          draws when told - which is how a table's columns come to run from the right and a
          list keeps the room for its markers on the right. In an untouched answer, and for a
          code block, it is exactly where Claude Code put it. */
-      const wantBox = b.code || !b.inUrduAnswer ? u : d;
+      const wantBox = b.row || b.code || !b.inUrduAnswer ? u : d;
 
       /* WHICH SIDE OF THAT BOX THE WORDS START FROM is the one place a decision is made, and
          it is named here rather than tolerated in a margin. A block holding NO right-to-left
@@ -260,7 +331,8 @@ for (const width of [700, 420]) {
          that exception: it is drawn from its marker's side, so that "npm install" is not a
          whole line away from its own bullet. */
       const ownSide = b.inUrduAnswer && !b.code && !b.blockHasRtl && !b.inList && KEEPS_ITS_OWN_SIDE;
-      const label = b.code ? "code, and must be exactly as Claude Code drew it"
+      const label = b.row ? "a row: its gutter, its dot and its connector must be exactly as Claude Code drew them"
+                  : b.code ? "code, and must be exactly as Claude Code drew it"
                   : !b.inUrduAnswer ? "in an English answer, and must not have been touched at all"
                   : ownSide ? "holds no right-to-left text, so its words start from the side Claude Code drew them on"
                   : "in a turned answer, and must be exactly what the browser draws when told";
@@ -271,11 +343,27 @@ for (const width of [700, 420]) {
         const gap = (x) => (x.ink ? [Math.round(x.ink[0] - x.box[0]), Math.round(x.ink[1] - x.box[0])] : null);
         if (far(gap(u), gap(b))) parts.push(`words start ${gap(b)} into their box, Claude Code drew them at ${gap(u)}`);
       } else if (far(wantBox.ink, b.ink)) parts.push(`ink ${b.ink}, wanted ${wantBox.ink}`);
+      if (b.order !== undefined && b.order !== null) {
+        const wantOrder = b.blockHasRtl && !b.code ? d.order : u.order;
+        if (b.order !== wantOrder) {
+          parts.push("reads \"" + b.order.slice(0, 40) + "\" where it should read \"" + String(wantOrder).slice(0, 40) + "\"" +
+            (b.blockHasRtl ? "" : " - a block with no right-to-left text in it was re-ordered"));
+        }
+      }
       if (parts.length) wrong.push(`${b.key}\n      ${label}\n      ${parts.join("\n      ")}`);
-      else if (b.code) code++; else if (ownSide) left++; else if (b.inUrduAnswer) mirrored++; else left++;
+      else if (b.row) rows++; else if (b.code) code++; else if (ownSide) left++; else if (b.inUrduAnswer) mirrored++; else left++;
     }
-    t.diagnostic(`${ours.length} elements: ${mirrored} mirrored, ${left} left alone, ${code} code`);
+    t.diagnostic(`${ours.length} elements: ${mirrored} what the browser draws when told, ${left} left alone, ${code} code, ${rows} rows with their dots where Claude Code put them`);
     assert.deepEqual(wrong, [], "these are not the mirror");
+
+    // and the reason an English item in an Urdu list keeps its own order is a measurement, not a
+    // belief: left to the browser with only the tag, at least one of them comes out re-ordered -
+    // 250–400ms reads 400ms–250. The day that stops being true, this says the rule is no longer
+    // earning its place. And it is what proves the order check above can see anything at all.
+    const reordered = ours.filter((b, i) => b.order && !b.blockHasRtl && !b.code && told[i].order !== untouched[i].order);
+    assert.ok(reordered.length > 0,
+      "left to the browser, no block without right-to-left text was re-ordered - the rule that keeps its order should be looked at");
+    t.diagnostic("the tag alone re-orders: " + reordered.map((b, i) => b.key.split("|")[1]).join(", "));
 
     // and the instrument is held to being able to see the fault at all
     const moved = ours.filter((b, i) => b.blockHasRtl && !b.code && far(untouched[i].ink, b.ink)).length;

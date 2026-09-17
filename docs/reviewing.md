@@ -53,11 +53,26 @@ answer, and the order they are asked in.
 
 ### What is inside it
 
-A thing is inside the line when it **belongs to the text whose direction is being set**.
+The work is to give text its correct right-to-left or left-to-right tag - the one fact the
+web's first-strong-character rule does not have - and let the browser do the rest. So the
+test is not an opinion about what belongs to what. It is a measurement:
+
+> **Tell the browser only the tag. Whatever then moves by itself is the text's. Whatever does
+> not move by itself is not ours to move.**
 
 - the words of an answer, a sent message, a draft in the box — obviously
-- **a message's own timeline dot**, which mirrors with its message, at the same distances
-  on both sides. It belongs to that message, so it turns with it.
+- a list's bullets and numbers, a table's column order, a quote's bar — the browser moves
+  them by itself the moment it is told
+- one exception, and it is the same exception everywhere: where the tag ALONE would change
+  the text. Told a message is right to left, the browser draws a code block with its `;` at
+  the front of the line, `250–400ms` in an Urdu list as `400ms–250`, and an English paragraph
+  with its full stop moved. Those keep their own order, because nobody's text is ever changed.
+  Every one of them is measured in `test/the-mirror.test.js`, not assumed.
+
+**Work, and wishes.** Anything that would have to be moved by hand because it would look nicer
+is a wish, not the work. There are no wishes at this stage. If one is ever carried out, it is
+said plainly beside it that it is a wish, forced by hand - because this repository is the
+evidence that a correct tag alone is enough, and a thing moved by hand is evidence against it.
 
 ### What is outside it
 
@@ -67,10 +82,13 @@ A thing is inside the line when it **belongs to the text whose direction is bein
   because somebody else wrote in Urdu is not a direction
 - how much of this extension is visible: one small "RTL on", only while Claude Code is in
   front of you, is the whole of it
+- **a message's timeline dot.** Told the direction, the browser leaves it where it is: it is
+  drawn at `left: 9px` in a gutter of `padding-left: 30px`, its connector joins one row to the
+  next, and its colour says what a tool did. It is a timeline and a status light, not text.
 
-Both mistakes have been made. The dot was removed once as "decoration" — wrong, it is
-direction. A gutter was reserved on every row to keep columns aligned — wrong, that is
-layout. `docs/decisions.md` section 41 has both.
+The dot was ruled inside the line once (section 41) and moved to the right by hand until 0.5.9.
+That was decided before the rule above existed, and on a row whose lines were ragged it left a
+gap beside the dot that changed from one line to the next. `docs/decisions.md` section 49.
 
 ### We tell. We do not build.
 
@@ -102,7 +120,7 @@ conversation to have, not a change to make.
 |---|---|---|
 | the line | every computed property of every element, with the fix and without it, against a named list of what may differ | `test/the-line.test.js` |
 | the mirror, all four places | compared with what the BROWSER draws when it is told - Claude Code's own bundle with the incomplete rule DELETED and the formula's answer said plainly. An answer: 96 elements, no allow-list, at two widths. The box you type into and a message you sent: every box and every piece of ink, the caret included, and identical to untouched Claude Code when there is no Urdu in them. An answer while it streams: five rhythms, and no line holding right-to-left text drawn from the left in any frame | `test/the-mirror.test.js` |
-| the dot | the same three distances on both sides, or "that is two designs, not one mirrored" - and still found with its class renamed, its test id renamed, or neither left | `test/rendering.test.js` and `test/timeline-survival.test.js` |
+| the dot | stays exactly where Claude Code draws it, on every row, in every language - its gutter, its position and its connector read on every row of the-mirror, and against untouched Claude Code | `test/rendering.test.js`, `test/real-webview.test.js` and `test/the-mirror.test.js` |
 | what we show | one item, only while Claude Code is in front of you | `test/status-bar.test.js` |
 | what we cost | no write and no whole-file read on an ordinary start; a tab change touches the disk not at all | `test/startup-cost.test.js` |
 | the roads in | every name renamed, every role taken away — each place still found | `test/real-webview.test.js` and the survival suites |

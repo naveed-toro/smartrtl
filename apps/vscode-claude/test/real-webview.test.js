@@ -61,10 +61,10 @@ test("the edge the reader's eye returns to is moved exactly once", { skip }, asy
   // moves that edge mid-answer moves text somebody has already read. This counts the times
   // it moves at all, with the fix and without it.
   //
-  // Exactly one is required: the message's own gutter going to the side it reads from, at
-  // the moment the message is decided and before there is anything under it to read.
-  // Counting rather than asserting a pixel, because that gutter's width is measured from
-  // the panel at runtime and is not ours to predict. decisions.md, 41.
+  // None is required. It used to be one - the message's dot and its gutter were moved to the
+  // right when the message was decided - and that was a thing moved by hand, not a direction
+  // the browser draws when it is told. Given only the tag, nothing moves this edge at all.
+  // decisions.md, 49.
   const measure = async (fix) => {
     const { page, close } = await real.open(real.conversation(real.answer()) + real.working(), { fix });
     try {
@@ -94,7 +94,7 @@ test("the edge the reader's eye returns to is moved exactly once", { skip }, asy
   const untouched = await measure(false);
   const fixed = await measure(true);
   assert.equal(untouched, 0, "the panel does not move this edge by itself");
-  assert.equal(fixed, 1, "and the fix may move it once, when the message's dot goes with it");
+  assert.equal(fixed, 0, "and neither does the fix: the tag moves no edge anybody reads from");
 });
 
 test("a sent message on the real stylesheet takes one direction, and nothing is built", { skip }, async () => {
@@ -180,28 +180,22 @@ test("an Urdu answer differs by direction, and by nothing that is not direction"
   const { differing, rewritten } = await bothWays(URDU_ANSWER);
   assert.deepEqual(rewritten, [], "no text is ever rewritten");
 
-  // direction and unicode-bidi ARE the fix. The padding is the message's own dot moving to
-  // the side that message reads from - the same fix, applied to the one thing beside the
-  // text that belongs to it: the row's 30px gutter goes from its left to its right.
+  // direction and unicode-bidi ARE the tag. The two paddings are a list's room for its
+  // bullets and numbers, and the margin is an Urdu table going to the edge its reader starts
+  // from - and the browser moves all three by itself the moment it is told the direction, with
+  // no rule of ours about any of them. The test below says what each must look like; this one
+  // says nothing ELSE moved.
   //
-  // This list used to have six more in it - width, inline-size, perspective-origin and
-  // transform-origin among them - because the gutter was reserved on BOTH sides of EVERY
-  // row so that all rows kept one column. That took 30px off the English answers in the
-  // same conversation, which is not a direction by any reading. It is only flipped now, on
-  // the row whose own message turned, and no row loses anything. decisions.md, 41.
-  //
-  // The same two paddings are also a list's room for its bullets and numbers, which goes to
-  // the side the list reads from - and the margin is an Urdu table going to the edge its
-  // reader starts from. Both are the thing, not a property that happens to be allowed:
-  // a marker belongs to its item, and where a table begins belongs to the table. The test
-  // below says what each of them must look like; this one says nothing ELSE moved.
+  // The paddings used to be allowed for a second reason: the message's dot and its 30px gutter
+  // were moved to the right by hand. That was a wish, not the work - told the direction, the
+  // browser leaves a dot drawn at `left: 9px` exactly where it is - and it is gone. Section 49.
   const allowed = ["direction", "unicode-bidi",
-                   "padding-left", "padding-inline-start",     // the gutter it leaves
-                   "padding-right", "padding-inline-end",      // the one it moves to
+                   "padding-left", "padding-inline-start",     // a list's room for its markers,
+                   "padding-right", "padding-inline-end",      // moved by the browser when told
                    "margin-left", "margin-inline-end"];        // a table, to its reader's edge
   const unexpected = differing.filter((p) => !allowed.includes(p));
   assert.deepEqual(unexpected, [],
-    `these are neither the direction nor the message's own dot: ${unexpected.join(", ")}`);
+    `these are not what the browser does when it is told a direction: ${unexpected.join(", ")}`);
   assert.ok(differing.includes("direction"), "and it must actually set a direction");
   // the one that caught a real restyle: <th> is centred by the BROWSER, not by the host,
   // and text-align:start was quietly un-centring every header in an Urdu table
@@ -285,17 +279,16 @@ test("an Urdu list keeps its bullets and numbers, and an Urdu table its column o
   } finally { await close(); }
 });
 
-test("the dot goes with its message, and the English rows beside it keep every pixel", { skip }, async () => {
-  // The dot is Claude Code's, drawn by its own ::before in a 30px gutter on the left of
-  // every row. A message that reads from the right belongs beside a dot on the right: the
-  // dot is part of that message, and turning the message turns it too. It is the same fix
-  // as the text, applied to the one thing beside the text that belongs to it.
+test("the dot stays exactly where Claude Code draws it, on every row, in every language", { skip }, async () => {
+  // The dot is not text. It is drawn by the row's own ::before at `left: 9px` in a gutter
+  // reserved by `padding-left: 30px` - physical sides, which the browser does not turn when it
+  // is told a direction - and its connector joins one row to the next, and its colour reports
+  // what a tool did. Given only the tag, the browser leaves it where it is, and so does this.
   //
-  // What is asserted with it is the half that was wrong until 0.5.5. The gutter used to be
-  // reserved on both sides of every row, so that all rows kept one column - and that took
-  // 30px off every English answer in the same conversation. An English answer must be
-  // exactly where it was, to the pixel, and exactly as wide, whatever language anybody else
-  // wrote in. decisions.md, 41.
+  // Until 0.5.9 it was moved to the right on a row whose message read right to left, by reading
+  // the panel's pixels at runtime and writing them back on the other side. That was a wish
+  // forced by hand, not the work, and on a row whose lines were ragged - a narration summary -
+  // it left a gap beside the dot that changed from one line to the next. decisions.md, 49.
   const c = real.cls;
   const md = (html) => `<div class="${c.message} ${c.timelineMessage}"><div class="${c.root}">${html}</div></div>`;
   const html = real.conversation(
@@ -309,10 +302,11 @@ test("the dot goes with its message, and the English rows beside it keep every p
       await page.waitForTimeout(700);
       return await page.evaluate(() => [...document.querySelectorAll('[class*="timelineMessage_"]')].map((el) => {
         const box = el.getBoundingClientRect(), p = el.querySelector("p").getBoundingClientRect();
-        const d = getComputedStyle(el, "::before");
+        const d = getComputedStyle(el, "::before"), a = getComputedStyle(el, "::after");
         return {
-          dotX: Math.round(d.left === "auto" ? box.right - parseFloat(d.right) : box.left + parseFloat(d.left)),
-          textL: Math.round(p.left), textR: Math.round(p.right), textW: Math.round(p.width)
+          dot: [d.left, d.right, d.top].join(" "), line: [a.left, a.right].join(" "),
+          padding: [getComputedStyle(el).paddingLeft, getComputedStyle(el).paddingRight].join(" "),
+          box: [p.left, p.right, p.width].map(Math.round)
         };
       }));
     } finally { await close(); }
@@ -320,19 +314,14 @@ test("the dot goes with its message, and the English rows beside it keep every p
 
   const off = await look(false), on = await look(true);
   assert.equal(on.length, 3);
-
-  // the Urdu row: its dot crosses the panel, and its text keeps every pixel of its width
-  assert.ok(on[1].dotX > on[0].dotX + 200,
-    `the Urdu message's dot stayed on the left, at ${on[1].dotX}`);
-  assert.equal(on[1].textW, off[1].textW, "and its text must lose no width to the move");
-  assert.ok(on[1].textR > off[1].textR - 40 && on[1].textR < off[1].textR,
-    "its text should now end where the gutter it gave up used to be");
-
-  // and the English rows, before it and after it: untouched, to the pixel
-  for (const i of [0, 2]) {
-    assert.deepEqual(on[i], off[i],
-      "an English answer moved because somebody else's message was in Urdu");
-  }
+  assert.deepEqual(on, off, "a row's dot, its connector, its gutter or its text box moved - and none of them is text");
+  // and the Urdu row really was turned, so this is not a page on which nothing happened
+  const turned = await (async () => {
+    const { page, close } = await real.open(html, { fix: true });
+    try { await page.waitForTimeout(700); return await page.$$eval('[data-bidi="rtl"]', (n) => n.length); }
+    finally { await close(); }
+  })();
+  assert.ok(turned > 0, "nothing was turned - the fix, or this test, is not running");
 });
 
 /* ------------------------------------------------------------------------- *

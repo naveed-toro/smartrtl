@@ -171,11 +171,11 @@ test("when it is over, going back up finds every line as it was read", async () 
 });
 
 test("the first Urdu answer in a conversation does not shove what is above it", async () => {
-  // A message that turns out to be right to left flips its OWN row's gutter, so that its
-  // dot sits on the side it reads from - see mirrorTimeline in the payload. Until 0.5.5
-  // the gutter was reserved on both sides of every row instead, to keep all the columns
-  // identical, and that took 30px off every English answer in the conversation. It does
-  // not any more, so the answer above is not merely un-shoved: it is untouched.
+  // A message that turns out to be right to left is given its direction and nothing else. No
+  // row's gutter moves - not its own, and not anybody else's - so the answer above is not
+  // merely un-shoved: it is untouched. Until 0.5.5 a gutter was reserved on every row, and
+  // until 0.5.9 the Urdu row's own dot and gutter were moved to the right by hand; both were
+  // wishes rather than the work, and both are gone. decisions.md, 41 and 49.
   const { page, close } = await open(`
 <div class="messagesContainer_x" id="scroller" style="height:320px">
   <div class="turn_x">

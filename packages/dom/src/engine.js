@@ -1583,15 +1583,61 @@
 
       if (BOX_HINT) {
         var byHint = el.closest(BOX_HINT);
-        if (inside(byHint) && usable(byHint)) return byHint;
+        if (inside(byHint) && usable(byHint)) return hearerOf(byHint, inside, ceiling);
       }
       var x = el.parentElement, hops = 0;
       while (x && hops < 5 && x !== document.body && x !== document.documentElement) {
-        if (inside(x) && x.querySelectorAll(BLOCKS).length >= 2 && usable(x)) return x;
+        if (inside(x) && x.querySelectorAll(BLOCKS).length >= 2 && usable(x)) return hearerOf(x, inside, ceiling);
         x = x.parentElement; hops++;
       }
       var p = el.parentElement;
-      return inside(p) && usable(p) ? p : null;
+      return inside(p) && usable(p) ? hearerOf(p, inside, ceiling) : null;
+    }
+
+    /**
+     * The element that can hear the tag - which is not always the box the text was found in.
+     *
+     * A direction decides two things about a piece of text, and the browser asks two different
+     * elements about them:
+     *
+     *   its LINES      laid out in a block. Given to an inline element, the direction reaches
+     *                  the words and never the lines they sit on - the words read right to left
+     *                  and every line still starts at the left edge.
+     *   its PLACE      a box that shrinks to fit inside a flex or grid container is put at the
+     *                  container's start, and which edge that is follows the CONTAINER's
+     *                  direction, not the box's own.
+     *
+     * So the tag is handed up, from an inline box to the block that lays out its lines, and from
+     * a box a flex or grid container places to that container - and never past the edge of the
+     * message the adapter named. It is not a second decision and not a rule of ours: it is the
+     * same one fact, given to the element that decides what the fact is about. Placement is only
+     * followed where the adapter HAS named a message, because without that edge a flex container
+     * might be a whole conversation.
+     *
+     * Found on 2.1.273, in Claude Code's narration summary - the "· summarized" row. Its markdown
+     * root is drawn inline inside a div, the div shrinks to fit inside the message's flex row,
+     * and its last paragraph is made inline too. Told at the root: the words read right to left,
+     * every line started at the left edge, and a short summary sat on the left of its row. Told
+     * at the message, as Claude Code would tell it: lines from the right, and the row's right.
+     * In an ordinary answer the message is where it lands as well, and nothing drawn changes.
+     *
+     * Asked of the page's own layout rather than of a tag name - a SPAN is a block in an ordinary
+     * answer and inline in a narration summary - and once per message, never per mutation.
+     */
+    function hearerOf(box, inside, ceiling) {
+      var x = box;
+      try {
+        for (var hops = 0; x && hops < 6; hops++) {
+          var up = x.parentElement;
+          if (!up || !inside(up) || !usable(up)) break;
+          var shown = getComputedStyle(x).display;
+          var linesAbove = shown === "inline" || shown === "contents";
+          var placedAbove = !!ceiling && /flex|grid/.test(getComputedStyle(up).display);
+          if (!linesAbove && !placedAbove) break;
+          x = up;
+        }
+      } catch (e) {}
+      return x;
     }
 
     /** Laid out one pixel square: the shape of text that is there only for a screen reader. */

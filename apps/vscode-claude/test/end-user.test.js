@@ -174,7 +174,7 @@ test("the escape hatch puts the page back exactly as it found it", async () => {
       text: el.textContent,
       height: Math.round(el.getBoundingClientRect().height),
       ours: document.querySelectorAll(
-        "[data-bidi],[data-bidi-row],[data-bidi-sent],[data-bidi-input],[data-bidi-layer]," +
+        "[data-bidi],[data-bidi-sent],[data-bidi-input],[data-bidi-layer]," +
         "#smart-rtl-direction,#smart-rtl-timeline,#smart-rtl-composer,#smart-rtl-sent").length
     };
   };

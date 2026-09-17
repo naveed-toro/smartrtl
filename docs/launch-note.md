@@ -55,7 +55,8 @@ without complaint: **the same experience, in either direction.**
 - **your own sent messages** — one direction for the whole message, from what it says:
   any Urdu in it and it reads right to left
 - **the box you type in** — one direction, live, from any RTL letter in it
-- **the timeline dot** — moves to the side its own message reads from
+- **nothing moved by hand** — every change is the direction tag and what the browser does with
+  it by itself. The timeline dot stays where Claude Code draws it
 
 Never changes a character of anybody's text. A block with no RTL in it is left exactly
 as Claude Code rendered it, down to the pixel — measured, both ways, on their own
@@ -198,7 +199,7 @@ worth stating:
   take it says so, instead of saying "on"
 
 The reasoning, and every formula and fix that was tried and rejected first, is in
-[decisions.md](decisions.md) — forty-eight sections, including the wrong turns, the two
+[decisions.md](decisions.md) — forty-nine sections, including the wrong turns, the two
 crashes, the measurements that came out the other way from what was expected, and the
 limits that were accepted in the end.
 

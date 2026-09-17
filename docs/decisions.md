@@ -10,7 +10,7 @@ search for, in several languages.
 
 ## What is in here
 
-Forty-eight sections, in the order they were written, which is the order the faults were
+Forty-nine sections, in the order they were written, which is the order the faults were
 found. The ones worth reading first are marked.
 
  1. [The root cause](#1-the-root-cause)
@@ -61,6 +61,7 @@ found. The ones worth reading first are marked.
 46. [The mirror, with nobody's judgement left in it](#46-the-mirror-with-nobodys-judgement-left-in-it) ←
 47. [We tell. We do not build. — and what that found in the box you type into](#47-we-tell-we-do-not-build--and-what-that-found-in-the-box-you-type-into) ←
 48. [The same fault in the message you sent, and the last hand-written reference retired](#48-the-same-fault-in-the-message-you-sent-and-the-last-hand-written-reference-retired) ←
+49. [Only the tag. The dot goes back where Claude Code draws it](#49-only-the-tag-the-dot-goes-back-where-claude-code-draws-it) ←
 
 ← 6 and 7 are the rule and the design it forced. 13 is what the first live run found.
 25 and 27 are the composer crash and the decision to stop; 28 is what that would have
@@ -3791,7 +3792,7 @@ Three smaller things went with it, each its own small fault:
   nothing to report, and a lamp that answers about something it never looked at is the thing
   the fuse box in section 38 exists to prevent.
 
-Held by `test/timeline-survival.test.js`, in `npm run review`: Claude Code's own bundle and
+Held by the timeline-survival suite, in `npm run review` until 0.5.9: Claude Code's own bundle and
 stylesheet with the class renamed, then with the test id renamed as well, then with the dot
 taken away altogether - and in each case the three distances of section 41 measured on both
 sides, 9 / 14 / 30, an Urdu row against an English one in the same conversation.
@@ -4188,3 +4189,115 @@ now claims about how it looks:
 | 2, the message you sent | what the browser draws when told |
 | 3, an answer arriving | what a reader goes through - no line ever drawn from the wrong side, at five rhythms |
 | 4, an answer that has arrived | what the browser draws when told, 96 elements, no allow-list |
+
+## 49. Only the tag. The dot goes back where Claude Code draws it
+
+> Reverses section 41 on the dot, and the three roads section 45 built to it. Written the day
+> the owner said what this repository is for.
+
+### What this repository is for
+
+The web has no correct rule for which text is right-to-left. It has one guess - the first strong
+character - and it is wrong for every line that opens with `npm` and turns Urdu. The formula
+here supplies the missing fact. After the history is fully studied, the owner means to publish
+it as a paper and propose it to the W3C, so that the fault ends everywhere at once, including in
+mobile apps where no extension can reach. Everything in this repository is built on the formula
+so that when the formula changes, every surface changes with it.
+
+That makes this repository **evidence**. Its claim is that a correct tag, by itself, is enough.
+So anything it moves by hand - anything the browser would not have done on being told - is
+evidence against its own claim.
+
+### Work, and wishes
+
+- **Work** is what the browser does by itself once it is given the correct tag.
+- **A wish** is anything forced by hand because it would look better.
+
+At this stage there is only work. If a wish is ever carried out later, it is written beside it,
+plainly, that it is a wish forced by hand.
+
+### The test, which is a measurement and not an opinion
+
+**Tell the browser only the tag. Whatever then moves by itself is the text's. Whatever does not,
+is not ours to move.**
+
+| told only the direction | moves by itself? | so |
+|---|---|---|
+| a list's bullets and numbers | yes | the text's |
+| a table's column order | yes | the text's |
+| a quote's bar | yes | the text's |
+| **a message's timeline dot** | **no** | **not ours** |
+
+The dot is drawn by the row's own `::before` at `left: 9px` in a gutter reserved by
+`padding-left: 30px` - physical sides, which a direction does not turn. Its `::after` connector
+joins it to the next row, and whether that line is drawn at all depends on the rows beside it.
+Its colour reports what a tool did. It is a timeline and a status light.
+
+Moving it took reading the panel's pixels at runtime, writing padding and positions back on the
+other side, three roads to find the row and a counter for rows drawn another way. That is
+building, and section 47 already said we do not build.
+
+### What the owner saw, and what it turned out to be
+
+On 0.5.8 in the real panel, an Urdu row sometimes sat a normal distance from its dot and
+sometimes much further away. Measured line by line on 2.1.273, the row that showed it was a
+**narration summary** - the `· summarized` row - and it was two faults stacked on each other:
+
+| a narration summary | its lines start from | its dot |
+|---|---|---|
+| Claude Code untouched | the LEFT | left |
+| **told only the tag** | **the right** | **left** |
+| 0.5.8 | the LEFT, ragged on the right | right |
+| **0.5.9** | **the right** | **left** |
+
+1. **The tag never reached the lines.** Claude Code draws a narration summary's markdown root
+   *inline* inside a div, and the div shrinks to fit inside the message's flex row. A direction
+   given to an inline element reaches the words and never the lines they sit on, and where a
+   shrink-to-fit box sits in a flex row is decided by the row's direction, not the box's. So the
+   words read right to left, every line still began at the left edge, and a short summary sat on
+   the left of its row - exactly as untouched Claude Code draws it.
+2. **The dot had been moved to the right, beside that ragged edge.** How far each line ended
+   from it depended on where the words happened to break: 1px on one line, 182px on the next.
+
+### What changed
+
+- **The dot is left exactly where Claude Code draws it.** Every line of the code that moved it
+  is gone, and so are the timeline-survival suite and the dot's assumptions in `claude-shape` and
+  `history`. `rendering`, `real-webview` and `the-mirror` now hold that it does not move.
+- **The tag is given to the element that can hear it.** A direction decides two things - where a
+  text's lines start, and where its box is placed - and the browser asks two different elements.
+  So the tag is handed up from an inline box to the block that lays out its lines, and from a box
+  a flex or grid container places to that container, and never past the edge of the message.
+  In Claude Code that is the message row, which is where the reference gives it too. Asked of
+  the page's layout, not of a tag name: a `SPAN` is a block in an ordinary answer and inline in a
+  narration summary.
+
+### And three places where the tag alone changes the text
+
+The-mirror compared boxes. Two boxes can be identical to the pixel with the text inside one of
+them in a different order, so it now reads every block's characters in the order the eye meets
+them. Told only that a message is right to left, the browser **re-orders** three things:
+
+```
+a code block                    the ; ending a line moves to its front, `if` splits
+250–400ms in an Urdu list       reads 400ms–250
+an English paragraph            its full stop moves
+```
+
+Those keep their own order, and that is not a departure from the tag: **nobody's text is ever
+changed**, and that outranks everything. It is why an English item in an Urdu list keeps
+`unicode-bidi: plaintext` and is placed with `text-align: right` - with plaintext, `start` follows
+the item's own first letter and would put it back on the left, a line away from its bullet, where
+the tag alone places it on the right. `start` was tried, and measured, and put it on the left.
+
+**This belongs in the paper.** A tag that is simply "this message is right to left" corrupts
+numbers, code and English sentences inside it. The proposal has to keep such runs in their own
+order - which is a finding, measured, not a preference.
+
+### Held
+
+`test/the-mirror.test.js`, in the review and in the daily watch, on 2.1.273: 113 elements at
+700px and at 420px - 81 exactly what the browser draws when told, 26 untouched, 2 code, and 4 rows
+whose gutter, dot and connector are exactly where Claude Code put them - with every block's
+character order compared too, and the re-ordering asserted, so that the day a browser
+stops making them, the rules that prevent them say so.

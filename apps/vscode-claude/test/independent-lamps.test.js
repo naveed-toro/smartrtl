@@ -331,7 +331,7 @@ test("and a build that has fixed all three leaves nothing of ours on the page at
     assert.match(s.sentMessages, /^not needed/);
     assert.match(s.direction, /^not needed/, "the answers' part: " + s.direction);
     assert.equal(await page.evaluate(() => document.querySelectorAll(
-      "[data-bidi],[data-bidi-sent],[data-bidi-input],[data-bidi-layer],[data-bidi-row]").length), 0,
+      "[data-bidi],[data-bidi-sent],[data-bidi-input],[data-bidi-layer]").length), 0,
       "something of ours is still on a page that needs none of it");
     assert.deepEqual(errors, []);
   } finally { await close(); }

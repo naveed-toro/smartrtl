@@ -1,4 +1,4 @@
-# The fifty-four builds, and what each one actually contained
+# The fifty-six builds, and what each one actually contained
 
 Compiled by opening every `.vsix` and reading what is inside it, not from memory. The
 second table was rebuilt the same way after the fact, which is why some of its rows say
@@ -1010,6 +1010,31 @@ of once it is taller than **half** the panel, not only once it is taller than al
 Payload: 135,021 bytes - 21,591 more than 0.5.2, for the long-message fix
 becoming a part of its own, a second way into the same trap, and the reasons written beside
 both.
+
+### 0.5.9 — only the tag
+
+What this repository is for was said plainly: it is the evidence for a proposed web standard, so
+nothing in it may be moved by hand. Measured against that, one thing was a wish rather than the
+work, and one place never received the tag at all. decisions.md, 49.
+
+- [x] **the timeline dot is left exactly where Claude Code draws it** — told only the direction,
+      the browser does not move it; it is a timeline and a status light, not text. Moving it was
+      a wish forced by hand, and every line that did it is gone **(lab, 2.1.273)**
+- [x] **a narration summary now reads from the right** — its markdown root is drawn inline and
+      shrinks to fit in the message's flex row, so the tag given to it reached the words and never
+      the lines, and a short one sat on the left. The tag is now given to the element that decides
+      where the lines start and where the box sits - the message **(lab, 2.1.273)**
+- [x] **the big, changing gap between a dot and an Urdu row is gone** — it was those two together:
+      a dot moved to the right, beside the ragged edge of lines that still started at the left
+      **(lab, 2.1.273; seen by the owner in the real panel on 0.5.8)**
+- [x] **the-mirror reads character order, not only boxes** — two boxes can match to the pixel with
+      the text inside one of them re-ordered. Told only the tag, the browser re-orders
+      `250–400ms` in an Urdu list to `400ms–250`, an English paragraph's full stop, and code; those
+      keep their order, and the re-ordering is asserted so the rules that prevent it can say when
+      they stop being needed **(lab)**
+- [x] **and Claude Code updated underneath, 2.1.270 to 2.1.273, and the fix went back in by
+      itself** **(the owner's own machine)**
+- [ ] installed and read in the real panel **(unseen)**
 
 ### 0.5.8 — the dot gets its other roads, and the other two places get the mirror
 

@@ -9,7 +9,7 @@
  *
  * What is in this file
  *   Only the parts that are true of Claude Code and of nothing else: its class names,
- *   its timeline dot, its collapse button, its pinned row. The deciding and the watching live in
+ *   its collapse button, its pinned row. The deciding and the watching live in
  *   @smartrtl/dom, and the rule itself in @smartrtl/core, so the browser extension and
  *   the desktop patch answer the same question the same way. The build step inlines
  *   both, because this file is appended to someone else's bundle and cannot import.
@@ -73,175 +73,12 @@
     var IN_BOX = '[class*="messageInputContainer_"]';
     var IN_TXT = '[class*="messageInput_"]';
     var IN_MIR = '[class*="mentionMirror_"]';
-    /* An answer's own row - the element that draws that message's dot - by name, and by the
-       test id every answer has carried since 2.1.59, which no restyle renames. The two are
-       the same element in every build from 2.1.59 to 2.1.270.
-
-       Deliberately NOT data-transcript-message, which would have been the obvious third
-       name: a SENT message carries it too, and a sent message has no dot. Moving a gutter
-       on a row that never had one is a layout change of ours, not a direction. */
-    var ROW_BY_NAME = '[class*="timelineMessage_"]';
-    var ROW_SEL = ROW_BY_NAME + ',[data-testid="assistant-message"]';
-    var ROW_MARK = '[data-bidi-row="rtl"]';   // ours, and the only name the rules below use
-    var PX = /^(\d+(?:\.\d+)?)px$/;
-
     /* Each of these can be turned off on its own without touching anything else. */
     var STICKY = '[class*="stickyHeader_"]';
     var BTN_ROW = '[class*="buttonContainer_"]';
 
-    var MIRROR_TIMELINE = true;   // put a message's dot on the side it reads from
     var MIRROR_INPUT = true;      // flip the box you type in
     var UNPIN_EXPANDED = true;    // let an expanded message scroll like ordinary content
-
-    /* ------------------------------------------------------------------
-       A message's own dot, on the side that message reads from.
-
-       Claude Code draws a dot and a connector in a 30px gutter to the LEFT of every
-       message. For a message that reads right to left, that dot belongs on the right:
-       it is part of the message, and turning a message round turns its dot round. It
-       is a direction, not a decoration, and the whole stylesheet was searched to
-       confirm nothing else lives in that gutter - no buttons, no icons.
-
-       HOW IT IS RESERVED, WHICH IS WHERE THIS WENT WRONG ONCE
-
-       Moving the dot means moving the gutter it sits in. Until 0.5.5 the gutter was
-       reserved on BOTH sides of EVERY row the moment any message turned - so that the
-       text columns of every row stayed identical to each other. Measured on 2.1.269,
-       in a conversation with one Urdu message in it, that cost the ENGLISH answers in
-       the same conversation 30px of width each. Keeping columns identical is a layout
-       decision and it was never ours to take; taking 30px from somebody's English
-       answer because of somebody else's Urdu one is not a direction by any reading.
-
-       So the gutter is flipped only on the row whose own message reads right to left,
-       and only from one side to the other. Measured, the same conversation:
-
-         english   text 50 -> 880, 830 wide, dot at 29    exactly as Claude Code drew it
-         urdu      text 20 -> 850, 830 wide, dot at 864   the mirror image of it
-
-       Nobody loses anything, each row keeps its full width, and each reader's eye
-       returns to the edge their own language starts from. What is given up is that an
-       English row and an Urdu row no longer share one column - which is what a mirror
-       is. decisions.md, 8 and 41.
-
-       The three offsets are read from the page at runtime rather than copied, so a
-       restyle upstream cannot leave them stale. If the gutter or the dot in it is not a
-       plain pixel number, nothing is done at all - moving a gutter without moving the dot
-       in it would be worse than leaving both alone. The connector is the one part that is
-       optional: Claude Code draws none on a message that stands alone in its turn, so a
-       row whose ::after has no place of its own gets the dot mirrored and no more.
-
-       And the rules sit in a cascade layer declared ahead of all of the page's, every
-       declaration !important, the same as every other part of this file. They name
-       nothing of Claude Code's: the only selector in them is our own attribute, so a
-       restyle cannot make the STYLESHEET stale either, only the search that finds a row.
-
-       WHICH IS FOUND THREE WAYS, AND WAS FOUND ONE WAY UNTIL 0.5.8
-
-       Everything else in this file has two roads or more, because a name hashed per build
-       is a name that will one day be a different name. This had one - the row's class -
-       and losing it would have taken the dot off the side its message reads from while
-       every word of that message turned: the one state where this project looks like a
-       thing somebody bolted on. Now: the class; the test id an answer has carried since
-       2.1.59, on the same element; and, with both gone, what a row IS - the nearest
-       ancestor that reserves a gutter and draws something absolutely positioned inside
-       it. The last needs no name at all, and is what rowByShape asks.
-
-       MEASURED FROM THE ROW IT IS ABOUT TO TURN, not from whatever row was first on the
-       page. Same element, same numbers, and it cannot be handed the wrong row's gutter.
-
-       AND NEVER GIVEN UP ON AFTER ONE ANSWER. Reading a gutter that is not there yet
-       looks exactly like reading a build that has no gutter, and this used to latch on
-       the first reading either way - one early answer and the dot never moved again for
-       the life of that panel. It asks up to a dozen rows before it settles.
-    ------------------------------------------------------------------ */
-    var timelineDone = false, timelineSheet = null, timelineTries = 0, gutter = "", unlike = 0;
-
-    /**
-     * The row a decided block belongs to: by name, by test id, and - with both gone - by
-     * what a row is. Null for anything that has no row of its own, a sent message included.
-     * @param {Element} el
-     * @returns {Element|null}
-     */
-    function theRow(el) {
-      try {
-        var named = el.closest(ROW_SEL);
-        if (named) return named;
-      } catch (e) {}
-      return rowByShape(el);
-    }
-
-    /**
-     * A row, by what it is and by no name: the nearest ancestor that reserves a gutter down
-     * one side and draws something absolutely positioned INSIDE that gutter. The "inside" is
-     * what makes it the row rather than any padded ancestor that happens to draw a corner
-     * ornament - a dot in a gutter is the one shape a timeline has.
-     *
-     * Only reached on a build where both names have gone, so it costs nothing today.
-     */
-    function rowByShape(el) {
-      try {
-        for (var x = el.parentElement, hops = 0; x && x !== document.body && hops < 12; x = x.parentElement, hops++) {
-          var pad = getComputedStyle(x).paddingLeft;
-          if (!PX.test(pad) || parseFloat(pad) <= 0) continue;
-          var dot = getComputedStyle(x, '::before');
-          if (dot.content === 'none' || dot.position !== 'absolute') continue;
-          if (!PX.test(dot.left) || !PX.test(dot.width)) continue;
-          if (parseFloat(dot.left) + parseFloat(dot.width) <= parseFloat(pad)) return x;
-        }
-      } catch (e) {}
-      return null;
-    }
-
-    /** @param {Element} row  a row nothing of ours is on yet */
-    function mirrorTimeline(row) {
-      if (!MIRROR_TIMELINE || timelineDone) return;
-      try {
-        var pad  = getComputedStyle(row).paddingLeft;
-        var dot  = getComputedStyle(row, '::before').left;
-        var line = getComputedStyle(row, '::after').left;
-        if (!PX.test(pad) || parseFloat(pad) <= 0 || !PX.test(dot)) { askAnotherRow(); return; }
-        timelineSheet = SmartRTLDom.layeredSheet('smart-rtl-timeline',
-          '@layer smartrtl-timeline{' +
-          ROW_MARK + '{padding-left:0!important;padding-right:' + pad + '!important}' +
-          ROW_MARK + '::before{left:auto!important;right:' + dot + '!important}' +
-          (PX.test(line) ? ROW_MARK + '::after{left:auto!important;right:' + line + '!important}' : '') +
-          '}', function () {});
-        gutter = pad;
-        timelineDone = true;
-      } catch (e) { askAnotherRow(); }
-    }
-
-    /** A reading that said nothing. Settled only once enough rows have said the same. */
-    function askAnotherRow() {
-      if (++timelineTries >= 12) timelineDone = true;
-    }
-
-    /** @param {Element} row */
-    function markRow(row) {
-      if (!MIRROR_TIMELINE || !timelineSheet || !row) return;
-      try {
-        if (row.hasAttribute('data-bidi-row')) return;
-        /* Turned round only while it is still drawn the way the row we measured was.
-           Nothing on this page is ever given a gutter it did not already have, and no row
-           is handed another row's numbers - "the dot is on the right" was never the claim;
-           the same distances on both sides is. A row drawn some other way is left exactly
-           as the page had it AND COUNTED: its text turns while its dot does not, which is
-           the one state this is all meant to avoid, so it must not read as "on". */
-        if (getComputedStyle(row).paddingLeft !== gutter) { unlike++; return; }
-        row.setAttribute('data-bidi-row', 'rtl');
-      } catch (e) {}
-    }
-
-    function undoTimeline() {
-      try { if (timelineSheet) timelineSheet.remove(); } catch (e) {}
-      timelineSheet = null;
-      var rows = document.querySelectorAll('[data-bidi-row]');
-      for (var k = 0; k < rows.length; k++) rows[k].removeAttribute('data-bidi-row');
-      timelineDone = false;
-      timelineTries = 0;
-      gutter = "";
-      unlike = 0;
-    }
 
     /* ------------------------------------------------------------------
        A user message that heads a turn is pinned:
@@ -1200,30 +1037,7 @@
         } : null,
         // one message ends here, by name - and since 2.1.268 by the attribute Claude Code
         // puts on every message in the transcript, which no restyle renames
-        boundary: '[class*="message_"],[data-transcript-message]',
-        onDecision: function (block) {
-          // A sent message has no dot of its own, so it has no row here and says nothing
-          // about this lamp - it used to answer for one, which is how a page of nothing
-          // but sent messages reported on a dot that was never drawn.
-          var row = null;
-          try { row = theRow(block); } catch (e) {}
-          if (!row) return;
-          lamp('timelineDot', function () {
-            mirrorTimeline(row);   // measure + install, once, from a row nothing of ours is on
-            if (!timelineSheet) return timelineDone ? null : "off - the row's dot has not been read yet";
-            /* And what the SHEET says, not merely that one was asked for. A page that
-               refuses every way of adding a stylesheet is handed a sheet that is not
-               there and answers questions about itself honestly - so the lamp above a
-               dot that never moved must not say "on". Every other circuit in this file
-               reports sheet.road(); this one used to report that it had a variable. */
-            var road = timelineSheet.road();
-            if (road.indexOf("off") === 0) return road;
-            markRow(row);       // this row's dot belongs on the side its message reads from
-            return unlike ? "not working - " + unlike + " row(s) are drawn with a different gutter " +
-                            "and were left alone rather than given this one's" : true;
-          });
-        },
-        onCleanup: undoTimeline
+        boundary: '[class*="message_"],[data-transcript-message]'
       });
       if (!running) {
         LAMPS.direction = "off - something is already running";
