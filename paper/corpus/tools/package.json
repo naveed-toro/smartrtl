@@ -1,0 +1,18 @@
+{
+  "name": "smartrtl-paper-corpus",
+  "private": true,
+  "description": "Turns machine-written answers into units for the paper's corpus. Not a package of the extension.",
+  "type": "module",
+  "scripts": {
+    "transcripts": "node transcripts.mjs",
+    "label": "node label/server.mjs",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "mdast-util-from-markdown": "2.0.3",
+    "micromark": "4.0.2",
+    "mdast-util-gfm": "3.1.0",
+    "micromark-extension-gfm": "3.0.0",
+    "hyparquet": "1.31.0"
+  }
+}

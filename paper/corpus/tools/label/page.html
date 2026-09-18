@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="ur" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>سمت کے لیبل</title>
+<style>
+  :root {
+    --bg: #faf9f6; --ink: #1d1d1b; --muted: #6b6a66; --line: #dcd9d2; --panel: #ffffff;
+    --accent: #1f5f8b; --chosen: #e3eef6; --warn: #8b3a1f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #1b1b1a; --ink: #ecebe7; --muted: #a09e98; --line: #3a3936; --panel: #242423;
+      --accent: #7db5dc; --chosen: #22384a; --warn: #e39a7b; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 17px/1.7 "Segoe UI", "Noto Naskh Arabic", "Noto Sans", system-ui, sans-serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 16px; }
+  header { display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: baseline; justify-content: space-between;
+    color: var(--muted); font-size: 14px; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
+  header b { color: var(--ink); }
+  .question { font-size: 19px; margin: 18px 0 10px; }
+  .drawing { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 6px 18px 10px;
+    margin: 10px 0; }
+  .drawing .name { font-size: 13px; color: var(--muted); direction: rtl; text-align: right; }
+  .drawing .text { font-size: 19px; line-height: 1.9; overflow-wrap: anywhere; }
+  .drawing .text :is(p, h1, h2, h3, h4, h5, h6, ul, ol) { margin: 4px 0; }
+  .drawing code { font-family: Consolas, "Cascadia Mono", monospace; font-size: 0.9em;
+    background: color-mix(in srgb, var(--line) 45%, transparent); padding: 0 4px; border-radius: 4px; }
+  .choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin: 16px 0; }
+  button { font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+    border-radius: 8px; padding: 8px 10px; cursor: pointer; text-align: right; }
+  button:hover { border-color: var(--accent); }
+  button.chosen { background: var(--chosen); border-color: var(--accent); }
+  button kbd { font: 13px Consolas, monospace; color: var(--muted); float: left; }
+  button small { display: block; color: var(--muted); font-size: 13px; line-height: 1.4; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .row button { text-align: center; }
+  pre.context { white-space: pre-wrap; unicode-bidi: plaintext; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 8px; padding: 12px; max-height: 50vh; overflow: auto; font-size: 15px; }
+  .note { color: var(--warn); }
+  .done { font-size: 20px; margin-top: 40px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <span>لیبل لگانے والا: <b id="by"></b></span>
+    <span><b id="count">0</b> / <span id="total">0</span> مکمل <span id="margin"></span></span>
+    <span id="sitting"></span>
+  </header>
+
+  <p id="status" class="note" hidden></p>
+
+  <section id="work" hidden>
+    <p class="question">ایک ہی عبارت دو طرح دکھائی گئی ہے۔ <b>لکھنے والے کی مراد کے مطابق کون سی درست پڑھی جاتی ہے؟</b></p>
+
+    <div class="drawing"><div class="name">دائیں سے بائیں</div><div class="text" id="rtl" dir="rtl"></div></div>
+    <div class="drawing"><div class="name">بائیں سے دائیں</div><div class="text" id="ltr" dir="ltr"></div></div>
+
+    <div class="choices" id="choices">
+      <button data-label="rtl"><kbd>1</kbd>دائیں سے بائیں<small>صرف اوپر والی درست ہے</small></button>
+      <button data-label="ltr"><kbd>2</kbd>بائیں سے دائیں<small>صرف نیچے والی درست ہے</small></button>
+      <button data-label="either"><kbd>3</kbd>دونوں درست<small>دونوں میں کوئی فرق نہیں پڑتا</small></button>
+      <button data-label="neither"><kbd>4</kbd>دونوں غلط<small>دونوں میں کچھ الٹ جاتا ہے</small></button>
+      <button data-label="unclear"><kbd>5</kbd>معلوم نہیں<small>صرف اس عبارت سے طے نہیں ہوتا</small></button>
+    </div>
+
+    <div class="row">
+      <button id="back">→ پچھلی <kbd>Backspace</kbd></button>
+      <button id="showContext">پورا جواب دیکھیں <kbd>C</kbd></button>
+    </div>
+    <pre class="context" id="context" hidden></pre>
+  </section>
+
+  <p class="done" id="done" hidden>سب عبارتوں پر لیبل لگ گئے۔ شکریہ!</p>
+</main>
+
+<script>
+(function () {
+  "use strict";
+  var by = new URLSearchParams(location.search).get("by") || "owner";
+  var sitting = new Date().toISOString();
+  var state, i = 0, shownAt = 0, contextOpened = false, busy = false;
+  var $ = function (id) { return document.getElementById(id); };
+
+  function api(p, body) {
+    var sep = p.indexOf("?") < 0 ? "?" : "&";
+    return fetch(p + sep + "by=" + encodeURIComponent(by), body ? {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body)
+    } : undefined).then(function (r) {
+      return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || r.status); return j; });
+    });
+  }
+
+  function margin(n, N) {
+    if (n < 30) return ""; // too few for the estimate to mean anything
+    if (n >= N) return "";
+    var m = 1.96 * Math.sqrt(0.25 / n) * Math.sqrt((N - n) / (N - 1)) * 100;
+    return "(غلطی کی گنجائش ±" + m.toFixed(1) + "٪)";
+  }
+
+  function paintHeader() {
+    var done = state.labels.filter(Boolean).length;
+    $("by").textContent = by;
+    $("count").textContent = done;
+    $("total").textContent = state.total;
+    $("margin").textContent = margin(done, state.total);
+    var minutes = Math.floor((Date.now() - Date.parse(sitting)) / 60000);
+    $("sitting").textContent = "اس نشست کو " + minutes + " منٹ" + (minutes >= 45 ? " — وقفہ لے لیں" : "");
+  }
+
+  function firstOpen(from) {
+    for (var k = from; k < state.total; k++) if (!state.labels[k]) return k;
+    for (k = 0; k < from; k++) if (!state.labels[k]) return k;
+    return -1;
+  }
+
+  function show(k) {
+    if (k < 0) { $("work").hidden = true; $("done").hidden = false; paintHeader(); return; }
+    return api("/api/unit?i=" + k).then(function (u) {
+      i = k;
+      $("rtl").innerHTML = u.html;
+      $("ltr").innerHTML = u.html;
+      $("rtl").dataset.textId = u.textId;
+      $("context").hidden = true;
+      contextOpened = false;
+      var chosen = state.labels[k];
+      Array.prototype.forEach.call($("choices").children, function (b) {
+        b.classList.toggle("chosen", b.dataset.label === chosen);
+      });
+      $("work").hidden = false;
+      shownAt = performance.now();
+      paintHeader();
+      window.scrollTo(0, 0);
+    });
+  }
+
+  function choose(label) {
+    if (busy || state.frozen) return;
+    busy = true;
+    api("/api/label", { i: i, textId: $("rtl").dataset.textId, label: label,
+      ms: performance.now() - shownAt, context: contextOpened, sitting: sitting })
+      .then(function () { state.labels[i] = label; return show(firstOpen(i + 1)); })
+      .catch(function (e) { $("status").hidden = false; $("status").textContent = "محفوظ نہیں ہوا: " + e.message; })
+      .then(function () { busy = false; });
+  }
+
+  function openContext() {
+    api("/api/context?i=" + i).then(function (c) {
+      contextOpened = true;
+      $("context").innerHTML = c.markdown;
+      $("context").hidden = false;
+    });
+  }
+
+  $("choices").addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (b) choose(b.dataset.label);
+  });
+  $("back").addEventListener("click", function () { if (i > 0) show(i - 1); });
+  $("showContext").addEventListener("click", openContext);
+  document.addEventListener("keydown", function (e) {
+    if (e.ctrlKey || e.altKey || e.metaKey) return;
+    var keys = { "1": "rtl", "2": "ltr", "3": "either", "4": "neither", "5": "unclear" };
+    if (keys[e.key]) { e.preventDefault(); choose(keys[e.key]); }
+    else if (e.key === "Backspace") { e.preventDefault(); if (i > 0) show(i - 1); }
+    else if (e.key === "c" || e.key === "C") openContext();
+  });
+  setInterval(function () { if (state) paintHeader(); }, 30000);
+
+  api("/api/state").then(function (s) {
+    state = s;
+    if (s.frozen) { $("status").hidden = false; $("status").textContent = "لیبل منجمد ہو چکے ہیں۔ اب کوئی تبدیلی نہیں ہو سکتی۔"; }
+    if (s.tampered.length) { $("status").hidden = false; $("status").textContent = "خبردار: منجمد ہونے کے بعد یہ فائلیں بدلی گئیں: " + s.tampered.join(", "); }
+    return show(firstOpen(0));
+  }).catch(function (e) { $("status").hidden = false; $("status").textContent = "صفحہ نہیں کھل سکا: " + e.message; });
+})();
+</script>
+</body>
+</html>
