@@ -67,7 +67,7 @@ test("the counts the documents quote are the counts that are true", () => {
     "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen",
     "seventeen", "eighteen", "nineteen", "twenty"];
   const inWords = (n) => n <= 20 ? WORDS[n]
-    : ["twenty", "thirty", "forty", "fifty"][Math.floor(n / 10) - 2] +
+    : ["twenty", "thirty", "forty", "fifty", "sixty", "seventy"][Math.floor(n / 10) - 2] +
       (n % 10 ? "-" + WORDS[n % 10] : "");
   const counts = new Set();
   for (let n = 1; n <= 59; n++) counts.add(inWords(n));
@@ -128,34 +128,29 @@ test("what the documents promise the payload contains, it contains", () => {
   const promised = {
     "__bidiStatus": true,     // the app README tells people to run it
     "__bidiFixOff": true,     // so does every document here
-    "faultIsStillHere": true, // "needed is measured, not read"
     "readingPosition": true,  // closing gives back the reader's line
-    // the box you type in, as decisions.md section 35 describes it: a circuit of its own,
-    // its rules in a cascade layer ahead of the page's, and no other lamp inside it
-    "startComposer": true,
-    "@layer smartrtl-composer": true,
+    // from 0.7.0 the direction of text is the formula and nothing else (section 51): the rule,
+    // one layer of rules ahead of the page's, and the box kept apart from its drawn layer
+    "openingLetters": true,
+    "@layer smartrtl-direction": true,
     "besideAnEditor": true,
-    // and a sent message, as section 36 describes it: a circuit of its own, its rules in a
-    // layer of their own, and the answers' part never deciding from what nobody can see
-    "startSent": true,
-    "@layer smartrtl-sent": true,
-    "screenReaderOnly": true,
-    // and the message nobody can read past, as section 37 describes it: a circuit of its
-    // own, its rules in a layer of their own, a row it lets go of marked by an attribute of
-    // ours - and the question "is it needed" asked of every row, not once before any existed
+    // and the message nobody can read past, as section 37 describes it
     "startPinned": true,
     "@layer smartrtl-unpin": true,
     "data-bidi-unpin": true,
-    "headersAreStillPinned": false,
-    // the class 0.5.1 leaned on for "one message" of that kind, gone from Claude Code since
-    // 2.1.266 - named in a comment still, and in no selector
-    "[class*=\\\"contentWrapper_\\\"]": false,
-    // and the three the documents say are NOT there any more, each of which shipped once
+    // and what 0.7.0 took out, each of which acted on text beside the formula
+    "faultIsStillHere": false,
+    "startComposer": false,
+    "startSent": false,
+    // and the recorder, whose question was answered (section 52, 0.8.0)
+    "__bidiTurns": false,
+    "smartrtl.streaming-log": false,
+    "@layer smartrtl-composer": false,
+    "@layer smartrtl-sent": false,
+    // and what went earlier still
     "smart-rtl-input-line": false,
     "smart-rtl-mirror": false,
     "undoStack": false,
-    // and the sent-message copy, withdrawn in 0.5.0: it was the last thing here that
-    // built elements in somebody else's page, and in the real panel it never ran
     "smart-rtl-copy": false,
     "decidePerLine": false
   };
@@ -168,8 +163,7 @@ test("what the documents promise the payload contains, it contains", () => {
 test("the adapter keys the roadmap lists are the ones the engine reads", () => {
   const roadmap = read("docs/roadmap.md");
   const engine = read("packages/dom/src/engine.js");
-  for (const key of ["blocks", "boxSelector", "boundary", "sent", "skip", "composer",
-                     "extraCss", "onDecision", "onCleanup", "quietMs", "maxBox"]) {
+  for (const key of ["answers", "composer", "sent"]) {
     assert.ok(roadmap.includes("`" + key + "`"), "the roadmap does not list " + key);
     assert.ok(new RegExp("(cfg|config)\\." + key + "\\b").test(engine),
       "the roadmap lists " + key + " and the engine never reads it");

@@ -44,18 +44,13 @@ first line - `SmartRTLDom.start(SmartRTL, {...})`.
 
 | key | what it is |
 |---|---|
-| `blocks` | selector for the elements that carry text, if the default is wrong |
-| `boxSelector` | hint for "one message", tried first when scoping a decision |
-| `boundary` | the ceiling a decision may never climb past, so one message's answer cannot reach the message beside it |
-| `sent` | `{ text[], runs, not[] }` - messages somebody sent, each decided as one piece: the element holding a message's text by name (`text`), and every run the page hands to `dir="auto"` (`runs`), which names no class at all - but never inside `not`, the text that has a lamp of its own, such as an answer. A circuit of its own inside the engine, like the composer |
-| `skip` | blocks the answers' part must never decide from - text only a screen reader hears, or text that has a lamp of its own |
-| `composer` | `{ container, input[], mirror[] }` - the box the user types into. Each part is a list of roads: by name first, then by what the element is. It runs on a circuit of its own inside the engine - its own observers, stylesheet and status - so an adapter whose answers fail to start still gets its box |
-| `extraCss` | rules the adapter wants in the same stylesheet |
-| `onDecision` | `(block, box)` - run once, when a message is decided |
-| `onCleanup` | `()` - undo the adapter's own work when the escape hatch is pulled |
-| `quietMs`, `maxBox` | timing and scope limits, if this surface needs different ones |
+| `answers` | `{ within, blocks?, skip? }` - where the page's markdown is (`within`), which elements are its blocks (default `p,li,h1..h6,td,th`), and what is never decided (`skip`, such as a heading only a screen reader hears). Every block takes its own direction from the formula |
+| `composer` | `{ input[], mirror[] }` - the box the user types into, and the layer drawn over it; each a list of roads, by name first, then by what the element is. Both take the draft's direction |
+| `sent` | `{ runs, not? }` - the runs a sent message's text is handed to (`dir="auto"` in Claude Code), never inside `not`. Each takes its own text's direction |
 
-`start()` returns `{ stop, refresh, status }`. `status()` is not decoration: a fix that has
+From 0.7.0 that is all: the formula is applied and nothing else acts on text (decisions.md 51).
+
+`start()` returns `{ stop, status }`. `status()` is not decoration: a fix that has
 quietly stopped working looks exactly like one that is working, and an adapter is expected
 to surface it - the VS Code one puts it on `window.__bidiStatus()`.
 
@@ -195,7 +190,7 @@ today, and none of them is a finding about the fix.
    cause, every rejected attempt with its measurement, and a passing suite. And the most
    useful thing to hand them: their own bundle with the fix THEY would write, built as a page,
    and every element and every streamed frame of this fix compared with it
-   (`test/the-mirror.test.js`, decisions.md sections 46 to 48). And every part
+   (`the-mirror suite`, decisions.md sections 46 to 48). And every part
    of this fix already stands down by itself on the day they ship one. The best outcome of
    publishing is that publishing turns out not to be needed.
 

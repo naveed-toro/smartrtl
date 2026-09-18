@@ -40,7 +40,7 @@ if (!payload.includes(BEGIN) || !payload.includes(END)) {
 if (!payload.includes("SmartRTLDom.start(SmartRTL")) {
   throw new Error("payload does not hand the shared rule to the shared engine - did the rewiring get lost?");
 }
-if (!dom.includes("rule.containsRtlWord")) {
+if (!dom.includes("rule.openingLetters")) {
   throw new Error("the engine does not use the shared rule - did the rewiring get lost?");
 }
 

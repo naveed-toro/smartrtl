@@ -11,11 +11,11 @@ Code's own that has nothing to do with language.**
 
 | | |
 |---|---|
-| **Right to left** | Urdu, Arabic, Hebrew and Persian read the right way round: answers, your own messages, and the box you type in. A line that opens with `npm` and turns Urdu is no longer dragged left to right |
+| **Right to left** | Urdu, Arabic, Hebrew and Persian take the direction the formula gives them - answers while they stream and once finished, your own messages, and the box you type in. A line that opens with `npm` and turns Urdu is no longer dragged left to right |
 | **Long messages** | a message you have already sent can be opened, read and closed again. Today it cannot, and that costs an English-only user exactly as much - see below |
 
-Never changes a character of anybody's text, and a block with no RTL in it is left
-exactly as Claude Code rendered it, to the pixel.
+Never changes a character of anybody's text. From 0.7.0 the one thing it does to text is set
+its direction by one formula, and nothing else of its own acts on text.
 
 ## Why this one has to be asked, when other extensions do not
 
@@ -64,75 +64,40 @@ rule - and [`@smartrtl/dom`](https://github.com/naveed-toro/smartrtl/blob/main/p
 it - instead. What is left in this file is only what is true of Claude Code and of
 nothing else.
 
-## What the payload actually does
+## What the payload actually does (0.7.0)
 
-- **answers** - one decision per message, never revised, applied through a single CSS
-  rule so blocks written later are born correct
-- **your own messages** - these are not markdown. They render through a plainText path
-  as a bare `<span dir="auto">`, which is the first-strong-character rule this project
-  exists to replace, applied by the extension itself in the one place the engine could
-  not see. The body div is named as a block, and the engine tells any `dir="auto"`
-  inside a decided block to inherit that decision
-- **the timeline dot is left exactly where Claude Code draws it** - told only the direction,
-  the browser does not move it, so neither does this. It is a timeline and a status light,
-  not text. Until 0.5.9 it was moved to the right by hand; that was a wish, not the work
-- **the composer** - the box you type in is two stacked layers, an invisible
-  contenteditable over a visible mirror; one flag on the container they share turns both,
-  so the caret can never sit on one side while the glyph sits on the other. Nothing of
-  ours goes inside either layer: while you type, the one thing that happens is that flag
-  being set or cleared, with a mark on each layer that turns. It is a lamp on its own
-  circuit - its own observers and its own stylesheet - found five ways (by name, and by
-  `role=textbox`, its label, `aria-multiline` and `data-placeholder`, which is what the box
-  IS and has not changed once in ten months of Claude Code), and its rules sit in a cascade
-  layer ahead of all of Claude Code's, so no stylesheet of theirs can overrule them. Put to
-  seventeen builds, 2.0.50 to 2.1.268: all of them hold
-- **your own messages, as a whole** - a sent message takes one direction from what it
-  says. It is a lamp of its own, apart from answers: found by Claude Code's class name and
-  by the `dir="auto"` its text is handed to - either one is enough - turned on the text
-  alone, never on the row where the buttons are, and nothing is built inside it. Put to the
-  same seventeen builds: every one that gives a sent message a road turns it
+**1. The direction of text, by the formula alone.** One rule, `openingLetters` in
+[`@smartrtl/core`](https://github.com/naveed-toro/smartrtl/blob/main/packages/core):
 
-Each of those, and the formulas and fixes that were tried and rejected first, is written
-up in [docs/decisions.md](https://github.com/naveed-toro/smartrtl/blob/main/docs/decisions.md) - forty-nine sections, including
-three attempts at per-line direction in the composer that were built, shipped and then
-withdrawn, the measurements that ended each one, the limits that were finally accepted so
-that a Claude Code update is the least likely thing to break it, and the box you type in
-put to ten months of Claude Code and to the next update made on purpose.
+```
+first letter right-to-left                            -> right-to-left
+first letter left-to-right, an RTL letter within 45   -> right-to-left
+first letter left-to-right, none within 45            -> left-to-right
+```
 
-### What it gives up, before anybody finds out
+45 was measured on the answers of Claude and ChatGPT
+([docs/decisions.md](https://github.com/naveed-toro/smartrtl/blob/main/docs/decisions.md), section 50).
 
-**A message that mixes two languages takes one direction as a whole** - while it is
-typed, and once it is sent. The English line inside an Urdu message goes with it.
+- **an answer** - every paragraph, heading, list item and table cell takes its own direction
+  from its own text, the moment it arrives and on every change after. A list item is decided
+  by itself, so an English item in an Urdu list reads left to right, bullet included
+- **the box you type in** - both of its layers, the one holding the caret and the one drawn
+  over it, take the draft's direction after every keystroke
+- **a message you send** - takes its own text's direction
 
-Per-line direction needs an element per line, and the only place to put one is inside a
-layer React owns. Every way of doing that in the composer either crashed the panel, or
-re-decided lines already on the screen, or put every keystroke on the screen one
-keystroke late - measured at 18ms of work per character on an eighty-line draft, more
-than a whole frame. For a sent message it meant building a copy of the message beside
-Claude Code's own, and in the real panel that copy never once ran. Both are given up on
-purpose: what is left sets attributes and nothing else, which is the shape that survives
-an update.
+On exactly those elements Claude Code's own guess - `unicode-bidi: plaintext` and
+`dir="auto"`, the first strong character - is switched off from a cascade layer ahead of its
+stylesheet, so no second rule acts on the same text. Code blocks are never touched.
 
-### What it costs
+**Nothing else acts on text.** Until 0.6.0 there was more: one decision for a whole message,
+bullets kept on one side, numbers like `250–400ms` and code kept in order, and a check of
+whether Claude Code had fixed this itself. All of it was taken out in 0.7.0 on purpose, so
+that what a reader sees is the formula and only the formula - and whether a block visibly
+turns while it streams can be judged in daily use. Section 51.
 
-One rule above all the others here: **a person typing must not be able to tell this is
-installed.** Everywhere else a millisecond is worth arguing about; in the box you type into it
-is a verdict.
-
-| | |
-|---|---|
-| a keystroke | **0.18ms** - about one percent of a frame |
-| an answer arriving, word by word | the same wall clock, the same layout and the same style recalculation as an untouched panel |
-| every time the editor opens | **14ms** |
-| switching between files | nothing - it stopped reading the disk for that |
-| the block added to Claude Code's bundle | 154KB, against its 5.28MB |
-
-Measured in Claude Code's own running panel, with the fix injected and taken out again
-between blocks of keystrokes, hundreds a side, so that nothing about the machine can be
-mistaken for something about the fix. Three earlier instruments disagreed with each other
-before that one; what went wrong with each is in
-[docs/decisions.md](https://github.com/naveed-toro/smartrtl/blob/main/docs/decisions.md),
-section 40.
+What that costs a reader, knowingly: an Urdu list with an English item has bullets on both
+sides, and `250–400ms` inside an Urdu line can read `400ms–250` - both are what the browser
+does when it is told only a direction.
 
 ## The other fix: long messages you cannot close
 
@@ -181,129 +146,25 @@ npx playwright install chromium # once - the browser itself
 npm test
 ```
 
-The tests do not check that the code says the right things; they render the payload
-in a page that carries the extension's own two CSS rules, and measure what a reader
-would see. That is how the reversed `250-400ms` was caught, and how the jitter numbers
-in [docs/decisions.md](https://github.com/naveed-toro/smartrtl/blob/main/docs/decisions.md) were arrived at.
+- `only-the-formula.test.js` - Claude Code's own running app with the payload in it: an
+  answer streamed three characters at a time, and in every painted frame every block's
+  direction is exactly the formula's; the box after every keystroke; a sent message; nothing
+  of ours anywhere else; and nothing left after `__bidiFixOff()`
+- `pinned-message.test.js` and `expandable.test.js` - Claude Code's own long-message bug,
+  opened, read to "Show less" and closed, with every name renamed, and with a build that has
+  stopped pinning
+- the install, update and uninstall path - `patcher.test.js`, `patch-format.test.js`,
+  `find-target.test.js`, `reinstall.test.js`, `uninstall.test.js`, `status-bar.test.js`,
+  `status-truth.test.js`, `startup-cost.test.js`, `reachable-messages.test.js`
+- `docs.test.js` - every link, file name, count and promise in the documents, put back to
+  the thing it is about
 
-Every case is a line that came out of a real answer, and several are the exact lines
-that broke an earlier version.
-
-- `rendering.test.js` - direction per block, the safety rule, all four RTL languages,
-  the timeline dot staying where Claude Code draws it, and the composer's two layers staying
-  in step
-- `streaming.test.js` / `jitter.test.js` - sample every animation frame while an answer
-  arrives character by character, and hold the design to its promise: at most one change
-  per block, and never back and forth
-- `expandable.test.js` - the long-message fix, including the round trip: open a question
-  from partway down a long answer, close it, and land on the line you were reading
-- `host-owned-dom.test.js` - the rule a crash was paid for: nothing the host put in its
-  own DOM is moved, replaced or thrown away
-- `composer-survival.test.js` - the box you type in, put to the next update made on purpose:
-  Claude Code forcing its own direction, renaming every class, wrapping the box, adding a
-  layer, rebuilding it, failing around it. The box turns whole, or is given back whole
-- `sent-survival.test.js` - a message somebody sent, put to the next update the same way:
-  Claude Code forcing `plaintext` on it, renaming everything, drawing it differently - and
-  never a decision from it reaching the answer beside it
-- `pinned-message.test.js` - Claude Code's own long-message bug, in its own app: a real
-  answer streamed under a forty-line message, then opened, read to "Show less" and closed -
-  and the same for a message it takes for a command, with every name renamed, and with a
-  build that has stopped pinning
-- `history.test.js` - the box, a sent message and a long pinned message in every build of
-  Claude Code in a folder, booted, typed into and sent; `build/fetch-claude-builds.js` fetches
-  the builds
-- `independent-lamps.test.js` - one part failing switches off only itself, and if Claude
-  Code fixes something itself, the part that existed for it stands down
-- `real-webview.test.js` - every question above, put to Claude Code's own stylesheet with
-  its own class names read out of it at run time, so an update cannot leave a green suite
-  measuring a page nobody has
-- `real-bundle.test.js` - no copy at all: Claude Code's own webview bundle, running, with
-  the payload appended the way the patcher appends it, and the composer React renders
-  typed into - including how quickly, with the fix and without it
-- `claude-shape.test.js` - every assumption this fix makes about Claude Code, one line each,
-  so the day an update breaks something starts with which one
-
-Those three, plus `real-webview.test.js`, run every day on GitHub against the newest
-Claude Code on the Marketplace - `.github/workflows/claude-watch.yml` - and nowhere near
-anybody's editor.
-- `docs.test.js` - the documents get the same treatment as the code: every link, every
-  file name, every count and every promise made about what the payload contains, put back
-  to the thing it is about. A document that has gone stale reads exactly like one that has
-  not
-
-## When Claude Code changes
-
-It will. This is a guest inside a product that ships every week, so the question worth
-answering is not whether everything keeps working - it is **how much goes dark, and
-whether anything here starts arguing with a fix of theirs.**
-
-Every part is on its own circuit. Before it is switched on it is asked two questions, and
-both answers are kept where you can read them:
+In the webview console (Developer: Open Webview Developer Tools):
 
 ```js
-__bidiStatus()      // in the webview console: Developer: Open Webview Developer Tools
+__bidiStatus()   // what the formula has tagged, and the pinned message's state
+__bidiFixOff()   // take all of it out, live
 ```
-```
-{ direction: "on",
-  unpinExpandedMessage: "on - measured working",
-  keepTheViewOnTheMessage: "on",
-  composer: "on - measured working",
-  sentMessages: "on - measured working",
-  unpinDetail: { found: "by name - an opened message has a collapse row",
-                 pinned: 4, letGo: 1, sheet: "style element, first in the page", ... },
-  engine: { blocks: "watching", sent: "on - measured working",
-            composer: "on - measured working", contained: 0,
-            composerDetail: { found: 'by [class*="messageInput_"]; the layer over it by [class*="mentionMirror_"]',
-                              sheet: "style element, first in the page", boxes: 1, ... },
-            sentDetail: { found: 'by [class*="expandableContainer_"] [class*="content_"]',
-                          messages: 3, turned: 2, ... } } }
-```
-
-`composerDetail.found` says which of its five roads found the box you type in,
-`sentDetail.found` which of its two found a sent message, and `unpinDetail.found` which of
-its two found an opened message. On the day a restyle renames Claude Code's classes they
-read `by [contenteditable][role="textbox"]`, `by the run handed to dir="auto"` and `by what
-it is - pinned, showing its whole length, taller than half the panel` instead - still
-working, and already telling you which road closed.
-
-`measured working` means the direction was set AND read back off the page afterwards. A
-part that set it and found the page did not take it says `not working`, and why - which
-is exactly what a Claude Code update changing a rule underneath it looks like. That is
-how 2.1.267 broke the box you type in: silently, while this still said `on`.
-
-**Is it possible?** If a class name is renamed or a component restyled, the part that
-depended on it goes off *on its own* and says so. Nothing else notices, and a block that
-throws for a reason nobody anticipated is caught at that block - `contained` counts them,
-because a fix that has quietly stopped working looks exactly like one that is working.
-
-**Is it needed?** If Claude Code fixes something itself, the part of this that existed for
-it goes quiet rather than fighting it - two fixes for one fault argue invisibly, and the
-argument is invisible to whoever shipped either of them. That is **measured, not read**. A
-stylesheet can be renamed, moved, overridden or shipped in a second file; where the browser
-actually puts the first character of a line cannot be any of those things.
-
-All four parts ask, and each asks about itself:
-
-- **answers** - a copy of their own markdown root, off screen, is asked to lay out the exact
-  sentence the fault is about, and read back
-- **the box you type in** and **a sent message** - asked of the real thing rather than a copy,
-  because half of what matters about those is the host's own live layer. The first draft, or
-  the first message, that opens in Latin and turns right-to-left is read before a single
-  attribute of ours is on it: drawn from the left, the fault is here; drawn from the right,
-  Claude Code has fixed it. Text that is only Urdu is never asked with - the browser reads
-  that right to left whether the fault is there or not
-- **the long message nobody can read past** - every message the page pins is asked whether it
-  is really `position: sticky`, and the first one named as pinned that is not takes the whole
-  of that fix back out of the page
-
-What stands down is only the part the fix was for. A page that lays out a mixed draft
-correctly has said nothing whatsoever about what it does with a message once it is sent, or
-with an answer. And the rules themselves do not depend on one road into the page - if the
-webview ever refuses a style element, they arrive as a constructed stylesheet instead, and
-`__bidiStatus()` says which. A part that has thrown and never once worked says that too,
-rather than `on`.
-
-`__bidiFixOff()` in that console takes all of it out, live, at any time.
 
 ## Limits
 

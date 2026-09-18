@@ -1,4 +1,4 @@
-# The fifty-six builds, and what each one actually contained
+# The sixty-two builds, and what each one actually contained
 
 Compiled by opening every `.vsix` and reading what is inside it, not from memory. The
 second table was rebuilt the same way after the fact, which is why some of its rows say
@@ -1011,6 +1011,83 @@ Payload: 135,021 bytes - 21,591 more than 0.5.2, for the long-message fix
 becoming a part of its own, a second way into the same trap, and the reasons written beside
 both.
 
+### 0.8.0 — clean: the formula, and nothing measuring it
+
+- [x] **the recorder is taken out** - its question is answered: in every reading, one turn, never
+      painted the other way; a turn comes with the text that causes it, so the eye takes it as part
+      of the stream and no hold is needed **(the owner, 2026-09-17; decisions.md 52)**
+- [x] **what is left is the formula in all four places, and Claude Code's long-message fix** -
+      `__bidiTurns()` and `__bidiTurnsReset()` are gone **(lab)**
+- [x] **the record 0.7.3 kept in the webview's storage is removed** when 0.8.0 starts, so nothing
+      of the recorder is left behind **(lab)**
+- [ ] read in the real panel **(unseen)**
+
+### 0.7.3 — the record is kept
+
+- [x] **`__bidiTurns()` adds up across reloads and restarts** - turns, the stream's rhythm in
+      buckets, and how many sessions it has seen, kept in the webview's own storage on this
+      machine; `savedAcrossRestarts` says whether that storage held. `__bidiTurnsReset()`
+      empties it **(lab)**
+- [ ] **the storage holds across a real VS Code restart** - the one thing only the real editor can
+      say **(unseen)**
+- [x] **the reading on 0.7.2, before this:** about fifty answers in the owner's panel, the last one
+      written to be the hardest case - blocks opening with up to 38 English letters before their
+      Urdu - and one turn in all of it, never shown the other way (0 frames); none of 4 frames or
+      more **(live)**
+
+### 0.7.2 — the recorder asks only the streaming question
+
+- [x] **`__bidiTurns()` counts turns in streaming answers only** - the box turns while somebody
+      types, and nobody types as fast as an answer streams, so a turn there is expected and says
+      nothing about whether a reader sees one while text arrives **(the owner, 2026-09-17)**
+- [x] **its answer is put in the eye test's terms** - never shown the other way; 1-2 frames, not
+      noticed in the eye test; 3 frames, not tested; 4 or more, noticed **(lab)**
+- [x] **the first real reading, on 0.7.1:** one long mixed answer streamed in the real panel -
+      one block turned, and it was never painted the other way (0 frames); every other block was
+      first painted with its Urdu already in it **(live)**
+
+### 0.7.1 — a recorder for the turn
+
+Measures, and acts on nothing. decisions.md, 52.
+
+- [x] **`__bidiTurns()` in the webview console: every turn of direction while text arrived, and
+      how many painted frames it stood the other way first; and the stream's own rhythm**
+      **(lab: only-the-formula.test.js, checked against the painted frames)**
+- [x] **nothing on the page changes because of it** **(lab: every-frame test unchanged)**
+- [ ] read in the real panel, in daily use **(unseen)**
+
+### 0.7.0 — only the formula
+
+Everything of this project's own that acted on text beside the formula was taken out, so that
+whether a reader sees a block turn can be judged in daily use. decisions.md, 51.
+
+- [x] **the box, a sent message and every block of an answer take the 45-letter formula's
+      direction, and nothing else of ours acts on text** **(lab: only-the-formula.test.js, in
+      Claude Code's own app, every painted frame of a streamed answer)**
+- [x] **Claude Code's own first-strong guess is off on exactly those elements** **(lab)**
+- [x] **taken out: one decision per message, bullets on one side, numbers and code kept in
+      order, the page asked whether it had fixed itself, the lamps** **(code)**
+- [x] **the long-message fix is unchanged** **(lab: pinned-message.test.js, expandable.test.js)**
+- [x] **everything before it is backed up** - the folder beside the repository, and 0.6.0's
+      `.vsix` **(the owner's machine)**
+- [ ] installed and read in the real panel **(unseen)**
+
+### 0.6.0 — the rule for an answer, measured
+
+The frozen rule changed, on the owner's decision, for answers only. A block is right-to-left
+when its first letter is, or when an RTL letter comes within its first 45 letters; otherwise
+left-to-right. 45 was measured on 64,476 mixed texts from Claude's and ChatGPT's answers.
+decisions.md, 50.
+
+- [x] **an English block with an Urdu phrase far into it reads left to right** — the owner's
+      screenshot case, the phrase at letter 342 of 406 **(code: every formula run on that answer)**
+- [x] **the five headings still read right to left, and the answer still only moves one way**
+      **(lab: direction.test.js, and both corpora replayed as streams)**
+- [x] **an English sentence whose Urdu phrase comes within its first 45 letters is still read
+      right to left** — the case section 5 gave up, still given up, now counted **(lab)**
+- [x] **the box you type into and the message you send are unchanged** **(code)**
+- [ ] installed and read in the real panel **(unseen)**
+
 ### 0.5.9 — only the tag
 
 What this repository is for was said plainly: it is the evidence for a proposed web standard, so
@@ -1104,7 +1181,7 @@ to a boundary rather than to Claude Code's own fix. decisions.md, 45.
       flattened every direct child of a turned message, so a span the host marks `dir="ltr"`
       came out right to left and 64px from where the host put it. Narrowed the same way
       **(lab, 2.1.270)**
-- [x] **and all four places are now held to one tape measure** — `the-mirror.test.js`, against a
+- [x] **and all four places are now held to one tape measure** — `the-mirror suite`, against a
       reference with nobody's judgement in it. The hand-written comparison beside it is
       deleted rather than kept: two instruments for one thing drift, and then disagree on the
       morning the question is whether an update broke something **(lab)**
@@ -1168,7 +1245,7 @@ already puts on things are read once more. decisions.md, 43.
       table is left where it was **(lab)**
 - [x] **and while it streams, no frame hides a marker** — a list is turned in the same style
       pass as its first item, so there is no frame with an item reading right to left in a
-      list that does not; the list changes sides once. `jitter.test.js` plays it in an item at
+      list that does not; the list changes sides once. `jitter suite` plays it in an item at
       a time **(lab)**
 - [x] **the big dot beside a message was checked on 2.1.270 too** — left of an English answer,
       right of an Urdu one, as in 0.5.5 **(lab)**
@@ -1196,7 +1273,7 @@ than an approximation of it.
       dot → text 14px, edge → text 30px — **the same three numbers on both sides**, and every
       row keeps its full 830px. An English answer is identical to the pixel with the fix and
       without it **(lab, on the real stylesheet)**
-- [x] **and the test says so in those words** — `rendering.test.js` fails with "that is two
+- [x] **and the test says so in those words** — `rendering suite` fails with "that is two
       designs, not one mirrored" if those three distances ever stop matching. The allow-list
       for an answer went from eight properties to four: `direction`, `unicode-bidi`, and the
       two paddings that are the gutter moving. `width`, `inline-size`, `perspective-origin`

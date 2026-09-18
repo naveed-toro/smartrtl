@@ -10,7 +10,7 @@ search for, in several languages.
 
 ## What is in here
 
-Forty-nine sections, in the order they were written, which is the order the faults were
+Fifty-two sections, in the order they were written, which is the order the faults were
 found. The ones worth reading first are marked.
 
  1. [The root cause](#1-the-root-cause)
@@ -61,7 +61,10 @@ found. The ones worth reading first are marked.
 46. [The mirror, with nobody's judgement left in it](#46-the-mirror-with-nobodys-judgement-left-in-it) ←
 47. [We tell. We do not build. — and what that found in the box you type into](#47-we-tell-we-do-not-build--and-what-that-found-in-the-box-you-type-into) ←
 48. [The same fault in the message you sent, and the last hand-written reference retired](#48-the-same-fault-in-the-message-you-sent-and-the-last-hand-written-reference-retired) ←
-49. [Only the tag. The dot goes back where Claude Code draws it](#49-only-the-tag-the-dot-goes-back-where-claude-code-draws-it) ←
+49. [Only the tag. The dot goes back where Claude Code draws it](#49-only-the-tag-the-dot-goes-back-where-claude-code-draws-it)
+50. [The rule for an answer, measured: an RTL letter within the first 45](#50-the-rule-for-an-answer-measured-an-rtl-letter-within-the-first-45)
+51. [Only the formula acts on text](#51-only-the-formula-acts-on-text)
+52. [A recorder for the turn a reader might see](#52-a-recorder-for-the-turn-a-reader-might-see) ←
 
 ← 6 and 7 are the rule and the design it forced. 13 is what the first live run found.
 25 and 27 are the composer crash and the decision to stop; 28 is what that would have
@@ -706,7 +709,7 @@ the first.
 ### Why both halves are asserted together, always
 
 Every previous attempt at "decide sooner" in this project ended in the panel jumping about,
-so `test/jitter.test.js` refuses to accept one without the other. Each scenario asserts:
+so `jitter suite` refuses to accept one without the other. Each scenario asserts:
 
 - `wrongFrames` - how long a block was shown a direction it did not end up in
 - `flips` - how often it changed, and whether it ever changed back
@@ -1070,7 +1073,7 @@ browser extension was abandoned on, and it is not worth re-entering for a full s
 **This becomes free the day Claude Code's composer gains a line element per line** - a
 rich-text editor, or any structure where a line is a node. On that day the whole cost
 above disappears, because nothing has to be built: it is one attribute per line, exactly
-as it was in the browser. `test/real-webview.test.js` already fails if the composer's
+as it was in the browser. `real-webview suite` already fails if the composer's
 class names change; anyone looking at that failure should check this too.
 
 ---
@@ -1133,7 +1136,7 @@ Pasting sets the direction with **zero frames** painted the wrong way round - th
 before-paint arrangement a streaming answer already relies on. An English-only draft is
 not touched at all: no line elements, no direction, nothing.
 
-Six tests in `test/composer.test.js` hold all of it, and each one corresponds to
+Six tests in `composer suite` hold all of it, and each one corresponds to
 something that was actually broken while it was being built.
 
 ---
@@ -1257,7 +1260,7 @@ node. **The single contract the real page enforces did not exist in the model.**
 tests were not weak about the thing they measured; they measured a page on which the bug
 is not expressible.
 
-`test/host-owned-dom.test.js` models the contract instead — nodes the host keeps, and
+`host-owned-dom suite` models the contract instead — nodes the host keeps, and
 removes through the parent — and states the rule rather than the symptom: *nothing the
 host put in the mirror is moved, replaced or thrown away.* Against 0.3.0 it fails
 immediately, and its third test reproduces the user's report exactly: two lines typed,
@@ -1308,7 +1311,7 @@ IME, dictation, autocorrect and spellcheck go back to being the browser's proble
 One row is a loss, and only in a draft that is genuinely two languages at once: the
 project's rule versus the browser's, any RTL word against the first strong character.
 That line reads right-to-left the moment it is **sent**, where the lines really are
-elements of ours. It is written down as a passing test in `composer.test.js`, not as a
+elements of ours. It is written down as a passing test in `composer suite`, not as a
 wish, so the day somebody claims otherwise it says so.
 
 Buying that last row back means owning the pixels the caret sits on: wrapping the lines
@@ -1396,7 +1399,7 @@ unmount them whenever it likes. And the clone loses nothing: the mirror is
 `aria-hidden` and `pointer-events:none`, so there is not one handler on it to lose.
 Chips, misspellings and the argument hint all come across.
 
-`test/host-owned-dom.test.js` — written against the crash, and the reason it is stated
+`host-owned-dom suite` — written against the crash, and the reason it is stated
 as a rule rather than a symptom — passes unchanged.
 
 ### The shape of a line, measured four ways
@@ -1413,7 +1416,7 @@ in one document and every candidate silently inherited `display: block` from ano
 So 0.3.0 never aligned a composer line at all. It ordered the characters and left the
 line against the left edge — and its tests could not tell, because they read our own
 `data-bidi-line` attribute instead of asking the page where the text was. Every test in
-`composer.test.js` now measures pixels.
+`composer suite` now measures pixels.
 
 `width: 100%` is what earns the alignment: it gives each line a line box of its own, so
 `text-align: start` resolves against **that line's** direction. `unicode-bidi: isolate`
@@ -1537,7 +1540,7 @@ same reason: **the harness modelled as already-there a page that is built at run
 
 - 0.3.0 — the mirror was modelled by `mirror.textContent = input.textContent`, which
   keeps no reference to anything it creates. React's one contract did not exist in the
-  model. → `test/host-owned-dom.test.js`
+  model. → `host-owned-dom suite`
 - 0.3.3 — the composer was in the page before the payload ran, so an observer that is
   dead on the real page was alive in the test. → `"a composer that arrives after the
   payload behaves the same in every way"`
@@ -1707,7 +1710,7 @@ position, same stream, with the fix and without it:
 | no patch, nothing replaced | 0 |
 
 Identical both ways, and the stronger form of the same answer is asserted permanently in
-`real-webview.test.js`: **no rule of ours matches that button or its wrapper at all**,
+`real-webview suite`: **no rule of ours matches that button or its wrapper at all**,
 checked by putting every rule in our stylesheet to the live element.
 
 ### What it actually is
@@ -2428,7 +2431,7 @@ Claude Code's own bundle and stylesheet, rewritten before they were served. 0.5.
 
 On the copied page that is twenty-four tests, and 0.5.0 fails eighteen of them. In Claude
 Code's own running app it is five rewrites of its real bundle, and 0.5.0 fails three on
-behaviour - `test/composer-survival.test.js` and `test/real-bundle.test.js`.
+behaviour - `composer-survival suite` and `real-bundle suite`.
 
 ### How it is built now
 
@@ -2553,11 +2556,11 @@ literal passes the old check and fails the new one.
 
 ### Knowing the day it changes
 
-`claude-shape.test.js` now names each of the four things the box has always been, one line
+`claude-shape suite` now names each of the four things the box has always been, one line
 each, and says so when Claude Code starts setting the box's direction itself - with
 `!important`, or from a cascade layer. The daily watch puts that, the real bundle and its five
 rewrites to every new release. And `build/fetch-claude-builds.js` fetches builds by version,
-keeping only the four files anything here reads, so that `test/history.test.js` can put the
+keeping only the four files anything here reads, so that `history suite` can put the
 box to every one of them: seventeen today, all holding.
 
 ### The rule this leaves
@@ -3319,7 +3322,7 @@ and only from one side to the other:
 
 The same three distances, measured from each row's own reading edge. Not "the dot is on the
 right" — the *same design*, mirrored, which is the only version of this that makes a reader
-feel Claude Code always did it. `test/rendering.test.js` asserts those three numbers match, and
+feel Claude Code always did it. `rendering suite` asserts those three numbers match, and
 fails with "that is two designs, not one mirrored" if they ever stop.
 
 And no row pays for another row's dot: every row keeps the whole width it had, English rows are
@@ -3433,7 +3436,7 @@ measured, on a page with Claude Code's own spinner running:
 | wait for the block to settle | **42** - two thirds of a second, read backwards |
 | decide on sight | **3** |
 
-`test/jitter.test.js` holds both halves. The 42 is not an average over long answers; it is
+`jitter suite` holds both halves. The 42 is not an average over long answers; it is
 what a *short* reply costs, because a reply of one paragraph never grows the second block
 that would have settled the first.
 
@@ -3611,7 +3614,7 @@ Code blocks, rules and quotes needed nothing: Claude Code gives them no side.
 
 A list is turned by the same attribute that turns its first item, in the same style pass, so
 there is no frame in which an item reads right to left inside a list that does not - which is
-the frame a marker disappears in. `jitter.test.js` plays a list in an item at a time, English
+the frame a marker disappears in. `jitter suite` plays a list in an item at a time, English
 items included, and counts both: that frame never happens, and the list changes sides once.
 
 A list of nothing but English inside an Urdu answer is right-to-left until its items are
@@ -3708,7 +3711,7 @@ once, left to right into right to left, which is the rule's own direction.
 The one turn left is not avoidable by anybody: until the first Urdu word exists, nothing says
 the answer is Urdu. Claude Code's own fix makes the same turn at the same character.
 
-The page that writes every block a few characters at a time (`jitter.test.js`) sees what that
+The page that writes every block a few characters at a time (`jitter suite`) sees what that
 costs there: a line that opens with a Latin word reads left to right until its Urdu word
 arrives, then turns - once, within a frame, with one word on screen. It used to demand one
 change for a whole answer; it demands the rule's direction now, and a separate test holds that
@@ -3797,7 +3800,7 @@ stylesheet with the class renamed, then with the test id renamed as well, then w
 taken away altogether - and in each case the three distances of section 41 measured on both
 sides, 9 / 14 / 30, an Urdu row against an English one in the same conversation.
 
-And by `history.test.js`, which now puts the dot to every build in a folder the way it already
+And by `history suite`, which now puts the dot to every build in a folder the way it already
 puts the box and a sent message to them - the thing whose absence let 2.1.267 break the box
 unnoticed. It finds rows by shape rather than by either name, so it is a second opinion on road
 3 rather than the same selector asked twice, and it runs on builds from before either name
@@ -3808,7 +3811,7 @@ existed.
 Numbers 3 and 4 - an answer arriving, an answer streaming - are compared box for box with the
 fix Claude Code's own developers would write. Numbers 1 and 2 - the box you type into and the
 message you sent - were held only to *they differ by direction and by nothing that is not
-direction* (`the-line.test.js`, `real-webview.test.js`).
+direction* (`the-line suite`, `real-webview suite`).
 
 That is a real promise and it is the wrong half. It says what we did **not** do. It says nothing
 about whether what we **did** looks like their work - and 0.5.5 passed every boundary in this
@@ -3948,7 +3951,7 @@ drawn from its marker's side, so that `npm install` is not a whole line away fro
 bullet.
 
 That second one is the only genuinely open question in the whole comparison, and it is written
-in `the-mirror.test.js` as a named switch rather than hidden in a tolerance - flip
+in `the-mirror suite` as a named switch rather than hidden in a tolerance - flip
 `KEEPS_ITS_OWN_SIDE` and the test says, element by element, what the panel would look like the
 other way.
 
@@ -3981,7 +3984,7 @@ because the burst carries the Urdu in with the Latin.
 
 ### Held
 
-`test/the-mirror.test.js`, in `npm run review` and therefore in the daily watch. Section 44's
+`the-mirror suite`, in `npm run review` and therefore in the daily watch. Section 44's
 numbers 3 and 4 are gone from the as-claude-would suite, which keeps numbers 1 and 2 - one tape
 measure per thing, because two of them drift and then disagree in somebody's face.
 
@@ -4099,7 +4102,7 @@ became a thing, it would be pointed at like any other.
 
 ### Held
 
-`test/the-mirror.test.js` carries numbers 1, 3 and 4 now. The as-claude-would suite keeps only
+`the-mirror suite` carries numbers 1, 3 and 4 now. The as-claude-would suite keeps only
 number 2, a sent message, which is the last place still resting on a reference written by hand -
 said in the file rather than left to be found. Section 48 finishes it and retires that suite.
 
@@ -4175,7 +4178,7 @@ Every box and every piece of ink is compared regardless of both, so neither can 
 
 ### One tape measure, four places
 
-`test/the-mirror.test.js` now carries all four, against a reference with nobody's judgement in
+`the-mirror suite` now carries all four, against a reference with nobody's judgement in
 it. The as-claude-would suite is deleted rather than left beside it: two instruments for one
 thing drift, and then they disagree in somebody's face on a morning when the question is
 whether an update broke something.
@@ -4296,8 +4299,213 @@ order - which is a finding, measured, not a preference.
 
 ### Held
 
-`test/the-mirror.test.js`, in the review and in the daily watch, on 2.1.273: 113 elements at
+`the-mirror suite`, in the review and in the daily watch, on 2.1.273: 113 elements at
 700px and at 420px - 81 exactly what the browser draws when told, 26 untouched, 2 code, and 4 rows
 whose gutter, dot and connector are exactly where Claude Code put them - with every block's
 character order compared too, and the re-ordering asserted, so that the day a browser
 stops making them, the rules that prevent them say so.
+
+---
+
+## 50. The rule for an answer, measured: an RTL letter within the first 45
+
+> Changes the frozen rule, on the owner's decision, 2026-09-17. For answers only (places 3 and
+> 4); the box you type into and the message you send keep theirs.
+
+### Why it was opened
+
+The owner saw an English answer of Claude's drawn right to left in the real panel: one Urdu
+phrase in its first list item, far into the item, and the other three items pure English. The
+rule said "is there an RTL word in here at all?", so the item turned, and the message's one
+decision (section 7) carried the rest with it. Section 5 had given that case up on purpose.
+
+Then the paper's study measured it. Everything is in `paper/`; the parts this section rests on:
+
+- The history: every formula ever adopted or proposed, each run from its source
+  (`paper/formulas.md`). This project's rule turned out to be Any RTL (2009). Firefox's
+  proposal for `dir="auto"` in 2010 was Any RTL **within the first 63 letters** - with no
+  reason given for 63.
+- The corpus: 5,065 mixed texts from Claude's answers and 59,411 from ChatGPT's (WildChat-4.8M),
+  Urdu, Arabic, Persian, Hebrew.
+- Every window from 5 to 100 letters, mistakes and waiting together (`paper/results/README.md`,
+  "choosing X"). By the written rule - the shortest window within half a percentage point of the
+  fewest mistakes on both sources - **45**. Past it mistakes stop falling and waiting keeps rising;
+  63 is on the same floor and waits 22% longer.
+
+### The rule
+
+```
+first letter right-to-left                            -> rtl
+first letter left-to-right, an RTL letter within 45   -> rtl
+first letter left-to-right, none within 45            -> ltr
+```
+
+`openingLetters` in `packages/core/src/direction.js`. Letters are Unicode letters; digits,
+punctuation and spaces are not counted.
+
+### Section 42's two questions, answered first
+
+1. **Does the answer still only move one way?** Yes. Before 45 letters "ltr" can become "rtl"
+   when an RTL letter arrives; after 45, nothing changes it. On both sources replayed as streams,
+   it never went back once (`paper/results/`, streaming run 3). Asserted in direction.test.js.
+2. **The five headings?** All right to left: their Urdu word comes within their first letters.
+   Asserted.
+
+### What it fixes, and what it still gives up
+
+- **Fixed:** an English block whose Urdu phrase comes after its first 45 letters - the owner's
+  screenshot: the phrase is letter 342 of 406. The block reads left to right.
+- **Still given up:** an English sentence whose Urdu phrase comes within its first 45 letters -
+  *"In Urdu this idea is called ایونٹ لوپ, …"*, letter 23. There is no certain way to tell it
+  from an Urdu sentence opening with an English name; the data counts it at about 1.9% of mixed
+  texts in ChatGPT's answers.
+
+### In the engine
+
+Two lines in the answers' part, nothing else:
+
+- a block decides its message right to left when `openingLetters` says rtl (was: an RTL word
+  anywhere);
+- in a message already decided, a block the rule reads as left to right is marked left to right
+  (was: a block with no RTL at all).
+
+One decision per message (section 7) stays as it was; so does everything about the box and the
+sent message. Whether a block visibly turns while it streams - which this rule, like the old one,
+can do once - is the paper's Part 2, decided by measurement: the owner's eye test noticed no turn
+of one or two frames (`paper/results/README.md`, eye tests).
+
+### Held
+
+The review, 179 of 179, with the new cases in direction.test.js and the frozen hashes updated by
+hand in frozen.test.js, saying which of section 42's questions the change answers.
+
+---
+
+## 51. Only the formula acts on text
+
+> 0.7.0, on the owner's decision, 2026-09-17. The backup of everything before it is
+> `smartrtl-backup-0.6.0-2026-09-17`, beside the repository, and 0.6.0's `.vsix`.
+
+### Why
+
+Whether a reader ever sees a block turn while an answer streams is now the paper's question
+(Part 2), and the owner means to answer it by using the panel every day. That only means
+something if what is on the screen is the formula and nothing else. Until 0.6.0 several things
+of this project's own also acted on text, each for a good reason recorded in its section - and
+each one a second hand on the same text, so a turn seen or not seen could not be put down to
+the formula.
+
+### What is left
+
+- **The formula, in all four places.** Every block of an answer by its own text, the box by
+  the draft, a sent message by its own text - `openingLetters` for all of them, the box and
+  the sent message included (they had the one-letter and one-word rules before).
+- **Claude Code's own guess switched off on exactly those elements** - `unicode-bidi:
+  plaintext`, `dir="auto"`, `text-align: left` - from one cascade layer ahead of its
+  stylesheet. Not a rule of ours on text: the removal of the page's competing one.
+- **Claude Code's own long-message bug** (section 37), unchanged. Not text.
+- **Install, update, uninstall and the status bar**, unchanged. Not text.
+
+### What was taken out
+
+| taken out | its section | what a reader now sees instead |
+|---|---|---|
+| one decision per message | 7 | every block by itself |
+| bullets and numbers kept on one side, the item's text by plaintext | 43, 49 | an English item in an Urdu list is left to right, its bullet with it |
+| `250–400ms`, code and a full stop kept in order | 49 | what the browser does when told only a direction |
+| asking the page whether Claude Code had fixed it itself | 39 | nothing stands down by itself |
+| the lamps, their read-backs and every second road to an element | 29, 35, 36 | `__bidiStatus()` says what the formula tagged |
+
+The engine went from 1,949 lines to 356, the payload from 1,067 to 624, and the tests of the
+things taken out were taken out with them (named "... suite" in the documents that
+describe them).
+
+### Held
+
+`test/only-the-formula.test.js`, in Claude Code's own running app: an answer streamed three
+characters at a time with every painted frame read - in every frame every block's direction
+is exactly the formula's; the box after every keystroke, both layers; a sent message; nothing
+of ours anywhere else; nothing left after `__bidiFixOff()`. And `pinned-message.test.js` and
+`expandable.test.js` for the long-message fix.
+
+---
+
+## 52. A recorder for the turn a reader might see
+
+> 0.7.1. Measures, and acts on nothing.
+
+### The question
+
+The formula decides on sight, so a block that opens in English and turns Urdu is shown left to
+right until its Urdu arrives, and then turns. Whether a reader ever sees that is the paper's
+Part 2. The owner's eye test in the lab noticed no turn of one or two painted frames and most
+turns of four or more. What is missing is how long the turns in the real panel are.
+
+### The recorder
+
+In the engine, beside the formula and outside it: on every decision it notes the block, the
+direction, and the painted frame - frames counted by `requestAnimationFrame`, and only while
+text is arriving. When a block's direction turns, it records how many painted frames the block
+stood the other way first; a turn made before the frame was painted counts 0. It also records
+the stream itself: how many characters each painted frame brought, and how far apart frames
+were. `__bidiTurns()` in the webview console reads it back.
+
+### What building it found
+
+**Claude Code draws a new element for a paragraph - a new markdown root, even - every few
+characters while it streams.** A record kept per element never saw a turn. A block is therefore
+followed by its text growing: a text that begins with a block's text, soon after, is that block
+continued.
+
+And in the lab harness, streamed three characters every 25ms, Claude Code painted text about
+every other frame, and one paragraph of two turned: *React ایک ...* stood left to right for 3
+frames (49ms) and turned; *In Urdu this idea is called ایونٹ لوپ ...* was first painted with its
+Urdu already in it and never stood the other way. The panel's own rhythm hides many turns
+before anybody could see them.
+
+### Held
+
+`only-the-formula.test.js`: the recorder's count of frames each turn stood the other way is
+the count the painted frames show, within one frame, and the stream's frames are recorded.
+
+### The first reading in the real panel, and what the recorder now counts
+
+On 0.7.1, one long answer mixing every kind of block was streamed in the owner's panel. One block
+turned - *JavaScript میں event loop ...*, at its tenth letter - and it was never painted the
+other way: 0 frames. Every other block that opens in English was first painted with its Urdu
+already in it. The recorder also counted three turns in the box, made by typing; the owner put
+them out of the question - nobody types as fast as an answer streams - and from 0.7.2 the
+recorder counts streaming answers only, and says each turn in the eye test's terms.
+
+### The record is kept (0.7.3)
+
+On 0.7.2 the owner used the panel for about fifty answers, the last one written to be the hardest
+case - paragraphs, list items and table cells opening with up to 38 English letters before their
+Urdu. `__bidiTurns()` counted one turn in all of it, never shown the other way, and none of four
+frames or more. The owner then asked whether the count survives closing the laptop: it did not,
+it lived in the panel's memory. From 0.7.3 it is kept in the webview's own storage and adds up
+across sessions, so that days of ordinary use become one record the paper can cite.
+
+### Answered, and taken out (0.8.0)
+
+The question the recorder was built for has its answer, and it is the opposite of the fear that
+started it. Across every reading - the lab harness, one long answer on 0.7.1, about fifty on 0.7.2
+with the hardest case written on purpose - one turn was ever seen, and it was never painted the
+other way.
+
+Why is the owner's reading, and it rests on no part of this extension's machinery: **a turn is
+never a separate event.** A one-way formula turns a block only because a right-to-left letter
+has just arrived, so the turn and that new text reach the screen in the same paint. While an
+answer streams the text is already moving - words appearing, the line growing - and a block that
+settles to the right as its Urdu comes in looks like one more step of that arrival, not like a
+change. The eye takes it as part of the stream. The readings agree, and mark the limit: turns of
+one or two frames went unnoticed in the eye test, turns of four or more mostly were - an English
+opening left alone on the screen that long is seen - and in the real panel a block that opens in English usually first
+reached the screen with its Urdu already in it. Holding a stream back until the formula settles is
+not needed, and the paper proposes no hold (its Part 2).
+
+So the owner took the recorder out in 0.8.0: the extension is the formula and Claude Code's
+long-message fix, and nothing else - no measuring code in the panel, no record in its storage.
+The record 0.7.3 kept is removed from the webview's storage the first time 0.8.0 starts. The
+readings stay here and in `paper/results/README.md`.
+

@@ -11,13 +11,17 @@ Claude Code's panel first, a browser extension and a markdown editor after it.
 
 ## The formula is frozen
 
-`packages/core/src/direction.js` holds the rule this entire project exists to apply:
+`packages/core/src/direction.js` holds the rule this entire project exists to apply -
+`openingLetters`, since 0.6.0 (the owner's decision, `docs/decisions.md` section 50):
 
 ```
-starts RTL                    -> RTL   (already true, nothing to do)
-starts LTR, no RTL after it   -> LTR   (left alone)
-starts LTR, RTL follows       -> RTL
+first letter RTL                               -> RTL
+first letter LTR, an RTL letter within 45      -> RTL
+first letter LTR, none within 45               -> LTR
 ```
+
+From 0.7.0 it is the only thing the extension applies to text, in all four places
+(section 51). The file still holds the rule it replaced, unused, for the paper's comparison.
 
 **Do not change this file.** Not to improve it, simplify it, refactor it, tidy it, rename
 anything inside it, make it handle a case it currently gets wrong, or bring it closer to a
@@ -45,20 +49,22 @@ word counts and function-word lists all get them wrong. The rule in the file get
 right.
 
 **Its real value is a property, not its accuracy.** The rule's answer only ever moves one
-way: text is appended and never unwritten, so a block that holds an RTL word holds one for
-the rest of its life, and the answer for such a block is RTL whatever else arrives. That is
+way: text is appended and never unwritten, so once an RTL letter has arrived within the first
+45 letters the answer is RTL whatever else arrives, and once 45 letters have passed without
+one it is LTR for good. That is
 what lets `packages/dom/src/engine.js` decide from a half-written block while an answer is
 still streaming. Deciding on sight costs 3 frames; waiting for the block to settle was
 measured at 42 - two thirds of a second of somebody reading a short reply backwards.
-`apps/vscode-claude/test/jitter.test.js` holds both halves.
+The measurement is section 42's; `apps/vscode-claude/test/only-the-formula.test.js` holds the
+streamed answer to the formula frame by frame.
 
 Any rule that is better informed - counting, ratios, context, word lists - can also change
 its mind, and a rule that can change its mind cannot be trusted with a half-written block.
 So a "more accurate" formula does not cost a little accuracy somewhere else. It costs the
 real-time behaviour of the whole extension.
 
-The one case the rule gets wrong on purpose - an English sentence carrying a single RTL
-phrase - is not a defect it tolerates. It is the price of that property. Section 5 of
+The one case the rule gets wrong on purpose - an English sentence whose RTL phrase comes within
+its first 45 letters - is not a defect it tolerates. It is the price of that property. Section 5 of
 `docs/decisions.md` gave it up deliberately, and section 42 is why it stays given up.
 
 ### If you think it should change

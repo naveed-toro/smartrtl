@@ -52,7 +52,8 @@ const RENAME = (s) => s
 
 const status = (page) => page.evaluate(() => {
   const s = window.__bidiStatus();
-  return { unpin: s.unpinExpandedMessage, keep: s.keepTheViewOnTheMessage, detail: s.unpinDetail || null };
+  const d = s.pinnedMessage || {};
+  return { unpin: d.state, keep: undefined, detail: d };
 });
 
 test("the trap, as Claude Code draws it: opened, a long message is pinned and its Show less is out of reach", { skip }, async () => {

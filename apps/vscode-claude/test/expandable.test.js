@@ -27,23 +27,6 @@ const boxOf = (page, sel) => page.$eval(sel, (el) => {
   return { x: Math.round(r.left), y: Math.round(r.top), w: Math.round(r.width) };
 });
 
-test("a user message is fixed even though its text is a span, not a paragraph", async () => {
-  const { page, close } = await open(userMessage(MIXED));
-  try {
-    assert.equal(await dirOf(page, ".content_x"), "rtl", "the body should read right-to-left");
-    assert.equal(await dirOf(page, "span[dir=auto]"), "rtl",
-      'dir="auto" must not get a second vote inside a block we already decided');
-  } finally { await close(); }
-});
-
-test("an English user message is left exactly as it was", async () => {
-  const { page, close } = await open(userMessage("Run npm install and then start the dev server."));
-  try {
-    assert.equal(await page.$$eval("[data-bidi]", (e) => e.length), 0, "nothing should be marked");
-    assert.equal(await dirOf(page, ".content_x"), "ltr");
-  } finally { await close(); }
-});
-
 test("the collapse button is not moved - not by a pixel", async () => {
   // The extension puts "Show less" at the end of a flex row on purpose. Whatever we
   // do to the text, that button must land where it lands with the fix switched off.
@@ -232,30 +215,6 @@ test("and an in-date block still does its job, so the guard is not just always o
    container and direction cannot beat it. And one Urdu message put its decision
    on an application-level container, far outside itself.
 ------------------------------------------------------------------------- */
-
-test("the text is actually aligned, not merely reordered", async () => {
-  const { page, close } = await open(userMessage(MIXED));
-  try {
-    const s = await page.$eval(".content_x", (el) => {
-      const c = getComputedStyle(el);
-      return { dir: c.direction, align: c.textAlign };
-    });
-    assert.equal(s.dir, "rtl");
-    assert.notEqual(s.align, "left",
-      "the host's own text-align must not survive the decision - this is the bug");
-  } finally { await close(); }
-});
-
-test("a decision never escapes the message it was made for", async () => {
-  const { page, close } = await open(turn(userMessage(MIXED)), { height: 700 });
-  try {
-    const outside = await page.$$eval("#scroller[data-bidi], .turn_x[data-bidi]", (e) => e.length);
-    assert.equal(outside, 0, "the scroller and the turn must never be claimed");
-    const marked = await page.$$eval('[data-bidi="rtl"]', (els) =>
-      els.every((e) => !!e.closest('[class*="message_"]')));
-    assert.ok(marked, "every decision must sit inside a message");
-  } finally { await close(); }
-});
 
 test("the message box is NOT moved - that was tried and it took the buttons with it", async () => {
   // Pushing the container to the bubble's right edge aligns the text where an RTL

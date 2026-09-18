@@ -1,62 +1,28 @@
 /* ==== smart-rtl-direction patch BEGIN ==== */
 /*
- * Text direction for RTL languages in the Claude Code chat webview.
+ * Claude Code's chat webview, from 0.7.0: two things and nothing else.
  *
- * The problem it solves
- *   webview/index.css sets  unicode-bidi: plaintext  on p, li, h1..h6, blockquote, td, th.
- *   Each line therefore takes its direction from its FIRST strong character, so a line
- *   that opens with a Latin token renders left-to-right even when the rest is Urdu.
+ * 1. THE DIRECTION OF TEXT, BY THE FORMULA ALONE
+ *    The box you type into, a message you send, an answer while it streams and once it is
+ *    finished - each takes its direction from one rule, openingLetters in @smartrtl/core:
  *
- * What is in this file
- *   Only the parts that are true of Claude Code and of nothing else: its class names,
- *   its collapse button, its pinned row. The deciding and the watching live in
- *   @smartrtl/dom, and the rule itself in @smartrtl/core, so the browser extension and
- *   the desktop patch answer the same question the same way. The build step inlines
- *   both, because this file is appended to someone else's bundle and cannot import.
+ *      first letter right-to-left                            -> right-to-left
+ *      first letter left-to-right, an RTL letter within 45   -> right-to-left
+ *      first letter left-to-right, none within 45            -> left-to-right
  *
- * The rule
- *   starts RTL                      -> RTL   (already true, nothing to do)
- *   starts LTR, no RTL after it     -> LTR   (left alone)
- *   starts LTR, RTL follows         -> RTL
+ *    Claude Code's own guess - unicode-bidi: plaintext on its markdown blocks and on the box,
+ *    dir="auto" on a sent message - is switched off on exactly the elements the formula
+ *    decides, so that no second rule acts on the same text. Nothing else of ours touches
+ *    text. The engine is @smartrtl/dom; the build inlines both packages, because this file is
+ *    appended to someone else's bundle and cannot import. docs/decisions.md section 51.
  *
- *   A line that starts LTR, contains RTL, and is still meant to read LTR does exist,
- *   but it is rare, and no local signal separates it reliably - a word-count guard
- *   was tried and its verdict turned on whether the writer typed "," or the Arabic
- *   ",". That case is deliberately given up so every common case is right.
+ * 2. CLAUDE CODE'S OWN BUG: A PINNED MESSAGE NOBODY CAN READ PAST
+ *    Not about direction, and in every language: an opened message that heads a turn stays
+ *    position: sticky and taller than the panel. It is let go of while opened, and the reader
+ *    is kept on their line when it opens and closes. Unchanged from 0.5.x.
  *
- *   One safety rule survives: a block with NO RTL character at all is never touched.
- *
- * Two things about this webview that no other page has, and that were found by reading
- * its own bundle rather than by guessing:
- *
- *   - an ANSWER is markdown, so its text lands in real p / li / h elements. A USER
- *     MESSAGE is not: it renders through a plainText path as a bare
- *     <span dir="auto"> inside a content div. Nothing there is a block, so the engine
- *     could not see user messages at all, whatever they said.
- *   - the box you type into is TWO layers: a contenteditable that is color:#0000 -
- *     caret only, nothing of it is visible - stacked over a mirror React renders the
- *     text into. The mirror is the only layer anybody reads, and its children belong
- *     to React. Take one of them and the box types blank spaces; draw a copy of it
- *     instead and the box types a keystroke behind. Both were shipped and measured,
- *     and the box now gets ONE direction and nothing of ours inside it.
- *   - a user message is wrapped in an expandable container that collapses at 60px and,
- *     once expanded, carries no height cap at all.
- *   - above every user message sits a visually hidden h3 carrying the same text, for
- *     screen readers. It is a block, and it comes first: until 0.5.2 it had the code
- *     for answers deciding the whole row of a sent message, from text nobody sees. It
- *     is skipped now, and a sent message is decided by a lamp of its own.
- *
- * Never touches code blocks, and never changes any text.
- *
- * Whether any of this is still needed is asked of the PAGE, in three separate places and
- * three separate ways, because Claude Code may fix one of them without touching the others:
- * an off-screen probe for answers, and - since 0.5.3 - the real box and the real sent message,
- * read back before any attribute of ours is on them, with the one text whose direction the
- * browser's rule and this one disagree about. Any of the three that is no longer needed takes
- * itself out of the page and says so. decisions.md, 39.
- *
- * Two things to run in the webview console:
- *   __bidiStatus()   which parts are on, which stood down, and why
+ * In the webview console:
+ *   __bidiStatus()   what each part is doing
  *   __bidiFixOff()   take all of it off, live
  */
 ;(function () {
@@ -69,49 +35,12 @@
     if (EXPIRES_AT && Date.now() > EXPIRES_AT) return;
 
     var EXP_BOX = '[class*="expandableContainer_"]';
-    var BODY = '[class*="content_"]';        // the text of one user message
-    var IN_BOX = '[class*="messageInputContainer_"]';
-    var IN_TXT = '[class*="messageInput_"]';
-    var IN_MIR = '[class*="mentionMirror_"]';
-    /* Each of these can be turned off on its own without touching anything else. */
     var STICKY = '[class*="stickyHeader_"]';
     var BTN_ROW = '[class*="buttonContainer_"]';
-
-    var MIRROR_INPUT = true;      // flip the box you type in
-    var UNPIN_EXPANDED = true;    // let an expanded message scroll like ordinary content
+    var UNPIN_EXPANDED = true;
 
     /* ------------------------------------------------------------------
-       A user message that heads a turn is pinned:
-
-         .message.stickyHeader { position: sticky; top: 0 }
-
-       Collapsed, it is 60px of question held above a long answer, which is the
-       point. Expanded, it has no height cap at all - and a pinned element taller
-       than the window can never show its own bottom, because it does not move.
-       The wheel then scrolls the conversation behind it, invisibly, until the
-       whole turn has gone past; only then does the message itself begin to move.
-       Its "Show less" sits at the end of that pinned block, so it is unreachable
-       for as long as the turn lasts.
-
-       That is not an RTL problem. It happens in every language, and it is worse
-       the further up you had scrolled before opening the message.
-
-       Capping the height was tried and rejected: how much of a window a message
-       may take is not ours to decide, and the right answer differs on a laptop
-       and on an external display. The message should open to its full length.
-
-       What is actually wrong is the pinning, and only while expanded - once you
-       are reading the message itself, there is nothing left for it to hold above
-       anything. So an expanded turn header simply stops being pinned and scrolls
-       like ordinary content. Nothing is capped, nothing is moved.
-
-       An expanded message is told apart from a merely short one by the collapse
-       row, which exists only when expanded and only as a direct child.
-
-       That is one of two roads to it, and the other is by what the trap IS: a pinned
-       row taller than half the panel it is pinned in, showing its whole length. That
-       road needs no class name, and it also reaches the second way into the same trap,
-       which the first road never could - see startPinned below.
+       2. The pinned message - a circuit of its own.
     ------------------------------------------------------------------ */
     var UNPIN = "data-bidi-unpin";                              // on a pinned row we let go of
     var OPENED = STICKY + ":has(" + EXP_BOX + " > " + BTN_ROW + ")";
@@ -135,44 +64,6 @@
     // showing its whole length. Pinning is there so that the question stays in view while
     // its answer is read; past half, it covers more of the answer than it leaves.
     var ROOM = 0.5;
-
-    /* ------------------------------------------------------------------
-       NOT DONE, and this one was nearly done twice.
-
-       Right-to-left text starts at the RIGHT edge of the panel, so anything that
-       moves that edge while an answer streams moves text somebody has already read.
-       Measured against Claude Code's own stylesheet, the edge appeared to twitch by
-       about ten pixels, three times, during one ordinary answer - and two fixes were
-       written for it: stretching the markdown root so it stops shrinking to fit, and
-       reserving the scrollbar gutter so the scrollbar stops changing anybody's width.
-
-       Neither shipped, because neither was needed. The twitch was in the test page:
-       a panel that is a fixed box in the real editor had been modelled as an ordinary
-       document, so it grew its own scrollbars and changed width underneath the
-       measurement. Constrained the way the panel is constrained, the answer's edge
-       does not move at all - zero frames, with the fix and without it.
-
-       The record is here rather than in a commit message because a plausible fix for
-       a fault that does not exist is the most expensive kind: it survives review, it
-       ships, and every later oddity gets debugged with it in the way.
-    ------------------------------------------------------------------ */
-
-    /* ------------------------------------------------------------------
-       NOT DONE, on purpose.
-
-       The body shrinks to fit its longest line - measured at 275px inside a 704px
-       bubble - and sits against the bubble's left edge, because that is where a
-       left-to-right design puts it. Pushing a decided message's box to the other
-       edge was written, and the button tests failed instantly: the controls live
-       inside that container and moved with it.
-
-       Moving a control the extension placed is the one thing this fix does not do.
-       And it is a smaller loss than it looks: the container is exactly as wide as
-       its longest line, so right-aligning inside it aligns every line to that
-       line's end - the block reads correctly as a block. It simply sits on the
-       left of a wider bubble, which is where their own layout puts it in English
-       too.
-    ------------------------------------------------------------------ */
 
     /* ------------------------------------------------------------------
        Unpinning alone is half a fix, and the other half only shows up when you
@@ -586,8 +477,6 @@
         stoodDown = true;
         teardown();
         state = "not needed - Claude Code does this itself now";
-        LAMPS.unpinExpandedMessage = state;
-        delete LAMPS.keepTheViewOnTheMessage;
       }
 
       function teardown() {
@@ -683,382 +572,50 @@
       };
     }
 
+    var pinnedPart = null;
+    try { if (UNPIN_EXPANDED) pinnedPart = startPinned(); } catch (e) { pinnedPart = null; }
+
     /* ------------------------------------------------------------------
-       THE FUSE BOX.
-
-       Everything below is a lamp on its own circuit. Each is asked two questions
-       before it is switched on, and both answers are kept where anybody can read
-       them back with __bidiStatus():
-
-         is it needed?    if Claude Code no longer has the fault a lamp exists for,
-                          that lamp stays OFF. Not out of politeness - two fixes for
-                          one fault fight each other, and the fight is invisible to
-                          whoever shipped either of them. "Needed" is MEASURED, never
-                          assumed or read out of a stylesheet.
-
-         is it possible?  everything it depends on has to be there. If one class name
-                          is renamed or one component restyled, that lamp goes off ON
-                          ITS OWN and the others do not notice.
-
-       And a lamp that throws at any point is caught here, so it cannot reach another
-       lamp or the webview around them.
-
-       What this rules out on purpose: any arrangement where one missing class name
-       takes the whole thing down. A fix living inside somebody else's product will
-       one day meet a version of it nobody has seen, and the only question that
-       matters then is how much goes dark.
+       1. The direction of text, by the formula alone.
     ------------------------------------------------------------------ */
-    var LAMPS = {};
-    var running = null;
-
-    function lamp(name, fn) {
-      var verdict;
-      try { verdict = fn(); }
-      catch (e) { LAMPS[name] = "off - " + ((e && e.message) || "threw while starting"); return false; }
-
-      if (verdict === true) LAMPS[name] = "on";
-      else if (verdict === false) LAMPS[name] = "not needed - Claude Code does this itself now";
-      else if (verdict === null) LAMPS[name] = "off - what it needs is not in this build";
-      else LAMPS[name] = String(verdict);
-      return LAMPS[name].indexOf("on") === 0;
-    }
+    var direction = null;
+    try {
+      direction = SmartRTLDom.start(SmartRTL, {
+        // an answer: every block of Claude Code's markdown, the elements its plaintext rule
+        // was written for - never the heading it hides above a sent message for screen readers
+        answers: {
+          within: '[class^="root_"],[class*=" root_"]',
+          skip: '[class*="screenReaderTurnHeading_"],[class*="visuallyHidden_"]'
+        },
+        // the box, by name and by what it is, and the layer drawn over it that people read
+        composer: {
+          input: ['[class*="messageInput_"]', '[contenteditable][role="textbox"]'],
+          mirror: ['[class*="mentionMirror_"]', '[aria-hidden="true"]']
+        },
+        // a sent message: the run its text is handed to dir="auto" in - never inside an answer
+        sent: {
+          runs: '[dir="auto"]',
+          not: '[data-testid="assistant-message"]'
+        }
+      });
+    } catch (e) { direction = null; }
 
     window.__bidiStatus = function () {
       var out = {};
-      for (var k in LAMPS) if (Object.prototype.hasOwnProperty.call(LAMPS, k)) out[k] = LAMPS[k];
+      try { out.direction = direction ? direction.status() : "off - the engine did not start"; } catch (e) { out.direction = "off - " + e.message; }
       try {
-        if (running && running.status) {
-          out.engine = running.status();
-          // What the engine MEASURED outranks what a lamp was told when it was switched
-          // on. A lamp is asked before the thing it lights exists; the engine looks at
-          // the page afterwards and sees whether the direction was actually taken. In
-          // 2.1.267 the composer's lamp said "on" over a box that no longer turned.
-          if (out.composer && out.composer.indexOf("on") === 0 && out.engine.composer) out.composer = out.engine.composer;
-          if (out.sentMessages && out.sentMessages.indexOf("on") === 0 && out.engine.sent) out.sentMessages = out.engine.sent;
-        }
-      } catch (e) {}
-      // and the pinned message, which is a circuit of this file's own, not the engine's
-      try {
-        if (pinnedPart && pinnedPart.status && out.unpinExpandedMessage &&
-            out.unpinExpandedMessage.indexOf("on") === 0) {
-          out.unpinDetail = pinnedPart.status();
-          out.unpinExpandedMessage = out.unpinDetail.state;
-        }
+        out.pinnedMessage = pinnedPart && pinnedPart.status ? pinnedPart.status()
+          : { state: pinnedPart && pinnedPart.verdict === false ? "not needed - Claude Code does this itself now" : "off" };
       } catch (e) {}
       return out;
     };
 
-    /* ------------------------------------------------------------------
-       Does this build still read a mixed line the wrong way round?
-
-       The whole project exists for one behaviour: `unicode-bidi: plaintext` on the
-       rendered blocks takes a line's direction from its FIRST strong character, so a
-       line that opens with `npm` reads left to right however much Urdu follows it.
-
-       This asks the page rather than reading their stylesheet. A rule can be renamed,
-       moved, overridden, or shipped in a second file, and any of those makes a text
-       search lie - usually in the expensive direction. What the browser does with the
-       sentence cannot lie about what a reader will see.
-
-       A copy of the markdown root, off screen, holding the exact sentence the fault
-       is about. Where the browser puts its FIRST character is the answer:
-
-         first character on the left   -> still the old behaviour -> the fault is here
-         first character on the right  -> somebody fixed it       -> stand down
-
-       Three things make it trustworthy:
-         - it is built outside the app's own root, so nothing of React's is touched
-         - it carries no decision of ours, so OUR stylesheet cannot answer our own
-           question - the rules we install all sit under [data-bidi], and this has none
-         - it is taken out again immediately, whatever happens
-
-       Returns true / false / null, and null means "no markdown root exists yet, ask
-       again later" - which at start-up is the usual answer, because the panel has not
-       rendered a message when a patch at the end of the bundle runs.
-    ------------------------------------------------------------------ */
-    function faultIsStillHere() {
-      var roots = document.querySelectorAll('[class*="root"]');
-      for (var i = 0; i < roots.length && i < 8; i++) {
-        var verdict = askOneContainer(roots[i]);
-        if (verdict !== null) return verdict;
-      }
-      return null;                      // nothing to measure yet - ask again later
-    }
-
-    /**
-     * One container, two paragraphs, and the instrument checks itself first.
-     *
-     * control   pure Urdu. In a build that decides a line's direction at all - which
-     *           is what `unicode-bidi: plaintext` does, and what any replacement for
-     *           it would also have to do - this reads right to left. If it does NOT,
-     *           then whatever was found is not the container the fault lives in, the
-     *           measurement means nothing, and it is thrown away rather than
-     *           believed. An instrument nobody checks reads whatever you hoped.
-     *
-     * subject   the sentence the whole project exists for: opens in English, turns
-     *           Urdu. Left to right means the fault is still here. Right to left
-     *           means somebody has fixed it, and everything of ours stands down.
-     */
-    function askOneContainer(root) {
-      var probe = document.createElement("div");
-      probe.className = root.className;
-      probe.setAttribute("data-bidi-probe", "1");
-      probe.style.cssText = "position:fixed;top:0;left:0;width:420px;opacity:0;" +
-                            "pointer-events:none;z-index:-1";
-      var control = document.createElement("p");
-      control.textContent = "اسلام علیکم کیسے ہیں";
-      var subject = document.createElement("p");
-      subject.textContent = "npm install کے بعد پروجیکٹ چلائیں";
-      probe.appendChild(control);
-      probe.appendChild(subject);
-      (document.body || document.documentElement).appendChild(probe);
-      try {
-        var c = readsRightToLeft(control);
-        if (c !== true) return null;    // the instrument is not measuring anything
-        return readsRightToLeft(subject) === false;
-      } finally {
-        if (probe.parentNode) probe.parentNode.removeChild(probe);
-      }
-    }
-
-    /** Where the FIRST character of a paragraph ended up. null = nothing was laid out. */
-    function readsRightToLeft(p) {
-      var line = p.getBoundingClientRect();
-      if (!line.width || !p.firstChild) return null;
-      var r = document.createRange();
-      r.setStart(p.firstChild, 0);
-      r.setEnd(p.firstChild, 1);
-      var first = r.getBoundingClientRect();
-      if (!first.width) return null;
-      return (first.left - line.left) > line.width / 2;
-    }
-
-    /**
-     * Ask again the moment there is something to ask about.
-     *
-     * At start-up the answer is almost always "no markdown root yet", so the lamp is
-     * switched on and the question left open. The first time a message appears it is
-     * settled once and for all - and if the answer is that somebody has fixed this,
-     * the answers' part comes straight back out, and only that part. The box you type
-     * in and sent messages are separate questions, and stay on.
-     */
-    function settleWhetherNeeded() {
-      var done = false, asking = false, attempts = 0;
-
-      function ask() {
-        // Asking means putting a probe in the page and taking it out again, and this
-        // is watching the page - so without these two guards the question asks itself
-        // for ever. Not a slow loop: a HANG, and the panel never finishes loading.
-        // Found by booting the real 5MB bundle rather than by any test, because the
-        // copied page always had a container the probe could measure in and so always
-        // got an answer on the first ask.
-        if (done || asking || attempts > 40) return;
-        asking = true;
-        var still = null;
-        try { still = faultIsStillHere(); }
-        catch (e) { /* a probe that throws is not an answer */ }
-        finally {
-          attempts++;
-          try { watcher.takeRecords(); } catch (e) {}   // our own two mutations, forgotten
-          asking = false;
-        }
-        if (still === null) return;                     // nothing to measure yet
-        done = true;
-        try { watcher.disconnect(); } catch (e) {}
-        clearTimeout(giveUp);
-        if (still) return;                              // the fault is here; carry on
-        LAMPS.direction = "not needed - Claude Code does this itself now";
-        // Only the part that exists for THIS fault stands down. It used to be
-        // running.stop(), which took the box you type in and sent messages with it - so
-        // Claude Code fixing its answers would have switched off two things it had not
-        // touched. One lamp at a time holds in this direction too.
-        try {
-          if (running && running.standDownBlocks) {
-            running.standDownBlocks("Claude Code reads a mixed line correctly by itself now");
-          }
-        } catch (e) {}
-      }
-
-      var watcher = new MutationObserver(ask);
-      var giveUp = setTimeout(function () {
-        done = true;
-        try { watcher.disconnect(); } catch (e) {}
-      }, 60000);
-      watcher.observe(document.documentElement, { childList: true, subtree: true });
-      ask();
-    }
-
-    /* ------------------------------------------------------------------
-       Hand the surface to the engine.
-
-       Two of the things handed over are described twice, on purpose: by the hashed
-       class names this build of Claude Code happens to use, and by what the elements
-       ARE. The names come from a stylesheet and change whenever somebody restyles.
-       What an element is for does not: the box you type into is contenteditable with
-       role=textbox, the layer drawn over it is aria-hidden, and a typed message is
-       handed to dir="auto". Either description is enough on its own, so a rename
-       leaves the other one standing.
-
-       Checked across five builds, 2.1.247 to 2.1.267, before it was relied on: the
-       names never changed, the roles never changed, and dir="auto" occurs exactly
-       once in the whole bundle - on the span a typed message's text goes into.
-
-       The box you type into was then put to seventeen builds, booted and typed into,
-       from 2.0.50 to 2.1.268 - ten months. Its class names went from minified letters
-       to hashed names, a second layer appeared over it, and 2.1.267 added plaintext.
-       The five things listed for it below never changed once, in any of them, so each
-       one is its own road to it: any single one of them still standing finds it.
-
-       The composer is two stacked layers: an invisible contenteditable you type
-       into and a mirror that shows the text. The engine turns both from the element
-       they share, so the caret can never end up on one side while the glyph sits on
-       the other, and turns nothing at all if it cannot find both. Turning is all
-       that is done to them - no element of ours goes into either. It is a lamp of its
-       own inside the engine, too: its own observers and its own stylesheet, so nothing
-       that happens to answers can reach it. decisions.md, 35.
-
-       A message somebody sent is a lamp of its own too, since 0.5.2. Until then it was
-       decided by the code for answers: its body was named as one of their blocks, and
-       from 2.1.247 a heading Claude Code hides above every sent message for screen
-       readers decided its whole row first - text nobody sees, in somebody else's lamp.
-       Seventeen builds were booted and sent a message before this was changed. Now the
-       answers' part skips that heading, and the sent message is found by name and by
-       the run its text is handed to - dir="auto", the browser's own first-strong guess.
-       decisions.md, 36.
-
-       boxSelector names the smallest thing that counts as "one answer": its markdown
-       root. The content wrapper named here for sent messages until 0.5.1 had stopped
-       existing in 2.1.266 - Claude Code's own component still asks for that class, and
-       its stylesheet no longer has one.
-    ------------------------------------------------------------------ */
-    var needed = lamp("direction", function () {
-      var still = faultIsStillHere();
-      if (still === false) return false;
-      return true;                       // true, or "nothing to measure yet" - carry on
-    });
-
-    // A message that heads a turn, pinned and too tall to read past: a circuit of this
-    // file's own, started before the engine and inside its own guard, so that nothing that
-    // happens to the engine can reach it. Whether it is needed is asked of every message
-    // the page pins, not once at start-up - see startPinned.
-    var pinnedPart = null;
-    var unpin = UNPIN_EXPANDED ? lamp("unpinExpandedMessage", function () {
-      pinnedPart = startPinned();
-      return pinnedPart.verdict;         // "on - ...", or false: this build does not pin
-    }) : false;
-    if (unpin) {
-      lamp("keepTheViewOnTheMessage", function () {
-        return pinnedPart && pinnedPart.listening && pinnedPart.listening() ? true : "off - it is not listening";
-      });
-    }
-
-    var composer = MIRROR_INPUT ? lamp("composer", function () {
-      // The composer is rendered long after this runs, so "not there yet" is not
-      // "not there". Both questions are answered later, by the engine, and __bidiStatus()
-      // reports what it found instead of this:
-      //
-      //   is it needed?    asked of the real box, with the first draft that can answer -
-      //                    one that opens in Latin and turns right-to-left, which the
-      //                    browser's rule reads one way and ours the other. Drawn from the
-      //                    right, Claude Code has fixed this and the circuit comes out of
-      //                    the page. Until 0.5.3 this said "yes, for ever". decisions.md, 39.
-      //   did it work?     read back after the box is turned, every layer at once.
-      return true;
-    }) : false;
-
-    var sent = lamp("sentMessages", function () {
-      // One direction for the whole of a sent message, from what it says. Until 0.5.0
-      // it was decided line by line, from a copy of the message built beside Claude
-      // Code's own - and in the real panel that copy was never once made: a hidden
-      // heading carrying the same text decided the message first. decisions.md, 34.
-      // A circuit of its own since 0.5.2; what it measures replaces this. decisions.md, 36.
-      // And since 0.5.3 the engine asks this one the same question it asks the box: the
-      // first message that can tell the two rules apart is read before anything of ours is
-      // on it, and a page that lays it out right-to-left by itself gets this circuit taken
-      // out of it - that one, and neither of the others. decisions.md, 39.
-      return true;
-    });
-
-    // The engine starts whether or not the answers need us. It used to start only when
-    // they did - so a Claude Code that had fixed its answers would have started with the
-    // box you type in and sent messages switched off as well, parts that were never
-    // asked about. Answers that do not need us get `blocks: false`, and nothing else.
-    {
-      running = SmartRTLDom.start(SmartRTL, {
-        blocks: needed ? SmartRTLDom.DEFAULT_BLOCKS : false,
-        boxSelector: '[class*="root"]',
-        // what the answers' part must never decide from: the heading hidden above every
-        // sent message for screen readers, and anything else that is only there for them
-        skip: '[class*="screenReaderTurnHeading_"],[class*="visuallyHidden_"]',
-        sent: sent ? {
-          // by name: the text of a sent message in its expandable container - the same
-          // class, same hash, in every build from 2.1.30 to 2.1.268 - and the plain div a
-          // slash command with its arguments is shown in
-          text: [EXP_BOX + ' ' + BODY, '[class*="slashCommandMessage_"]'],
-          // and by what it is: the run the message's text is handed to dir="auto" in,
-          // in every build from 2.1.220 on, where it occurs nowhere else in the bundle
-          runs: true,
-          // and never inside an answer, which has a lamp of its own. Named by the test id
-          // every answer has carried since 2.1.59, which no restyle renames: the day
-          // Claude Code hands an answer's paragraphs to dir="auto" too, the road above
-          // would otherwise take each of them for a sent message
-          not: ['[data-testid="assistant-message"]']
-        } : null,
-        composer: composer ? {
-          container: IN_BOX,
-          // by name, by role, by the label a screen reader announces, by the multi-line
-          // flag that goes with that role, and by the attribute its placeholder is drawn
-          // from. The last four are what the box IS, and have read the same in every build
-          // from 2.0.50 to 2.1.268 - including the ones whose class names were minified
-          // letters, where the first road did not exist at all. data-placeholder occurs
-          // on this box and on nothing else in the bundle.
-          input: [IN_TXT, '[contenteditable][role="textbox"]', '[aria-label="Message input"]',
-                  '[contenteditable][aria-multiline="true"]', '[contenteditable][data-placeholder]'],
-          // by name, and by what a copy of the text is: hidden from a screen reader, which
-          // already hears the box itself. Several hidden things beside the box are told apart
-          // by which of them is drawn over it.
-          mirror: [IN_MIR, '[aria-hidden="true"]']
-          // One direction for the whole box, and that is a decision rather than a gap.
-          // A line of a draft is a newline character inside one text node, so an
-          // element per line has to be made - and the only place to put one is inside
-          // the mirror, which is React's. Both ways of doing that were built, shipped
-          // and typed into:
-          //
-          //   0.3.0  made the elements in React's mirror. It threw React's own nodes
-          //          away, the mirror stopped updating - the box typed blank spaces -
-          //          and React's next removeChild took the whole panel down.
-          //   0.3.3  left React's mirror alone and drew a clone of it. Safe, and
-          //          still wrong: every keystroke reached the screen ONE KEYSTROKE
-          //          LATE.
-          //
-          // Typing is what this box is for. So the composer takes one direction for
-          // the whole of it, live, from any RTL letter - and a draft that mixes
-          // languages goes right to left as a whole. A sent message does the same.
-        } : null,
-        // one message ends here, by name - and since 2.1.268 by the attribute Claude Code
-        // puts on every message in the transcript, which no restyle renames
-        boundary: '[class*="message_"],[data-transcript-message]'
-      });
-      if (!running) {
-        LAMPS.direction = "off - something is already running";
-      } else {
-        // the question only means anything while the answers' part is on
-        if (needed) settleWhetherNeeded();
-      }
-    }
-
-    // The escape hatch covers every circuit, whichever of them started, and it is honest
-    // about itself: after it has been used, the status must not still claim that anything
-    // is on. It used to leave the pinned message's listener behind, still putting the
-    // reader back on their line after they had turned all of this off.
     {
       var release = typeof window.__bidiFixOff === "function" ? window.__bidiFixOff : null;
       window.__bidiFixOff = function () {
-        for (var k in LAMPS) if (Object.prototype.hasOwnProperty.call(LAMPS, k)) {
-          if (LAMPS[k].indexOf("on") === 0) LAMPS[k] = "off - turned off by hand";
-        }
+        try { if (direction) direction.stop(); } catch (e) {}
         try { if (pinnedPart && pinnedPart.stop) pinnedPart.stop(); } catch (e) {}
-        running = null;
+        direction = null;
         return release ? release() : "off";
       };
     }

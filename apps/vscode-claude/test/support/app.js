@@ -173,11 +173,8 @@ const read = (page) => page.evaluate((sel) => {
     const a = r.getBoundingClientRect(), b = el.getBoundingClientRect();
     return (a.left - b.left) > b.width / 2 ? "rtl" : "ltr";
   };
-  const s = window.__bidiStatus ? window.__bidiStatus() : null;
-  return { marked: box.getAttribute("data-bidi-input"), input: cs(input), mirror: mirror ? cs(mirror) : null,
-           reads: side(mirror || input), layers: mirror ? 2 : 1,
-           status: s ? s.composer : "the payload did not run",
-           found: s && s.engine && s.engine.composerDetail ? s.engine.composerDetail.found : null };
+  return { marked: input.getAttribute("data-bidi-box"), input: cs(input), mirror: mirror ? cs(mirror) : null,
+           reads: side(mirror || input), layers: mirror ? 2 : 1 };
 }, BOX);
 
 /**
@@ -221,12 +218,9 @@ async function sentBlock(page, first) {
         while (b && getComputedStyle(b).display.startsWith("inline")) b = b.parentElement;
         b.setAttribute("data-test-sent", "");
         const row = b.closest("[data-transcript-message]") || b.closest('[class*="message_"]');
-        const s = window.__bidiStatus ? window.__bidiStatus() : null;
         return {
           ours: b.getAttribute("data-bidi-sent"),
-          rowDecided: row ? [row, ...row.querySelectorAll("*")].some((e) => e.hasAttribute("data-bidi")) : null,
-          status: s ? s.sentMessages : "the payload did not run",
-          found: s && s.engine && s.engine.sentDetail ? s.engine.sentDetail.found : null
+          rowDecided: row ? [row, ...row.querySelectorAll("*")].some((e) => e.hasAttribute("data-bidi")) : null
         };
       }
     }
