@@ -1,0 +1,628 @@
+{
+  "what": "Direction rules replayed over streamed text (outline section 5)",
+  "generated": "2026-09-17T08:38:48.623Z",
+  "corpus": {
+    "source": "B (WildChat-4.8M sample, OpenAI models)",
+    "texts": 59411,
+    "seed": "smartrtl corpus, source A, 2026-09-17",
+    "snapshotSha256": "371e58de1614a295132f597cd80cf9731eb2db73e61ec600bc7bcfe9f4c6b826"
+  },
+  "provenance": {
+    "unicode": "18.0.0",
+    "closure": {
+      "commit": "0d779e6baca4cf9d650aa28c3146305db3c101ce",
+      "sha256": "e0b51560339009ac085258f86b56dc22c8afd9c10d47fd5eb7f4e84ecfafa97b"
+    },
+    "smartrtl": {
+      "file": "packages/core/src/direction.js"
+    },
+    "rules": {
+      "file": "paper/rules/rules.js",
+      "sha256": "5cd5b09bc08ccf8219e44ddd48c1dae0513f21a145fea644a40afc3fd02191a5"
+    }
+  },
+  "by": {
+    "word": {
+      "first-strong": {
+        "changed": 1,
+        "reversed": 0,
+        "changes": 1,
+        "finalRtl": 46455,
+        "hold": {
+          "meanArrivals": 0,
+          "zeroPct": 100,
+          "median": 0,
+          "p90": 0,
+          "p95": 0,
+          "p99": 0,
+          "waitsForWholeBlock": 0
+        },
+        "shownOtherWay": 0.1667,
+        "byFirstStrong": {
+          "L": {
+            "texts": 12956,
+            "changed": 0,
+            "reversed": 0
+          },
+          "R": {
+            "texts": 46455,
+            "changed": 1,
+            "reversed": 0
+          }
+        },
+        "byLanguage": {
+          "Persian": {
+            "texts": 26521,
+            "changed": 0,
+            "reversed": 0
+          },
+          "Arabic": {
+            "texts": 22930,
+            "changed": 1,
+            "reversed": 0
+          },
+          "Hebrew": {
+            "texts": 9894,
+            "changed": 0,
+            "reversed": 0
+          },
+          "Urdu": {
+            "texts": 66,
+            "changed": 0,
+            "reversed": 0
+          }
+        }
+      },
+      "plaintext": {
+        "changed": 1,
+        "reversed": 0,
+        "changes": 1,
+        "finalRtl": 46455,
+        "hold": {
+          "meanArrivals": 0,
+          "zeroPct": 100,
+          "median": 0,
+          "p90": 0,
+          "p95": 0,
+          "p99": 0,
+          "waitsForWholeBlock": 0
+        },
+        "shownOtherWay": 0.1667,
+        "byFirstStrong": {
+          "L": {
+            "texts": 12956,
+            "changed": 0,
+            "reversed": 0
+          },
+          "R": {
+            "texts": 46455,
+            "changed": 1,
+            "reversed": 0
+          }
+        },
+        "byLanguage": {
+          "Persian": {
+            "texts": 26521,
+            "changed": 0,
+            "reversed": 0
+          },
+          "Arabic": {
+            "texts": 22930,
+            "changed": 1,
+            "reversed": 0
+          },
+          "Hebrew": {
+            "texts": 9894,
+            "changed": 0,
+            "reversed": 0
+          },
+          "Urdu": {
+            "texts": 66,
+            "changed": 0,
+            "reversed": 0
+          }
+        }
+      },
+      "word-count-40": {
+        "changed": 15313,
+        "reversed": 3257,
+        "changes": 19938,
+        "finalRtl": 55310,
+        "hold": {
+          "meanArrivals": 18.98,
+          "zeroPct": 0,
+          "median": 14,
+          "p90": 40,
+          "p95": 51,
+          "p99": 77,
+          "waitsForWholeBlock": 59411
+        },
+        "shownOtherWay": 0.3026,
+        "byFirstStrong": {
+          "L": {
+            "texts": 12956,
+            "changed": 12034,
+            "reversed": 1768
+          },
+          "R": {
+            "texts": 46455,
+            "changed": 3279,
+            "reversed": 1489
+          }
+        },
+        "byLanguage": {
+          "Persian": {
+            "texts": 26521,
+            "changed": 7295,
+            "reversed": 948
+          },
+          "Arabic": {
+            "texts": 22930,
+            "changed": 7000,
+            "reversed": 2006
+          },
+          "Hebrew": {
+            "texts": 9894,
+            "changed": 1011,
+            "reversed": 302
+          },
+          "Urdu": {
+            "texts": 66,
+            "changed": 7,
+            "reversed": 1
+          }
+        }
+      },
+      "first-strong-rtl": {
+        "changed": 1,
+        "reversed": 0,
+        "changes": 1,
+        "finalRtl": 46455,
+        "hold": {
+          "meanArrivals": 0,
+          "zeroPct": 100,
+          "median": 0,
+          "p90": 0,
+          "p95": 0,
+          "p99": 0,
+          "waitsForWholeBlock": 0
+        },
+        "shownOtherWay": 0.1667,
+        "byFirstStrong": {
+          "L": {
+            "texts": 12956,
+            "changed": 0,
+            "reversed": 0
+          },
+          "R": {
+            "texts": 46455,
+            "changed": 1,
+            "reversed": 0
+          }
+        },
+        "byLanguage": {
+          "Persian": {
+            "texts": 26521,
+            "changed": 0,
+            "reversed": 0
+          },
+          "Arabic": {
+            "texts": 22930,
+            "changed": 1,
+            "reversed": 0
+          },
+          "Hebrew": {
+            "texts": 9894,
+            "changed": 0,
+            "reversed": 0
+          },
+          "Urdu": {
+            "texts": 66,
+            "changed": 0,
+            "reversed": 0
+          }
+        }
+      },
+      "any-rtl": {
+        "changed": 12771,
+        "reversed": 0,
+        "changes": 12771,
+        "finalRtl": 59411,
+        "hold": {
+          "meanArrivals": 0.47,
+          "zeroPct": 78.5,
+          "median": 0,
+          "p90": 2,
+          "p95": 2,
+          "p99": 6,
+          "waitsForWholeBlock": 0
+        },
+        "shownOtherWay": 0.2285,
+        "byFirstStrong": {
+          "L": {
+            "texts": 12956,
+            "changed": 12770,
+            "reversed": 0
+          },
+          "R": {
+            "texts": 46455,
+            "changed": 1,
+            "reversed": 0
+          }
+        },
+        "byLanguage": {
+          "Persian": {
+            "texts": 26521,
+            "changed": 6367,
+            "reversed": 0
+          },
+          "Arabic": {
+            "texts": 22930,
+            "changed": 5722,
+            "reversed": 0
+          },
+          "Hebrew": {
+            "texts": 9894,
+            "changed": 675,
+            "reversed": 0
+          },
+          "Urdu": {
+            "texts": 66,
+            "changed": 7,
+            "reversed": 0
+          }
+        }
+      },
+      "any-rtl-63": {
+        "changed": 12571,
+        "reversed": 0,
+        "changes": 12571,
+        "finalRtl": 59211,
+        "hold": {
+          "meanArrivals": 0.44,
+          "zeroPct": 78.5,
+          "median": 0,
+          "p90": 2,
+          "p95": 2,
+          "p99": 6,
+          "waitsForWholeBlock": 0
+        },
+        "shownOtherWay": 0.2238,
+        "byFirstStrong": {
+          "L": {
+            "texts": 12956,
+            "changed": 12570,
+            "reversed": 0
+          },
+          "R": {
+            "texts": 46455,
+            "changed": 1,
+            "reversed": 0
+          }
+        },
+        "byLanguage": {
+          "Persian": {
+            "texts": 26521,
+            "changed": 6323,
+            "reversed": 0
+          },
+          "Arabic": {
+            "texts": 22930,
+            "changed": 5570,
+            "reversed": 0
+          },
+          "Hebrew": {
+            "texts": 9894,
+            "changed": 671,
+            "reversed": 0
+          },
+          "Urdu": {
+            "texts": 66,
+            "changed": 7,
+            "reversed": 0
+          }
+        }
+      },
+      "char-majority": {
+        "changed": 22886,
+        "reversed": 8031,
+        "changes": 33452,
+        "finalRtl": 49718,
+        "hold": {
+          "meanArrivals": 18.98,
+          "zeroPct": 0,
+          "median": 14,
+          "p90": 40,
+          "p95": 51,
+          "p99": 77,
+          "waitsForWholeBlock": 59411
+        },
+        "shownOtherWay": 0.3732,
+        "byFirstStrong": {
+          "L": {
+            "texts": 12956,
+            "changed": 9983,
+            "reversed": 957
+          },
+          "R": {
+            "texts": 46455,
+            "changed": 12903,
+            "reversed": 7074
+          }
+        },
+        "byLanguage": {
+          "Persian": {
+            "texts": 26521,
+            "changed": 10672,
+            "reversed": 3255
+          },
+          "Arabic": {
+            "texts": 22930,
+            "changed": 8668,
+            "reversed": 2806
+          },
+          "Hebrew": {
+            "texts": 9894,
+            "changed": 3525,
+            "reversed": 1958
+          },
+          "Urdu": {
+            "texts": 66,
+            "changed": 21,
+            "reversed": 12
+          }
+        }
+      },
+      "telegram-2017": {
+        "changed": 21167,
+        "reversed": 7106,
+        "changes": 30584,
+        "finalRtl": 50581,
+        "hold": {
+          "meanArrivals": 18.98,
+          "zeroPct": 0,
+          "median": 14,
+          "p90": 40,
+          "p95": 51,
+          "p99": 77,
+          "waitsForWholeBlock": 59411
+        },
+        "shownOtherWay": 0.3755,
+        "byFirstStrong": {
+          "L": {
+            "texts": 12956,
+            "changed": 9987,
+            "reversed": 951
+          },
+          "R": {
+            "texts": 46455,
+            "changed": 11180,
+            "reversed": 6155
+          }
+        },
+        "byLanguage": {
+          "Persian": {
+            "texts": 26521,
+            "changed": 9912,
+            "reversed": 2853
+          },
+          "Arabic": {
+            "texts": 22930,
+            "changed": 8063,
+            "reversed": 2497
+          },
+          "Hebrew": {
+            "texts": 9894,
+            "changed": 3175,
+            "reversed": 1746
+          },
+          "Urdu": {
+            "texts": 66,
+            "changed": 17,
+            "reversed": 10
+          }
+        }
+      },
+      "prose-majority": {
+        "changed": 18973,
+        "reversed": 5492,
+        "changes": 25902,
+        "finalRtl": 51780,
+        "hold": {
+          "meanArrivals": 18.98,
+          "zeroPct": 0,
+          "median": 14,
+          "p90": 40,
+          "p95": 51,
+          "p99": 77,
+          "waitsForWholeBlock": 59411
+        },
+        "shownOtherWay": 0.3676,
+        "byFirstStrong": {
+          "L": {
+            "texts": 12956,
+            "changed": 10139,
+            "reversed": 879
+          },
+          "R": {
+            "texts": 46455,
+            "changed": 8834,
+            "reversed": 4613
+          }
+        },
+        "byLanguage": {
+          "Persian": {
+            "texts": 26521,
+            "changed": 9207,
+            "reversed": 2223
+          },
+          "Arabic": {
+            "texts": 22930,
+            "changed": 7713,
+            "reversed": 2246
+          },
+          "Hebrew": {
+            "texts": 9894,
+            "changed": 2037,
+            "reversed": 1014
+          },
+          "Urdu": {
+            "texts": 66,
+            "changed": 16,
+            "reversed": 9
+          }
+        }
+      },
+      "smartrtl": {
+        "changed": 12976,
+        "reversed": 0,
+        "changes": 12976,
+        "finalRtl": 59289,
+        "hold": {
+          "meanArrivals": 0.5,
+          "zeroPct": 78,
+          "median": 0,
+          "p90": 2,
+          "p95": 2,
+          "p99": 6,
+          "waitsForWholeBlock": 122
+        },
+        "shownOtherWay": 0.2299,
+        "byFirstStrong": {
+          "L": {
+            "texts": 12956,
+            "changed": 12683,
+            "reversed": 0
+          },
+          "R": {
+            "texts": 46455,
+            "changed": 293,
+            "reversed": 0
+          }
+        },
+        "byLanguage": {
+          "Persian": {
+            "texts": 26521,
+            "changed": 6400,
+            "reversed": 0
+          },
+          "Arabic": {
+            "texts": 22930,
+            "changed": 5814,
+            "reversed": 0
+          },
+          "Hebrew": {
+            "texts": 9894,
+            "changed": 755,
+            "reversed": 0
+          },
+          "Urdu": {
+            "texts": 66,
+            "changed": 7,
+            "reversed": 0
+          }
+        }
+      },
+      "opening-words-3": {
+        "changed": 11000,
+        "reversed": 0,
+        "changes": 11000,
+        "finalRtl": 57454,
+        "hold": {
+          "meanArrivals": 0.37,
+          "zeroPct": 78.2,
+          "median": 0,
+          "p90": 2,
+          "p95": 2,
+          "p99": 3,
+          "waitsForWholeBlock": 24
+        },
+        "shownOtherWay": 0.2056,
+        "byFirstStrong": {
+          "L": {
+            "texts": 12956,
+            "changed": 10999,
+            "reversed": 0
+          },
+          "R": {
+            "texts": 46455,
+            "changed": 1,
+            "reversed": 0
+          }
+        },
+        "byLanguage": {
+          "Persian": {
+            "texts": 26521,
+            "changed": 5783,
+            "reversed": 0
+          },
+          "Arabic": {
+            "texts": 22930,
+            "changed": 4615,
+            "reversed": 0
+          },
+          "Hebrew": {
+            "texts": 9894,
+            "changed": 595,
+            "reversed": 0
+          },
+          "Urdu": {
+            "texts": 66,
+            "changed": 7,
+            "reversed": 0
+          }
+        }
+      },
+      "opening-words-6": {
+        "changed": 12337,
+        "reversed": 0,
+        "changes": 12337,
+        "finalRtl": 58791,
+        "hold": {
+          "meanArrivals": 0.42,
+          "zeroPct": 78.2,
+          "median": 0,
+          "p90": 2,
+          "p95": 2,
+          "p99": 6,
+          "waitsForWholeBlock": 39
+        },
+        "shownOtherWay": 0.2147,
+        "byFirstStrong": {
+          "L": {
+            "texts": 12956,
+            "changed": 12336,
+            "reversed": 0
+          },
+          "R": {
+            "texts": 46455,
+            "changed": 1,
+            "reversed": 0
+          }
+        },
+        "byLanguage": {
+          "Persian": {
+            "texts": 26521,
+            "changed": 6259,
+            "reversed": 0
+          },
+          "Arabic": {
+            "texts": 22930,
+            "changed": 5402,
+            "reversed": 0
+          },
+          "Hebrew": {
+            "texts": 9894,
+            "changed": 669,
+            "reversed": 0
+          },
+          "Urdu": {
+            "texts": 66,
+            "changed": 7,
+            "reversed": 0
+          }
+        }
+      }
+    }
+  }
+}

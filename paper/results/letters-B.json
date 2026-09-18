@@ -1,0 +1,145 @@
+{
+  "source": "B",
+  "texts": 12904,
+  "proxyRtl": 10547,
+  "proxyLtr": 1176,
+  "lettersInFirst6Words": {
+    "texts": 8692,
+    "mean": 31.3,
+    "p10": 23,
+    "median": 31,
+    "p90": 40
+  },
+  "byLetters": [
+    {
+      "L": 10,
+      "late": 4513,
+      "latePct": 42.8,
+      "early": 80,
+      "earlyPct": 6.8,
+      "mistakes": 4593
+    },
+    {
+      "L": 15,
+      "late": 1624,
+      "latePct": 15.4,
+      "early": 717,
+      "earlyPct": 61,
+      "mistakes": 2341
+    },
+    {
+      "L": 20,
+      "late": 791,
+      "latePct": 7.5,
+      "early": 787,
+      "earlyPct": 66.9,
+      "mistakes": 1578
+    },
+    {
+      "L": 25,
+      "late": 432,
+      "latePct": 4.1,
+      "early": 862,
+      "earlyPct": 73.3,
+      "mistakes": 1294
+    },
+    {
+      "L": 30,
+      "late": 275,
+      "latePct": 2.6,
+      "early": 903,
+      "earlyPct": 76.8,
+      "mistakes": 1178
+    },
+    {
+      "L": 35,
+      "late": 177,
+      "latePct": 1.7,
+      "early": 931,
+      "earlyPct": 79.2,
+      "mistakes": 1108
+    },
+    {
+      "L": 40,
+      "late": 114,
+      "latePct": 1.1,
+      "early": 957,
+      "earlyPct": 81.4,
+      "mistakes": 1071
+    },
+    {
+      "L": 50,
+      "late": 61,
+      "latePct": 0.6,
+      "early": 984,
+      "earlyPct": 83.7,
+      "mistakes": 1045
+    },
+    {
+      "L": 63,
+      "late": 29,
+      "latePct": 0.3,
+      "early": 1029,
+      "earlyPct": 87.5,
+      "mistakes": 1058
+    },
+    {
+      "L": 80,
+      "late": 12,
+      "latePct": 0.1,
+      "early": 1072,
+      "earlyPct": 91.2,
+      "mistakes": 1084
+    }
+  ],
+  "byWords": [
+    {
+      "N": 3,
+      "late": 1066,
+      "latePct": 10.1,
+      "early": 714,
+      "earlyPct": 60.7,
+      "mistakes": 1780
+    },
+    {
+      "N": 4,
+      "late": 564,
+      "latePct": 5.3,
+      "early": 816,
+      "earlyPct": 69.4,
+      "mistakes": 1380
+    },
+    {
+      "N": 5,
+      "late": 313,
+      "latePct": 3,
+      "early": 886,
+      "earlyPct": 75.3,
+      "mistakes": 1199
+    },
+    {
+      "N": 6,
+      "late": 167,
+      "latePct": 1.6,
+      "early": 924,
+      "earlyPct": 78.6,
+      "mistakes": 1091
+    },
+    {
+      "N": 7,
+      "late": 118,
+      "latePct": 1.1,
+      "early": 951,
+      "earlyPct": 80.9,
+      "mistakes": 1069
+    },
+    {
+      "N": 8,
+      "late": 89,
+      "latePct": 0.8,
+      "early": 981,
+      "earlyPct": 83.4,
+      "mistakes": 1070
+    }
+  ]
+}

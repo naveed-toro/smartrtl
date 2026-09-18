@@ -1,0 +1,208 @@
+{
+  "at": "2026-09-17T09:53:48.663Z",
+  "chunk": {
+    "chars": 4,
+    "ms": 30
+  },
+  "frameMs": 16.7,
+  "lab": {
+    "built": "2026-09-17T09:50:46.675Z",
+    "closure": {
+      "commit": "0d779e6baca4cf9d650aa28c3146305db3c101ce",
+      "sha256": "e0b51560339009ac085258f86b56dc22c8afd9c10d47fd5eb7f4e84ecfafa97b"
+    },
+    "rules": {
+      "file": "paper/rules/rules.js",
+      "sha256": "8f03127d88309a4ad8d14fa3d55309d70c9a6c1a2c271861dc5490c75821419d"
+    },
+    "smartrtl": {
+      "file": "packages/core/src/direction.js",
+      "sha256": "88d947a80293f03b2a30f09d7d1305a6cc20695d83588eba0c76fd14a5409363"
+    },
+    "unicode": "18.0.0"
+  },
+  "trials": [
+    {
+      "answer": "noticed",
+      "frames": 4,
+      "measuredMs": 66,
+      "opening": "React"
+    },
+    {
+      "answer": "not-noticed",
+      "frames": 2,
+      "measuredMs": 33,
+      "opening": "Python"
+    },
+    {
+      "answer": "not-noticed",
+      "frames": 0,
+      "measuredMs": 0,
+      "opening": "Docker"
+    },
+    {
+      "answer": "not-noticed",
+      "frames": 8,
+      "measuredMs": 133,
+      "opening": "GitHub"
+    },
+    {
+      "answer": "not-noticed",
+      "frames": 8,
+      "measuredMs": 133,
+      "opening": "JavaScript"
+    },
+    {
+      "answer": "not-noticed",
+      "frames": 0,
+      "measuredMs": 0,
+      "opening": "API"
+    },
+    {
+      "answer": "noticed",
+      "frames": 16,
+      "measuredMs": 267,
+      "opening": "React"
+    },
+    {
+      "answer": "noticed",
+      "frames": 16,
+      "measuredMs": 267,
+      "opening": "Python"
+    },
+    {
+      "answer": "noticed",
+      "frames": 4,
+      "measuredMs": 66,
+      "opening": "Docker"
+    },
+    {
+      "answer": "not-noticed",
+      "frames": 1,
+      "measuredMs": 16,
+      "opening": "GitHub"
+    },
+    {
+      "answer": "not-noticed",
+      "frames": 8,
+      "measuredMs": 133,
+      "opening": "JavaScript"
+    },
+    {
+      "answer": "not-noticed",
+      "frames": 1,
+      "measuredMs": 16,
+      "opening": "API"
+    },
+    {
+      "answer": "not-noticed",
+      "frames": 2,
+      "measuredMs": 32,
+      "opening": "React"
+    },
+    {
+      "answer": "not-noticed",
+      "frames": 16,
+      "measuredMs": 267,
+      "opening": "Python"
+    },
+    {
+      "answer": "not-noticed",
+      "frames": 16,
+      "measuredMs": 266,
+      "opening": "Docker"
+    },
+    {
+      "answer": "not-noticed",
+      "frames": 4,
+      "measuredMs": 66,
+      "opening": "GitHub"
+    },
+    {
+      "answer": "not-noticed",
+      "frames": 2,
+      "measuredMs": 33,
+      "opening": "JavaScript"
+    },
+    {
+      "answer": "not-noticed",
+      "frames": 1,
+      "measuredMs": 17,
+      "opening": "API"
+    },
+    {
+      "answer": "not-noticed",
+      "frames": 1,
+      "measuredMs": 16,
+      "opening": "React"
+    },
+    {
+      "answer": "noticed",
+      "frames": 8,
+      "measuredMs": 133,
+      "opening": "Python"
+    },
+    {
+      "answer": "not-noticed",
+      "frames": 2,
+      "measuredMs": 34,
+      "opening": "Docker"
+    },
+    {
+      "answer": "not-noticed",
+      "frames": 0,
+      "measuredMs": 0,
+      "opening": "GitHub"
+    },
+    {
+      "answer": "not-noticed",
+      "frames": 2,
+      "measuredMs": 33,
+      "opening": "JavaScript"
+    },
+    {
+      "answer": "noticed",
+      "frames": 4,
+      "measuredMs": 67,
+      "opening": "API"
+    },
+    {
+      "answer": "not-noticed",
+      "frames": 0,
+      "measuredMs": 0,
+      "opening": "React"
+    },
+    {
+      "answer": "noticed",
+      "frames": 16,
+      "measuredMs": 267,
+      "opening": "Python"
+    },
+    {
+      "answer": "not-noticed",
+      "frames": 1,
+      "measuredMs": 17,
+      "opening": "Docker"
+    },
+    {
+      "answer": "not-noticed",
+      "frames": 0,
+      "measuredMs": 0,
+      "opening": "GitHub"
+    },
+    {
+      "answer": "noticed",
+      "frames": 8,
+      "measuredMs": 133,
+      "opening": "JavaScript"
+    },
+    {
+      "answer": "noticed",
+      "frames": 4,
+      "measuredMs": 67,
+      "opening": "API"
+    }
+  ],
+  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36 Edg/153.0.0.0",
+  "viewer": null
+}

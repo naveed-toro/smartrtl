@@ -1,0 +1,486 @@
+{
+  "what": "Direction rules replayed over streamed text (outline section 5)",
+  "generated": "2026-09-17T06:30:58.577Z",
+  "corpus": {
+    "source": "A (owner's Claude Code answers, before 2026-09-17)",
+    "texts": 5065,
+    "seed": "smartrtl corpus, source A, 2026-09-17",
+    "snapshotSha256": "d02d8c5d76953d4617400f39d2a0070cead6320d275e68b002544918b700b08e"
+  },
+  "provenance": {
+    "unicode": "18.0.0",
+    "closure": {
+      "commit": "0d779e6baca4cf9d650aa28c3146305db3c101ce",
+      "sha256": "e0b51560339009ac085258f86b56dc22c8afd9c10d47fd5eb7f4e84ecfafa97b"
+    },
+    "smartrtl": {
+      "file": "packages/core/src/direction.js"
+    },
+    "rules": {
+      "file": "paper/rules/rules.js",
+      "sha256": "93cbdd5c4e1e636a2261f370566187ad92e320e8b28a218040c921853446809f"
+    }
+  },
+  "by": {
+    "character": {
+      "first-strong": {
+        "changed": 3,
+        "reversed": 0,
+        "changes": 3,
+        "finalRtl": 3354,
+        "shownOtherWay": 0.1391,
+        "byFirstStrong": {
+          "L": {
+            "texts": 1711,
+            "changed": 0,
+            "reversed": 0
+          },
+          "R": {
+            "texts": 3354,
+            "changed": 3,
+            "reversed": 0
+          }
+        }
+      },
+      "plaintext": {
+        "changed": 3,
+        "reversed": 0,
+        "changes": 3,
+        "finalRtl": 3354,
+        "shownOtherWay": 0.1391,
+        "byFirstStrong": {
+          "L": {
+            "texts": 1711,
+            "changed": 0,
+            "reversed": 0
+          },
+          "R": {
+            "texts": 3354,
+            "changed": 3,
+            "reversed": 0
+          }
+        }
+      },
+      "word-count-40": {
+        "changed": 1833,
+        "reversed": 461,
+        "changes": 2619,
+        "finalRtl": 4887,
+        "shownOtherWay": 0.2829,
+        "byFirstStrong": {
+          "L": {
+            "texts": 1711,
+            "changed": 1634,
+            "reversed": 298
+          },
+          "R": {
+            "texts": 3354,
+            "changed": 199,
+            "reversed": 163
+          }
+        }
+      },
+      "first-strong-rtl": {
+        "changed": 3,
+        "reversed": 0,
+        "changes": 3,
+        "finalRtl": 3354,
+        "shownOtherWay": 0.1391,
+        "byFirstStrong": {
+          "L": {
+            "texts": 1711,
+            "changed": 0,
+            "reversed": 0
+          },
+          "R": {
+            "texts": 3354,
+            "changed": 3,
+            "reversed": 0
+          }
+        }
+      },
+      "any-rtl": {
+        "changed": 1710,
+        "reversed": 0,
+        "changes": 1710,
+        "finalRtl": 5061,
+        "shownOtherWay": 0.2502,
+        "byFirstStrong": {
+          "L": {
+            "texts": 1711,
+            "changed": 1707,
+            "reversed": 0
+          },
+          "R": {
+            "texts": 3354,
+            "changed": 3,
+            "reversed": 0
+          }
+        }
+      },
+      "any-rtl-63": {
+        "changed": 1730,
+        "reversed": 0,
+        "changes": 1730,
+        "finalRtl": 5050,
+        "shownOtherWay": 0.2431,
+        "byFirstStrong": {
+          "L": {
+            "texts": 1711,
+            "changed": 1696,
+            "reversed": 0
+          },
+          "R": {
+            "texts": 3354,
+            "changed": 34,
+            "reversed": 0
+          }
+        }
+      },
+      "char-majority": {
+        "changed": 2406,
+        "reversed": 1176,
+        "changes": 4423,
+        "finalRtl": 4336,
+        "shownOtherWay": 0.3367,
+        "byFirstStrong": {
+          "L": {
+            "texts": 1711,
+            "changed": 1308,
+            "reversed": 278
+          },
+          "R": {
+            "texts": 3354,
+            "changed": 1098,
+            "reversed": 898
+          }
+        }
+      },
+      "telegram-2017": {
+        "changed": 2299,
+        "reversed": 1084,
+        "changes": 4188,
+        "finalRtl": 4355,
+        "shownOtherWay": 0.3383,
+        "byFirstStrong": {
+          "L": {
+            "texts": 1711,
+            "changed": 1308,
+            "reversed": 278
+          },
+          "R": {
+            "texts": 3354,
+            "changed": 991,
+            "reversed": 806
+          }
+        }
+      },
+      "prose-majority": {
+        "changed": 2426,
+        "reversed": 1210,
+        "changes": 4668,
+        "finalRtl": 4667,
+        "shownOtherWay": 0.3021,
+        "byFirstStrong": {
+          "L": {
+            "texts": 1711,
+            "changed": 1483,
+            "reversed": 361
+          },
+          "R": {
+            "texts": 3354,
+            "changed": 943,
+            "reversed": 849
+          }
+        }
+      },
+      "smartrtl": {
+        "changed": 5027,
+        "reversed": 0,
+        "changes": 5027,
+        "finalRtl": 5053,
+        "shownOtherWay": 0.1003,
+        "byFirstStrong": {
+          "L": {
+            "texts": 1711,
+            "changed": 1689,
+            "reversed": 0
+          },
+          "R": {
+            "texts": 3354,
+            "changed": 3338,
+            "reversed": 0
+          }
+        }
+      },
+      "opening-words-3": {
+        "changed": 1615,
+        "reversed": 17,
+        "changes": 1641,
+        "finalRtl": 4958,
+        "shownOtherWay": 0.2408,
+        "byFirstStrong": {
+          "L": {
+            "texts": 1711,
+            "changed": 1612,
+            "reversed": 17
+          },
+          "R": {
+            "texts": 3354,
+            "changed": 3,
+            "reversed": 0
+          }
+        }
+      },
+      "opening-words-2-of-5": {
+        "changed": 4807,
+        "reversed": 17,
+        "changes": 4832,
+        "finalRtl": 4798,
+        "shownOtherWay": 0.1667,
+        "byFirstStrong": {
+          "L": {
+            "texts": 1711,
+            "changed": 1510,
+            "reversed": 16
+          },
+          "R": {
+            "texts": 3354,
+            "changed": 3297,
+            "reversed": 1
+          }
+        }
+      }
+    },
+    "word": {
+      "first-strong": {
+        "changed": 1,
+        "reversed": 0,
+        "changes": 1,
+        "finalRtl": 3354,
+        "shownOtherWay": 0.027,
+        "byFirstStrong": {
+          "L": {
+            "texts": 1711,
+            "changed": 0,
+            "reversed": 0
+          },
+          "R": {
+            "texts": 3354,
+            "changed": 1,
+            "reversed": 0
+          }
+        }
+      },
+      "plaintext": {
+        "changed": 1,
+        "reversed": 0,
+        "changes": 1,
+        "finalRtl": 3354,
+        "shownOtherWay": 0.027,
+        "byFirstStrong": {
+          "L": {
+            "texts": 1711,
+            "changed": 0,
+            "reversed": 0
+          },
+          "R": {
+            "texts": 3354,
+            "changed": 1,
+            "reversed": 0
+          }
+        }
+      },
+      "word-count-40": {
+        "changed": 1832,
+        "reversed": 460,
+        "changes": 2611,
+        "finalRtl": 4887,
+        "shownOtherWay": 0.233,
+        "byFirstStrong": {
+          "L": {
+            "texts": 1711,
+            "changed": 1634,
+            "reversed": 297
+          },
+          "R": {
+            "texts": 3354,
+            "changed": 198,
+            "reversed": 163
+          }
+        }
+      },
+      "first-strong-rtl": {
+        "changed": 1,
+        "reversed": 0,
+        "changes": 1,
+        "finalRtl": 3354,
+        "shownOtherWay": 0.027,
+        "byFirstStrong": {
+          "L": {
+            "texts": 1711,
+            "changed": 0,
+            "reversed": 0
+          },
+          "R": {
+            "texts": 3354,
+            "changed": 1,
+            "reversed": 0
+          }
+        }
+      },
+      "any-rtl": {
+        "changed": 1699,
+        "reversed": 0,
+        "changes": 1699,
+        "finalRtl": 5061,
+        "shownOtherWay": 0.1948,
+        "byFirstStrong": {
+          "L": {
+            "texts": 1711,
+            "changed": 1698,
+            "reversed": 0
+          },
+          "R": {
+            "texts": 3354,
+            "changed": 1,
+            "reversed": 0
+          }
+        }
+      },
+      "any-rtl-63": {
+        "changed": 1711,
+        "reversed": 0,
+        "changes": 1711,
+        "finalRtl": 5050,
+        "shownOtherWay": 0.1916,
+        "byFirstStrong": {
+          "L": {
+            "texts": 1711,
+            "changed": 1695,
+            "reversed": 0
+          },
+          "R": {
+            "texts": 3354,
+            "changed": 16,
+            "reversed": 0
+          }
+        }
+      },
+      "char-majority": {
+        "changed": 2382,
+        "reversed": 1147,
+        "changes": 4304,
+        "finalRtl": 4336,
+        "shownOtherWay": 0.3098,
+        "byFirstStrong": {
+          "L": {
+            "texts": 1711,
+            "changed": 1308,
+            "reversed": 275
+          },
+          "R": {
+            "texts": 3354,
+            "changed": 1074,
+            "reversed": 872
+          }
+        }
+      },
+      "telegram-2017": {
+        "changed": 2269,
+        "reversed": 1050,
+        "changes": 4061,
+        "finalRtl": 4355,
+        "shownOtherWay": 0.3119,
+        "byFirstStrong": {
+          "L": {
+            "texts": 1711,
+            "changed": 1308,
+            "reversed": 275
+          },
+          "R": {
+            "texts": 3354,
+            "changed": 961,
+            "reversed": 775
+          }
+        }
+      },
+      "prose-majority": {
+        "changed": 2165,
+        "reversed": 842,
+        "changes": 3541,
+        "finalRtl": 4667,
+        "shownOtherWay": 0.2714,
+        "byFirstStrong": {
+          "L": {
+            "texts": 1711,
+            "changed": 1481,
+            "reversed": 254
+          },
+          "R": {
+            "texts": 3354,
+            "changed": 684,
+            "reversed": 588
+          }
+        }
+      },
+      "smartrtl": {
+        "changed": 1720,
+        "reversed": 0,
+        "changes": 1720,
+        "finalRtl": 5053,
+        "shownOtherWay": 0.1909,
+        "byFirstStrong": {
+          "L": {
+            "texts": 1711,
+            "changed": 1688,
+            "reversed": 0
+          },
+          "R": {
+            "texts": 3354,
+            "changed": 32,
+            "reversed": 0
+          }
+        }
+      },
+      "opening-words-3": {
+        "changed": 1609,
+        "reversed": 12,
+        "changes": 1627,
+        "finalRtl": 4958,
+        "shownOtherWay": 0.1855,
+        "byFirstStrong": {
+          "L": {
+            "texts": 1711,
+            "changed": 1608,
+            "reversed": 12
+          },
+          "R": {
+            "texts": 3354,
+            "changed": 1,
+            "reversed": 0
+          }
+        }
+      },
+      "opening-words-2-of-5": {
+        "changed": 4802,
+        "reversed": 9,
+        "changes": 4816,
+        "finalRtl": 4798,
+        "shownOtherWay": 0.1513,
+        "byFirstStrong": {
+          "L": {
+            "texts": 1711,
+            "changed": 1505,
+            "reversed": 9
+          },
+          "R": {
+            "texts": 3354,
+            "changed": 3297,
+            "reversed": 0
+          }
+        }
+      }
+    }
+  }
+}

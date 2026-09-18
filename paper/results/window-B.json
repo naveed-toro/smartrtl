@@ -1,0 +1,105 @@
+{
+  "source": "B",
+  "startsLtrWithRtlWord": 12904,
+  "proxyRtl": 10547,
+  "proxyLtr": 1176,
+  "unclear": 1181,
+  "rows": [
+    {
+      "n": 1,
+      "late": 10547,
+      "latePct": 100,
+      "early": 0,
+      "earlyPct": 0,
+      "mistakes": 10547
+    },
+    {
+      "n": 2,
+      "late": 3940,
+      "latePct": 37.4,
+      "early": 660,
+      "earlyPct": 56.1,
+      "mistakes": 4600
+    },
+    {
+      "n": 3,
+      "late": 1066,
+      "latePct": 10.1,
+      "early": 714,
+      "earlyPct": 60.7,
+      "mistakes": 1780
+    },
+    {
+      "n": 4,
+      "late": 564,
+      "latePct": 5.3,
+      "early": 816,
+      "earlyPct": 69.4,
+      "mistakes": 1380
+    },
+    {
+      "n": 5,
+      "late": 313,
+      "latePct": 3,
+      "early": 886,
+      "earlyPct": 75.3,
+      "mistakes": 1199
+    },
+    {
+      "n": 6,
+      "late": 167,
+      "latePct": 1.6,
+      "early": 924,
+      "earlyPct": 78.6,
+      "mistakes": 1091
+    },
+    {
+      "n": 7,
+      "late": 118,
+      "latePct": 1.1,
+      "early": 951,
+      "earlyPct": 80.9,
+      "mistakes": 1069
+    },
+    {
+      "n": 8,
+      "late": 89,
+      "latePct": 0.8,
+      "early": 981,
+      "earlyPct": 83.4,
+      "mistakes": 1070
+    },
+    {
+      "n": 10,
+      "late": 61,
+      "latePct": 0.6,
+      "early": 1014,
+      "earlyPct": 86.2,
+      "mistakes": 1075
+    },
+    {
+      "n": 12,
+      "late": 33,
+      "latePct": 0.3,
+      "early": 1052,
+      "earlyPct": 89.5,
+      "mistakes": 1085
+    },
+    {
+      "n": 15,
+      "late": 12,
+      "latePct": 0.1,
+      "early": 1084,
+      "earlyPct": 92.2,
+      "mistakes": 1096
+    },
+    {
+      "n": 20,
+      "late": 2,
+      "latePct": 0,
+      "early": 1116,
+      "earlyPct": 94.9,
+      "mistakes": 1118
+    }
+  ]
+}

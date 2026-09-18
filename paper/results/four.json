@@ -1,0 +1,175 @@
+{
+  "what": "The four candidates on the chat data: wrong at the end (proxy), went back, and how late they turn",
+  "generated": "2026-09-17T14:36:19.257Z",
+  "proxy": ">= 50% RTL words should read RTL, <= 20% LTR, between not counted",
+  "sources": {
+    "A": {
+      "mixedOpeningLtr": 1705,
+      "judged": 1574,
+      "shouldRtl": 1547,
+      "shouldLtr": 27,
+      "wrong": {
+        "any-rtl": {
+          "total": 27,
+          "rtlShownLtr": 0,
+          "ltrShownRtl": 27
+        },
+        "first-formula": {
+          "total": 27,
+          "rtlShownLtr": 0,
+          "ltrShownRtl": 27
+        },
+        "firefox-63": {
+          "total": 26,
+          "rtlShownLtr": 1,
+          "ltrShownRtl": 25
+        },
+        "firefox-45": {
+          "total": 33,
+          "rtlShownLtr": 8,
+          "ltrShownRtl": 25
+        }
+      },
+      "wentBack": {
+        "any-rtl": 0,
+        "first-formula": 0,
+        "firefox-63": 0,
+        "firefox-45": 0
+      },
+      "turns": {
+        "any-rtl": {
+          "blocksTurned": 1744,
+          "ofBlocks": 11852,
+          "turnLetter": {
+            "median": 8,
+            "p90": 20,
+            "p99": 47,
+            "max": 113
+          },
+          "turnedAfterLetter45": 20,
+          "turnedAfterLetter100": 1
+        },
+        "first-formula": {
+          "blocksTurned": 1756,
+          "ofBlocks": 11852,
+          "turnLetter": {
+            "median": 9,
+            "p90": 21,
+            "p99": 48,
+            "max": 114
+          },
+          "turnedAfterLetter45": 23,
+          "turnedAfterLetter100": 1
+        },
+        "firefox-63": {
+          "blocksTurned": 1739,
+          "ofBlocks": 11852,
+          "turnLetter": {
+            "median": 8,
+            "p90": 20,
+            "p99": 45,
+            "max": 63
+          },
+          "turnedAfterLetter45": 15,
+          "turnedAfterLetter100": 0
+        },
+        "firefox-45": {
+          "blocksTurned": 1724,
+          "ofBlocks": 11852,
+          "turnLetter": {
+            "median": 8,
+            "p90": 20,
+            "p99": 35,
+            "max": 45
+          },
+          "turnedAfterLetter45": 0,
+          "turnedAfterLetter100": 0
+        }
+      }
+    },
+    "B": {
+      "mixedOpeningLtr": 12938,
+      "judged": 11757,
+      "shouldRtl": 10529,
+      "shouldLtr": 1228,
+      "wrong": {
+        "any-rtl": {
+          "total": 1228,
+          "rtlShownLtr": 0,
+          "ltrShownRtl": 1228
+        },
+        "first-formula": {
+          "total": 1236,
+          "rtlShownLtr": 36,
+          "ltrShownRtl": 1200
+        },
+        "firefox-63": {
+          "total": 1108,
+          "rtlShownLtr": 29,
+          "ltrShownRtl": 1079
+        },
+        "firefox-45": {
+          "total": 1115,
+          "rtlShownLtr": 92,
+          "ltrShownRtl": 1023
+        }
+      },
+      "wentBack": {
+        "any-rtl": 0,
+        "first-formula": 0,
+        "firefox-63": 0,
+        "firefox-45": 0
+      },
+      "turns": {
+        "any-rtl": {
+          "blocksTurned": 13398,
+          "ofBlocks": 306355,
+          "turnLetter": {
+            "median": 10,
+            "p90": 21,
+            "p99": 79,
+            "max": 1054
+          },
+          "turnedAfterLetter45": 363,
+          "turnedAfterLetter100": 87
+        },
+        "first-formula": {
+          "blocksTurned": 13375,
+          "ofBlocks": 306355,
+          "turnLetter": {
+            "median": 12,
+            "p90": 22,
+            "p99": 79,
+            "max": 1055
+          },
+          "turnedAfterLetter45": 376,
+          "turnedAfterLetter100": 83
+        },
+        "firefox-63": {
+          "blocksTurned": 13198,
+          "ofBlocks": 306355,
+          "turnLetter": {
+            "median": 10,
+            "p90": 20,
+            "p99": 47,
+            "max": 63
+          },
+          "turnedAfterLetter45": 163,
+          "turnedAfterLetter100": 0
+        },
+        "firefox-45": {
+          "blocksTurned": 13035,
+          "ofBlocks": 306355,
+          "turnLetter": {
+            "median": 10,
+            "p90": 19,
+            "p99": 37,
+            "max": 45
+          },
+          "turnedAfterLetter45": 0,
+          "turnedAfterLetter100": 0
+        }
+      }
+    }
+  }
+}

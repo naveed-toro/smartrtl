@@ -1,0 +1,145 @@
+{
+  "source": "A",
+  "texts": 1699,
+  "proxyRtl": 1544,
+  "proxyLtr": 25,
+  "lettersInFirst6Words": {
+    "texts": 1275,
+    "mean": 26.3,
+    "p10": 18,
+    "median": 25,
+    "p90": 37
+  },
+  "byLetters": [
+    {
+      "L": 10,
+      "late": 552,
+      "latePct": 35.8,
+      "early": 10,
+      "earlyPct": 40,
+      "mistakes": 562
+    },
+    {
+      "L": 15,
+      "late": 230,
+      "latePct": 14.9,
+      "early": 14,
+      "earlyPct": 56,
+      "mistakes": 244
+    },
+    {
+      "L": 20,
+      "late": 117,
+      "latePct": 7.6,
+      "early": 16,
+      "earlyPct": 64,
+      "mistakes": 133
+    },
+    {
+      "L": 25,
+      "late": 65,
+      "latePct": 4.2,
+      "early": 19,
+      "earlyPct": 76,
+      "mistakes": 84
+    },
+    {
+      "L": 30,
+      "late": 34,
+      "latePct": 2.2,
+      "early": 21,
+      "earlyPct": 84,
+      "mistakes": 55
+    },
+    {
+      "L": 35,
+      "late": 14,
+      "latePct": 0.9,
+      "early": 21,
+      "earlyPct": 84,
+      "mistakes": 35
+    },
+    {
+      "L": 40,
+      "late": 10,
+      "latePct": 0.6,
+      "early": 23,
+      "earlyPct": 92,
+      "mistakes": 33
+    },
+    {
+      "L": 50,
+      "late": 3,
+      "latePct": 0.2,
+      "early": 23,
+      "earlyPct": 92,
+      "mistakes": 26
+    },
+    {
+      "L": 63,
+      "late": 0,
+      "latePct": 0,
+      "early": 23,
+      "earlyPct": 92,
+      "mistakes": 23
+    },
+    {
+      "L": 80,
+      "late": 0,
+      "latePct": 0,
+      "early": 24,
+      "earlyPct": 96,
+      "mistakes": 24
+    }
+  ],
+  "byWords": [
+    {
+      "N": 3,
+      "late": 110,
+      "latePct": 7.1,
+      "early": 15,
+      "earlyPct": 60,
+      "mistakes": 125
+    },
+    {
+      "N": 4,
+      "late": 39,
+      "latePct": 2.5,
+      "early": 18,
+      "earlyPct": 72,
+      "mistakes": 57
+    },
+    {
+      "N": 5,
+      "late": 19,
+      "latePct": 1.2,
+      "early": 21,
+      "earlyPct": 84,
+      "mistakes": 40
+    },
+    {
+      "N": 6,
+      "late": 14,
+      "latePct": 0.9,
+      "early": 21,
+      "earlyPct": 84,
+      "mistakes": 35
+    },
+    {
+      "N": 7,
+      "late": 11,
+      "latePct": 0.7,
+      "early": 21,
+      "earlyPct": 84,
+      "mistakes": 32
+    },
+    {
+      "N": 8,
+      "late": 9,
+      "latePct": 0.6,
+      "early": 21,
+      "earlyPct": 84,
+      "mistakes": 30
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+
+by character (5065 texts)
+rule                        final rtl        changed       reversed  shown other way
+first-strong               3354 66.2%         3 0.1%         0 0.0%            13.9%
+plaintext                  3354 66.2%         3 0.1%         0 0.0%            13.9%
+word-count-40              4887 96.5%     1833 36.2%       461 9.1%            28.3%
+first-strong-rtl           3354 66.2%         3 0.1%         0 0.0%            13.9%
+any-rtl                    5061 99.9%     1710 33.8%         0 0.0%            25.0%
+any-rtl-63                 5050 99.7%     1730 34.2%         0 0.0%            24.3%
+char-majority              4336 85.6%     2406 47.5%     1176 23.2%            33.7%
+telegram-2017              4355 86.0%     2299 45.4%     1084 21.4%            33.8%
+prose-majority             4667 92.1%     2426 47.9%     1210 23.9%            30.2%
+smartrtl                   5053 99.8%     5027 99.2%         0 0.0%            10.0%
+opening-words-3            4958 97.9%     1615 31.9%        17 0.3%            24.1%
+opening-words-2-of-5       4902 96.8%     1558 30.8%        15 0.3%            30.9%
+
+by word (5065 texts)
+rule                        final rtl        changed       reversed  shown other way
+first-strong               3354 66.2%         1 0.0%         0 0.0%             2.7%
+plaintext                  3354 66.2%         1 0.0%         0 0.0%             2.7%
+word-count-40              4887 96.5%     1832 36.2%       460 9.1%            23.3%
+first-strong-rtl           3354 66.2%         1 0.0%         0 0.0%             2.7%
+any-rtl                    5061 99.9%     1699 33.5%         0 0.0%            19.5%
+any-rtl-63                 5050 99.7%     1711 33.8%         0 0.0%            19.2%
+char-majority              4336 85.6%     2382 47.0%     1147 22.6%            31.0%
+telegram-2017              4355 86.0%     2269 44.8%     1050 20.7%            31.2%
+prose-majority             4667 92.1%     2165 42.7%      842 16.6%            27.1%
+smartrtl                   5053 99.8%     1720 34.0%         0 0.0%            19.1%
+opening-words-3            4958 97.9%     1609 31.8%        12 0.2%            18.6%
+opening-words-2-of-5       4902 96.8%     1550 30.6%         8 0.2%            25.9%

@@ -1,0 +1,30 @@
+{
+  "rowGroups": 521,
+  "conversations": 0,
+  "answers": 36705,
+  "repeated": 1820,
+  "units": 317294,
+  "mixed": 60699,
+  "byLanguage": {
+    "Persian": {
+      "answers": 13543,
+      "units": 137668,
+      "mixed": 27358
+    },
+    "Arabic": {
+      "answers": 21481,
+      "units": 155071,
+      "mixed": 23287
+    },
+    "Hebrew": {
+      "answers": 1433,
+      "units": 23788,
+      "mixed": 9988
+    },
+    "Urdu": {
+      "answers": 248,
+      "units": 767,
+      "mixed": 66
+    }
+  }
+}
