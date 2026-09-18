@@ -65,6 +65,60 @@ our numbers; they can see the problem, and each answer to it, with their own eye
 
 ## Introduction
 
+### I.0 Why this is worth anybody's time (the owner, 2026-09-18)
+
+The case the paper opens with, in the owner's words, written down here so the rest of the
+document serves it:
+
+- **Nobody meant to leave these readers out.** More money and more first-class engineering has
+  gone into these systems than into almost anything else being built; whole countries treat the
+  race as a matter of standing. That is exactly why the gap is worth naming: it is not
+  indifference, it is a defect nobody measured.
+- **Understanding every language is the point of the thing.** A model takes a question in any
+  language, spelled any way, typed at any speed, mistakes and all, and answers it. A reader
+  whose language runs right to left gets that same answer - and cannot read it, because the
+  line is laid out the wrong way round.
+- **This is not about weak English.** A person may write English perfectly and still think in
+  their own language, and still read an answer in their own language faster and with less
+  effort. Given the choice, people ask in the language they think in.
+- **What is left to them.** Writing their own language in Latin letters. Urdu in `abc` can be
+  read, but nobody enjoys it for long: it tires the eye, and it is a second-class way to use a
+  first-class tool.
+- **And the deeper irony:** for decades the web never gave anyone a rule that gets this right.
+  Proposals came - and were refused, not against evidence, but against doubt. Neither side
+  brought a measurement. So the question simply stopped moving, and it is the AI era that has
+  made the cost of that daily.
+
+**Evidence still owed for this section** (nothing above goes into the paper without it): a
+citable count of readers of right-to-left scripts; a citable measurement of how much slower
+transliterated text is read; and, from source B, how often people write their own language in
+Latin letters when talking to a chat. Until each is cited or measured, the claim is written as
+the owner's argument, not as a finding.
+
+### I.0.1 What this work adds, and what it still cannot do
+
+The paper does not argue from opinion. It eliminates:
+
+- **The counting formulas** - word count, character majority, majority of prose - go back on
+  their own answer while it streams: the text is read one way, jumps, and comes back. Measured:
+  Google's word count on 9.1% of Claude's mixed texts and 5.5% of ChatGPT's; character majority
+  on 22.6% and 13.5% (results/README.md, run 3). Private developers building their own fixes
+  today land in the same place, for the same reason.
+- **First strong** - what HTML actually adopted - never goes back, and is wrong on 10 of the 16
+  lines of a single ordinary Urdu answer in the lab.
+- **What is left** are four rules that only ever move one way: Any RTL, this project's first
+  rule, and Firefox's window at 63 and at 45 letters. They agree everywhere except 493 texts,
+  and those 493 were read one by one.
+- **The answer is 63** - fantasai's number for Firefox in 2010, refused then for want of
+  evidence, measured now: 139 of 447 judged lines wrong, against 45's 160. This work's own
+  earlier suggestion, 45, is rejected here by this work's own data (decisions.md 53).
+
+**And the limit, stated in the paper itself:** an English sentence that carries a right-to-left
+phrase inside its first 63 letters is still laid out right to left. That is not a bug in the
+rule; it is the cost of a rule that can decide a half-written line and never take it back. No
+formula over letters can have both. Saying so plainly is part of the proposal: this fixes most
+of the problem, measurably, and names the piece it does not fix.
+
 ### I.1 A decades-old problem, and why AI made it daily
 
 - **Claim:** every answer so far assumed a human author holding the control (an editor's
