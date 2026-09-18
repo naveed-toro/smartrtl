@@ -339,12 +339,50 @@ arXiv:2608.02555, 2026-08-03. https://arxiv.org/abs/2608.02555
   and it names Arabic third among non-English languages - it gives no figure for Persian, Urdu or
   Hebrew, and none for how those users write (script or transliteration).
 
-**[SPEAKERS]** Counts of readers of right-to-left scripts - Arabic, Persian, Urdu, Hebrew, and
-the others the rule supports - **still to be cited from official sources**: national censuses
-(Pakistan's 7th Population and Housing Census 2023 for Urdu, India's 2011 census tables for
-Urdu in India, Israel's Central Bureau of Statistics for Hebrew, Iran's Statistical Centre for
-Persian) and the UN for Arabic. Ethnologue's summary page refuses an automated fetch. Nothing
-goes into the paper from a secondary summary.
+**[SPEAKERS-AR]** UNESCO, *World Arabic Language Day*, and the United Nations, *World Arabic
+Language Day*. Read 2026-09-18. https://www.unesco.org/en/world-arabic-language-day ·
+https://www.un.org/en/observances/arabiclanguageday
+- **read** (both pages fetched here, same wording on each); cited for how many people Arabic
+  serves and for its standing at the UN.
+- Arabic is "used daily by more than 400 million people".
+- The day "coincides with the day in 1973 that the General Assembly of the United Nations
+  adopted Arabic as the sixth official language of the Organization."
+- Note for the paper: this is a round figure from an observance page, not a census. It is enough
+  for "this is not a niche"; it is not enough for any arithmetic.
+
+**[POPULATION]** World Bank, *Population, total* (indicator `SP.POP.TOTL`), read through the
+World Bank API 2026-09-18, most recent value per economy.
+https://api.worldbank.org/v2/country/ARB;PAK;IND;IRN;ISR/indicator/SP.POP.TOTL?format=json
+- **verified** (fetched here as JSON, the figures below are its own):
+
+| | 2025 population |
+|---|---|
+| Arab World (World Bank aggregate) | 503,356,133 |
+| Pakistan | 255,219,554 |
+| India | 1,463,865,525 |
+| Iran | 92,417,681 |
+| Israel | 10,122,800 |
+
+- What this is and is not: these are **people living in those countries**, not counts of readers
+  of a script. They belong in the paper only as the scale of the places where these scripts are
+  the script of daily life, beside [SPEAKERS-AR]'s "more than 400 million" for Arabic, and never
+  as "N readers of Urdu". The per-language counts below are what would carry that claim.
+
+**[SPEAKERS]** Per-language counts of readers - Urdu, Persian, Hebrew and the rest - **still to
+be cited from official sources**, and every automated route to them failed on 2026-09-18:
+- Pakistan's 7th Population and Housing Census 2023, Table 11, *Population by Mother Tongue*:
+  the PDF opens but its text is drawn with a custom font encoding, so it cannot be read by
+  script - it has to be read by eye. Start at https://www.pbs.gov.pk/digital-census (the
+  National Census Report 2023 also carries "Percentage of Population by Mother Tongue", Table
+  4.14).
+- Census of India 2011, table C-16 *Population by Mother Tongue* - `censusindia.gov.in` and
+  `language.census.gov.in` were unreachable from here (a bad certificate and a refused
+  connection).
+- Israel's Central Bureau of Statistics: the media-release index loads, but no Hebrew Language
+  Day release was found in it - https://www.cbs.gov.il/en/Pages/SubjectPressReleases.aspx
+- Iran's Statistical Centre (`amar.org.ir`) closed the connection.
+Nothing goes into the paper from a secondary summary; where the number cannot be read from the
+source, the paper uses [POPULATION] and says what it is.
 
 ## Datasets
 
