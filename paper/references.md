@@ -368,13 +368,26 @@ https://api.worldbank.org/v2/country/ARB;PAK;IND;IRN;ISR/indicator/SP.POP.TOTL?f
   the script of daily life, beside [SPEAKERS-AR]'s "more than 400 million" for Arabic, and never
   as "N readers of Urdu". The per-language counts below are what would carry that claim.
 
-**[SPEAKERS]** Per-language counts of readers - Urdu, Persian, Hebrew and the rest - **still to
-be cited from official sources**, and every automated route to them failed on 2026-09-18:
-- Pakistan's 7th Population and Housing Census 2023, Table 11, *Population by Mother Tongue*:
-  the PDF opens but its text is drawn with a custom font encoding, so it cannot be read by
-  script - it has to be read by eye. Start at https://www.pbs.gov.pk/digital-census (the
-  National Census Report 2023 also carries "Percentage of Population by Mother Tongue", Table
-  4.14).
+**[PK-CENSUS]** Pakistan Bureau of Statistics. *National Census Report*, 7th Population and
+Housing Census 2023, section 4.3.2 "Population Distribution by Mother Tongue" and Table 4.14,
+p. 138. Downloaded and read here 2026-09-18.
+https://www.pbs.gov.pk/wp-content/uploads/2020/07/National-Census-Report-2023.pdf
+- **verified** - the report's own sentence, from its text:
+- "According to the Census-2023, Punjabi is the most widely spoken language in Pakistan
+  identified by 36.98% of the population as their mother tongue which has slightly decreased
+  from Census-2017 with 38.78% (Tabel 4.14). The second most spoken language is Pushto 18.15%
+  ... followed by Sindhi 14.31% ... The share of other languages spoken in Pakistan are: Saraiki
+  12.00%, **Urdu 9.25%**, Balochi 3.38%, Hindko 2.69%, Others 1.39%, Brahvi 1.16%, Mewati 0.46%,
+  Kohistani 0.43%, Kashmiri 0.11%, Shina 0.05%, Balti 0.02%."
+- What it settles, and what it does not: Urdu is the **mother tongue** of 9.25% of Pakistan -
+  about 24 million of its 255 million [POPULATION] - while being the national language that
+  schooling, print and the keyboard are in. So "how many read the Urdu script" is not this
+  number and is not in this report: reading it is a matter of schooling, not of mother tongue.
+  The paper uses this figure for what it is, and takes the reading question to the literacy and
+  schooling sources instead.
+
+**[SPEAKERS]** Per-language counts of readers - Persian, Hebrew and the rest - **still to be
+cited from official sources**, and these routes failed on 2026-09-18:
 - Census of India 2011, table C-16 *Population by Mother Tongue* - `censusindia.gov.in` and
   `language.census.gov.in` were unreachable from here (a bad certificate and a refused
   connection).

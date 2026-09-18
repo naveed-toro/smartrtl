@@ -117,9 +117,11 @@ document serves it:
    than 400 million people" and has been an official UN language since 1973 [SPEAKERS-AR], and
    the places where these scripts are daily life hold, by the World Bank, 503 million people in
    the Arab world, 255 million in Pakistan, 92 million in Iran and 10 million in Israel
-   [POPULATION] - people, not readers, and the paper says so. Per-language reader counts for
-   Urdu, Persian and Hebrew are still owed: Pakistan publishes them in a PDF no script can read,
-   and India, Israel and Iran could not be reached at all [SPEAKERS].
+   [POPULATION] - people, not readers, and the paper says so. Pakistan’s own census adds a
+   warning the paper will carry: Urdu is the mother tongue of only **9.25%** of Pakistanis
+   [PK-CENSUS], while being the language the country is schooled and printed in - so a count of
+   mother tongues is not a count of readers, in either direction. Per-language reader counts for
+   Persian and Hebrew are still owed; India, Israel and Iran could not be reached [SPEAKERS].
 **Measured, and it went the other way** (results/README.md, romanized.json): on 11,823 user
 turns in Arabic, Persian, Hebrew and Urdu conversations, **95.9% hold the writer's own script**;
 only 3.6% are Latin letters alone, and 409 of those 421 turns were written by someone who writes
