@@ -83,7 +83,9 @@ document serves it:
   effort. Given the choice, people ask in the language they think in.
 - **What is left to them.** Writing their own language in Latin letters. Urdu in `abc` can be
   read, but nobody enjoys it for long: it tires the eye, and it is a second-class way to use a
-  first-class tool.
+  first-class tool. *(Measured since, and it is not what most of them do - see below. The point
+  the paper keeps is the one the measurement supports: they bring their own script, and it is
+  their own script that comes back laid out the wrong way round.)*
 - **And the deeper irony:** for decades the web never gave anyone a rule that gets this right.
   Proposals came - and were refused, not against evidence, but against doubt. Neither side
   brought a measurement. So the question simply stopped moving, and it is the AI era that has
@@ -115,7 +117,7 @@ document serves it:
    time (Arabic, Persian, Urdu, Hebrew, and the others the rule supports), never from a
    second-hand summary [SPEAKERS].
 **Measured, and it went the other way** (results/README.md, romanized.json): on 11,823 user
-turns in Arabic, Persian, Hebrew and Urdu conversations, **95.9% hold the writer own script**;
+turns in Arabic, Persian, Hebrew and Urdu conversations, **95.9% hold the writer's own script**;
 only 3.6% are Latin letters alone, and 409 of those 421 turns were written by someone who writes
 the script elsewhere in the same conversation. People are not pushed into `abc` here, and the
 paper says so. What the same measurement gives instead is stronger: their own script is what they
