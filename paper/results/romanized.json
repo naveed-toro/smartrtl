@@ -1,0 +1,71 @@
+{
+  "what": "How users write to a chat in right-to-left languages: their own script, or Latin letters",
+  "dataset": "allenai/WildChat-4.8M",
+  "revision": "c827c6df8fcf008219ffaffa4d1dd77491099367",
+  "unicode": "18.0.0",
+  "seed": "smartrtl corpus, source B, WildChat-4.8M, 2026-09-17",
+  "sample": {
+    "rowGroups": 200,
+    "ofRowGroups": 3131,
+    "conversationsPerRowGroup": 1000
+  },
+  "note": "A 'latin' turn holds Latin letters and no right-to-left letter; it may be romanized or plain English, so it is an upper bound. The lower bound is latinTurnsByBothWaysUsers: Latin turns written by someone who also writes the script in the same conversation.",
+  "perLanguage": {
+    "Arabic": {
+      "conversations": 4461,
+      "userTurns": 6645,
+      "script": 4648,
+      "latin": 202,
+      "mixed": 1764,
+      "neither": 31,
+      "latinOnlyConversations": 2,
+      "bothWaysConversations": 98,
+      "latinTurnsByBothWaysUsers": 198
+    },
+    "Persian": {
+      "conversations": 1505,
+      "userTurns": 4897,
+      "script": 3997,
+      "latin": 181,
+      "mixed": 702,
+      "neither": 17,
+      "latinOnlyConversations": 0,
+      "bothWaysConversations": 75,
+      "latinTurnsByBothWaysUsers": 181
+    },
+    "Urdu": {
+      "conversations": 31,
+      "userTurns": 38,
+      "script": 24,
+      "latin": 8,
+      "mixed": 6,
+      "neither": 0,
+      "latinOnlyConversations": 1,
+      "bothWaysConversations": 0,
+      "latinTurnsByBothWaysUsers": 0
+    },
+    "Hebrew": {
+      "conversations": 105,
+      "userTurns": 243,
+      "script": 81,
+      "latin": 30,
+      "mixed": 119,
+      "neither": 13,
+      "latinOnlyConversations": 0,
+      "bothWaysConversations": 11,
+      "latinTurnsByBothWaysUsers": 30
+    }
+  },
+  "all": {
+    "conversations": 6102,
+    "userTurns": 11823,
+    "script": 8750,
+    "latin": 421,
+    "mixed": 2591,
+    "neither": 61,
+    "latinOnlyConversations": 3,
+    "bothWaysConversations": 184,
+    "latinTurnsByBothWaysUsers": 409
+  },
+  "generated": "2026-09-18T07:58:05.439Z"
+}

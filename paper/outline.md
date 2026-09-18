@@ -114,9 +114,14 @@ document serves it:
 1. **How many people read right-to-left scripts** - from censuses and the UN, one language at a
    time (Arabic, Persian, Urdu, Hebrew, and the others the rule supports), never from a
    second-hand summary [SPEAKERS].
-2. **How often people write their own language in Latin letters when talking to a chat** - this
-   one we can measure ourselves, on source B, and it is the strongest of the two because it
-   shows what readers do when the direction problem is left unfixed.
+**Measured, and it went the other way** (results/README.md, romanized.json): on 11,823 user
+turns in Arabic, Persian, Hebrew and Urdu conversations, **95.9% hold the writer own script**;
+only 3.6% are Latin letters alone, and 409 of those 421 turns were written by someone who writes
+the script elsewhere in the same conversation. People are not pushed into `abc` here, and the
+paper says so. What the same measurement gives instead is stronger: their own script is what they
+write to these systems, so it is what they read back - and **one turn in five (21.9%; Hebrew
+49.0%) mixes both directions inside a single message**, which is exactly the case the whole paper
+is about, typed by the reader themselves.
 
 ### I.0.1 What this work adds, and what it still cannot do
 

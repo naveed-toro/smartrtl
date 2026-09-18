@@ -1,0 +1,71 @@
+{
+  "what": "How users write to a chat in right-to-left languages: their own script, or Latin letters",
+  "dataset": "allenai/WildChat-4.8M",
+  "revision": "c827c6df8fcf008219ffaffa4d1dd77491099367",
+  "unicode": "18.0.0",
+  "seed": "smartrtl corpus, source B, WildChat-4.8M, 2026-09-17",
+  "sample": {
+    "rowGroups": 40,
+    "ofRowGroups": 3131,
+    "conversationsPerRowGroup": 1000
+  },
+  "note": "A 'latin' turn holds Latin letters and no right-to-left letter; it may be romanized or plain English, so it is an upper bound. The lower bound is latinTurnsByBothWaysUsers: Latin turns written by someone who also writes the script in the same conversation.",
+  "perLanguage": {
+    "Arabic": {
+      "conversations": 452,
+      "userTurns": 765,
+      "script": 493,
+      "latin": 52,
+      "mixed": 220,
+      "neither": 0,
+      "latinOnlyConversations": 0,
+      "bothWaysConversations": 21,
+      "latinTurnsByBothWaysUsers": 52
+    },
+    "Persian": {
+      "conversations": 347,
+      "userTurns": 1156,
+      "script": 994,
+      "latin": 29,
+      "mixed": 131,
+      "neither": 2,
+      "latinOnlyConversations": 0,
+      "bothWaysConversations": 19,
+      "latinTurnsByBothWaysUsers": 29
+    },
+    "Urdu": {
+      "conversations": 7,
+      "userTurns": 7,
+      "script": 6,
+      "latin": 0,
+      "mixed": 1,
+      "neither": 0,
+      "latinOnlyConversations": 0,
+      "bothWaysConversations": 0,
+      "latinTurnsByBothWaysUsers": 0
+    },
+    "Hebrew": {
+      "conversations": 25,
+      "userTurns": 48,
+      "script": 28,
+      "latin": 0,
+      "mixed": 19,
+      "neither": 1,
+      "latinOnlyConversations": 0,
+      "bothWaysConversations": 0,
+      "latinTurnsByBothWaysUsers": 0
+    }
+  },
+  "all": {
+    "conversations": 831,
+    "userTurns": 1976,
+    "script": 1521,
+    "latin": 81,
+    "mixed": 371,
+    "neither": 3,
+    "latinOnlyConversations": 0,
+    "bothWaysConversations": 40,
+    "latinTurnsByBothWaysUsers": 81
+  },
+  "generated": "2026-09-18T07:46:27.217Z"
+}

@@ -4,6 +4,40 @@ Measurements the paper will report. Each file here is written by a script in
 `corpus/tools/`, holds counts only, and records the corpus snapshot and the formulas' file
 hash it was computed from. Nothing here is edited by hand.
 
+## romanized.json - how people write to a chat in a right-to-left language
+
+`node measure-romanized.mjs --groups 200`. The corpus keeps only the assistant's turns, so this
+reads the **user's** turns, from 200 row groups of the same dataset and revision (a seeded
+sample, 6,102 conversations, 11,823 user turns). Only counts are kept; no message text is
+written anywhere.
+
+| | user turns | holds its own script | Latin letters only | mixes both in one turn |
+|---|---|---|---|---|
+| Arabic | 6,645 | 96.5% | 3.0% | 26.5% |
+| Persian | 4,897 | 96.0% | 3.7% | 14.3% |
+| Hebrew | 243 | 82.3% | 12.3% | 49.0% |
+| Urdu | 38 | 78.9% | 21.1% | 15.8% |
+| **all four** | **11,823** | **95.9%** | **3.6%** | **21.9%** |
+
+**This does not support the claim it was built to test.** The introduction wanted to say that
+readers are pushed into writing their language in Latin letters; on these chats they are not. They
+write their own script - 95.9% of their turns hold right-to-left letters. The paper drops that
+claim as a finding of ours and keeps only what is measured here.
+
+**What it does show, and it is stronger:**
+
+- **People bring their own script to these systems.** Nearly every message they send is in it, so
+  nearly every answer they read is in it too - which is precisely the text these products lay out
+  the wrong way round. This is not an edge of their usage; it is their usage.
+- **One turn in five mixes both directions** (21.9%; Hebrew 49.0%, Arabic 26.5%) - a technical
+  term, a file name, a link inside their own sentence. That is the case every formula in this
+  paper is fighting over, and it is what people actually type.
+- **Latin-only turns are rare, and they are not people who lack the script**: 409 of the 421
+  Latin-only turns were written by someone who writes the script elsewhere in the same
+  conversation. Whatever those turns are - English, a command, a pasted error - the person has
+  their own script and uses it.
+- Urdu and Hebrew counts here are small (38 and 243 turns); nothing is claimed from them alone.
+
 ## four.json - the four candidates on the chat data
 
 `node measure-four.mjs`. Any RTL, our first formula, and Firefox's formula at 63 and at 45 letters
