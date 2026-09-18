@@ -1,0 +1,15 @@
+# Private text: units taken from personal conversations stay on this machine until the
+# owner has read and released them (corpus.md, "Source A").
+corpus/private/
+
+# Downloaded data, checked against a recorded hash before use (tools/bidi.mjs).
+corpus/tools/.cache/
+
+# The owner's Obsidian settings for reading this folder - personal, not part of the paper.
+.obsidian/
+
+# Public data re-derived by scripts from pinned upstream revisions (too large for git).
+corpus/public/
+
+# The lab machine's answers, cut from corpus/public by demo/build.mjs (too large for git).
+demo/data/
