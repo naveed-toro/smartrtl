@@ -83,3 +83,34 @@ test("no input crashes it", () => {
     assert.doesNotThrow(() => directionFor(v));
   }
 });
+
+test("from 0.6.0, an answer's block: an RTL letter within its first 45 letters (section 50)", () => {
+  const { openingLetters, openingSettled, OPENING_LETTERS } = require("../src/direction.js");
+  assert.equal(OPENING_LETTERS, 45);
+  // the five headings still read right to left
+  for (const h of ["useMemo اور useCallback", "args - اصل arguments", "children بطور props",
+    "Debounce بمقابلہ Throttle", "JavaScript میں Debounce فنکشن"]) {
+    assert.equal(openingLetters(h), "rtl", h);
+  }
+  assert.equal(openingLetters("یہ سب ایک ہی اردو جواب کی سطریں ہیں۔"), "rtl");
+  assert.equal(openingLetters("2024 کا سال"), "rtl", "digits are not letters");
+  // English with no RTL, or with RTL only after 45 letters, reads left to right
+  assert.equal(openingLetters("The build tool comparison is documented upstream."), "ltr");
+  assert.equal(openingLetters("Check the native RTL claim yourself, two minutes and no risk, and then look for ایک"), "ltr");
+  // the case section 5 gave up is still given up: the Urdu phrase is letter 23
+  assert.equal(openingLetters("In Urdu this idea is called ایونٹ لوپ, but the mechanics are identical."), "rtl");
+  assert.equal(openingLetters("250–400ms"), "ltr");
+  assert.equal(openingLetters("— 42 —"), null, "no letter, nothing to decide");
+  // one way only, and settled for good
+  assert.equal(openingSettled("React is a"), false);
+  assert.equal(openingSettled("React ایک"), true);
+  assert.equal(openingSettled("a".repeat(45)), true);
+  const grow = "React is a JavaScript library for building user interfaces and then اردو";
+  let last = null;
+  for (let i = 1; i <= grow.length; i++) {
+    const d = openingLetters(grow.slice(0, i));
+    if (last === "rtl") assert.equal(d, "rtl", "never back from rtl");
+    if (last === "ltr" && openingSettled(grow.slice(0, i - 1))) assert.equal(d, "ltr", "never changes once settled");
+    if (d) last = d;
+  }
+});

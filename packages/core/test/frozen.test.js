@@ -28,11 +28,15 @@ const fs = require("node:fs");
 const path = require("node:path");
 const crypto = require("node:crypto");
 
+// Changed on purpose on 2026-09-17, by the owner's decision, for 0.6.0: the rule for an
+// answer became openingLetters (45 letters). Section 42's first question - the answer only
+// ever moves one way - still holds, and the five headings still read right to left; both
+// are asserted in direction.test.js. docs/decisions.md section 50.
 const FROZEN = {
   "src/direction.js":
-    "88d947a80293f03b2a30f09d7d1305a6cc20695d83588eba0c76fd14a5409363",
+    "8977154f0d7c1cbcd7ae948d0c691b4219f58217bf5b2e47fd7405ac02081c2f",
   "test/direction.test.js":
-    "adbc8388da1a38301406ebfd2596117fa7395d259f5f300510ecddb1317f8967"
+    "d93d47e185758a57b56fe2029bd8619055e732802fc248a97d5a38ac4556c1a5"
 };
 
 const ROOT = path.resolve(__dirname, "..");

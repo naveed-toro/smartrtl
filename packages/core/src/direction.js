@@ -135,7 +135,58 @@
     return enough ? "rtl" : null;
   }
 
+  /**
+   * How far into a text the rule for an answer looks: 45 letters.
+   *
+   * Firefox's proposal for dir="auto" in 2010 looked at the first 63 letters and gave no
+   * reason for 63. Measured on 64,476 mixed texts from Claude's and ChatGPT's answers, 45 is
+   * the shortest window whose mistakes are within half a percentage point of the best
+   * window's on both, and every letter beyond it only makes a streamed block wait longer
+   * (paper/results/README.md, "choosing X"; docs/decisions.md section 50).
+   */
+  var OPENING_LETTERS = 45;
+
+  /**
+   * The rule for an answer, from 0.6.0.
+   *
+   *   first letter right-to-left                          -> rtl
+   *   first letter left-to-right, an RTL letter within 45  -> rtl
+   *   first letter left-to-right, none within 45           -> ltr
+   *
+   * Letters are Unicode letters; digits, punctuation and spaces are not counted. The answer
+   * still only ever moves one way: "ltr" before 45 letters can become "rtl" when an RTL
+   * letter arrives, and once 45 letters have passed nothing can change it. An English
+   * sentence whose Urdu phrase comes within its first 45 letters is still read as
+   * right-to-left - the case section 5 gave up, now given up for a measured reason.
+   *
+   * @returns {"rtl"|"ltr"|null} null when there is no letter yet
+   */
+  function openingLetters(text) {
+    var letters = 0;
+    for (var ch of String(text || "")) {
+      if (!FIRST_LETTER.test(ch)) continue;
+      letters++;
+      if (LETTER.test(ch)) return "rtl";
+      if (letters >= OPENING_LETTERS) return "ltr";
+    }
+    return letters ? "ltr" : null;
+  }
+
+  /** Has openingLetters given its last word on this text, whatever is appended to it? */
+  function openingSettled(text) {
+    var letters = 0;
+    for (var ch of String(text || "")) {
+      if (!FIRST_LETTER.test(ch)) continue;
+      letters++;
+      if (LETTER.test(ch) || letters >= OPENING_LETTERS) return true;
+    }
+    return false;
+  }
+
   return {
+    openingLetters: openingLetters,
+    openingSettled: openingSettled,
+    OPENING_LETTERS: OPENING_LETTERS,
     containsRtl: containsRtl,
     containsRtlWord: containsRtlWord,
     containsRtlLetter: containsRtlLetter,
