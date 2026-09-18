@@ -282,6 +282,57 @@ before citing.
   re-analysis" while streaming; cite a commit and read the implementation first.
   https://github.com/CodeinScrubs/BidiLens
 
+## Why this matters (Introduction I.0)
+
+The sources behind the opening claims: that people read their own language faster and with
+less effort, that writing it in Latin letters costs the reader something, that people do talk
+to these systems in their own language, and how many readers of right-to-left scripts there
+are. Read 2026-09-18.
+
+**[L2-READING]** F. Rocabado, G. Schmitz, J. A. Duñabeitia. *You Can Stand Under My Umbrella:
+Cognitive Load in Second-Language Reading.* Behavioral Sciences 15(8):1051, 2025.
+https://doi.org/10.3390/bs15081051 (open access; PMC12382749)
+- **read**; cited for the cost of reading in a second language.
+- "L2 reading is generally slower and more effortful than reading in the native language (L1),
+  often involving additional cognitive load."
+- "reading in L2 takes longer than in L1, even for highly proficient readers."
+- The sentences came back through a summarising fetch: verify them in the PDF before printing.
+
+**[ARABIC-ORTHO]** I. Asadi, A. Asli-Badarneh. *Diglossia and Orthographic Complexity as
+Multiplicative but not Additive Challenges in Arabic: A Critical Review.* Journal of
+Psycholinguistic Research, 2026. https://doi.org/10.1007/s10936-026-10214-3 (open access;
+PMC13050341)
+- **read**; cited for what Latin-letter Arabic costs a reader.
+- "In the Arabizi condition, students performed well with narratives but poorly with expository
+  texts, showing that script familiarity aids informal reading but not academic comprehension."
+- The study it reviews (eighth-grade readers, Arabizi against vowelled and unvowelled Arabic)
+  is the primary source and has still to be read: Reading and Writing,
+  https://doi.org/10.1007/s11145-021-10143-8 - Springer asked for a login.
+
+**[ARABIZI-USE]** A. Keleg, A. A. Ben Abdallah, T. Yassine, C. Helwe, I. Guellil, N. Ousidhoum.
+*Romanized Arabic Across Dialects: Views, Usage Patterns, and Linguistic Variation.*
+arXiv:2608.02555, 2026-08-03. https://arxiv.org/abs/2608.02555
+- **read**; cited for people writing their own language in Latin letters, and what they think
+  of it: "the prevalence and usage of Arabizi vary by factors such as region and age group".
+
+**[CHATGPT-LANG]** OpenAI. *How ChatGPT adoption has expanded* (2025), beside the working paper
+A. Chatterji, T. Cunningham, D. Deming, Z. Hitzig, C. Ong, C. Shan, K. Wadman, *How People Use
+ChatGPT*, NBER Working Paper 34255, September 2025.
+https://openai.com/index/how-chatgpt-adoption-has-expanded/ ·
+https://www.nber.org/papers/w34255
+- **secondary, not yet verified.** The claim wanted here - that users writing in a language
+  other than English are now more than half of consumer usage, and that Arabic is among the
+  largest - is reported from that page, which refuses an automated fetch (403). The NBER paper
+  itself was downloaded and searched: it carries the task and growth figures, not this one. To
+  cite it, open the page in a browser and copy the sentence, or find the figure in the paper.
+
+**[SPEAKERS]** Counts of readers of right-to-left scripts - Arabic, Persian, Urdu, Hebrew, and
+the others the rule supports - **still to be cited from official sources**: national censuses
+(Pakistan's 7th Population and Housing Census 2023 for Urdu, India's 2011 census tables for
+Urdu in India, Israel's Central Bureau of Statistics for Hebrew, Iran's Statistical Centre for
+Persian) and the UN for Arabic. Ethnologue's summary page refuses an automated fetch. Nothing
+goes into the paper from a secondary summary.
+
 ## Datasets
 
 **[WILDCHAT]** W. Zhao, X. Ren, J. Hessel, C. Cardie, Y. Choi, Y. Deng. *WildChat: 1M

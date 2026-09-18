@@ -89,11 +89,30 @@ document serves it:
   brought a measurement. So the question simply stopped moving, and it is the AI era that has
   made the cost of that daily.
 
-**Evidence still owed for this section** (nothing above goes into the paper without it): a
-citable count of readers of right-to-left scripts; a citable measurement of how much slower
-transliterated text is read; and, from source B, how often people write their own language in
-Latin letters when talking to a chat. Until each is cited or measured, the claim is written as
-the owner's argument, not as a finding.
+**What is cited already** (references.md, "Why this matters"):
+
+- Reading in a second language is slower and costs more: "L2 reading is generally slower and
+  more effortful than reading in the native language (L1), often involving additional cognitive
+  load" - and it holds "even for highly proficient readers" [L2-READING]. That is the answer to
+  "their English is good enough".
+- Latin letters are not a free substitute for a reader's own script: in the Arabizi condition
+  readers "performed well with narratives but poorly with expository texts, showing that script
+  familiarity aids informal reading but not academic comprehension" [ARABIC-ORTHO]. Chat answers
+  - explanations, instructions, code - are expository text.
+- Writing one's own language in Latin letters is a real, lasting practice, not a curiosity, and
+  its prevalence differs by region and age [ARABIZI-USE].
+
+**Still owed, and not to be written as a finding until it is in hand:**
+
+1. **How many people read right-to-left scripts** - from censuses and the UN, one language at a
+   time (Arabic, Persian, Urdu, Hebrew, and the others the rule supports), never from a
+   second-hand summary [SPEAKERS].
+2. **That most of these systems' users are already not writing in English** - OpenAI reports it;
+   the page refuses an automated fetch, so the sentence has to be copied from the page or found
+   in the paper [CHATGPT-LANG].
+3. **How often people write their own language in Latin letters when talking to a chat** - this
+   one we can measure ourselves, on source B, and it is the strongest of the three because it
+   shows what readers do when the direction problem is left unfixed.
 
 ### I.0.1 What this work adds, and what it still cannot do
 
