@@ -315,16 +315,29 @@ arXiv:2608.02555, 2026-08-03. https://arxiv.org/abs/2608.02555
 - **read**; cited for people writing their own language in Latin letters, and what they think
   of it: "the prevalence and usage of Arabizi vary by factors such as region and age group".
 
-**[CHATGPT-LANG]** OpenAI. *How ChatGPT adoption has expanded* (2025), beside the working paper
-A. Chatterji, T. Cunningham, D. Deming, Z. Hitzig, C. Ong, C. Shan, K. Wadman, *How People Use
-ChatGPT*, NBER Working Paper 34255, September 2025.
-https://openai.com/index/how-chatgpt-adoption-has-expanded/ ·
-https://www.nber.org/papers/w34255
-- **secondary, not yet verified.** The claim wanted here - that users writing in a language
-  other than English are now more than half of consumer usage, and that Arabic is among the
-  largest - is reported from that page, which refuses an automated fetch (403). The NBER paper
-  itself was downloaded and searched: it carries the task and growth figures, not this one. To
-  cite it, open the page in a browser and copy the sentence, or find the figure in the paper.
+**[CHATGPT-LANG]** OpenAI (Global Affairs, OpenAI Signals). *How ChatGPT adoption has expanded.*
+2026-06-30. https://openai.com/index/how-chatgpt-adoption-has-expanded/
+- **verified from the page by the owner, 2026-09-18** - the site refuses an automated fetch
+  (403), so it was opened in a browser and the text taken from it. Anyone checking this does the
+  same. The companion working paper - A. Chatterji, T. Cunningham, D. Deming, Z. Hitzig, C. Ong,
+  C. Shan, K. Wadman, *How People Use ChatGPT*, NBER Working Paper 34255, September 2025,
+  https://www.nber.org/papers/w34255 - was downloaded and searched here: it carries the task and
+  growth figures, and no language figures at all.
+- "Non-English ChatGPT usage grew alongside global usage. Users predominantly using a language
+  other than English now represent over half of active users. The leading non-English languages
+  on ChatGPT are Spanish, Portuguese, and Arabic."
+- "Uzbek, Kazakh, and Burmese were the languages with the largest percentage increase in their
+  share of active users since July 2023."
+- "ChatGPT adoption has grown sharply across every continent since July 2023. In relative terms,
+  the fastest growth has been in Africa and Asia."
+- "lower-Human Development Index (HDI) countries have seen the fastest relative growth in weekly
+  active users since July 2023"
+- Its own method note, which the paper quotes with the figure: "Language is assigned using each
+  user's most recent available language classification profile. Monthly shares include users
+  active in the seven days preceding the first day of each month who are over 18 years of age."
+- What it does and does not say: it counts **users by their predominant language**, not messages,
+  and it names Arabic third among non-English languages - it gives no figure for Persian, Urdu or
+  Hebrew, and none for how those users write (script or transliteration).
 
 **[SPEAKERS]** Counts of readers of right-to-left scripts - Arabic, Persian, Urdu, Hebrew, and
 the others the rule supports - **still to be cited from official sources**: national censuses

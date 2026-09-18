@@ -101,17 +101,21 @@ document serves it:
   - explanations, instructions, code - are expository text.
 - Writing one's own language in Latin letters is a real, lasting practice, not a curiosity, and
   its prevalence differs by region and age [ARABIZI-USE].
+- These readers are not a niche of the people using these systems - they are the majority
+  direction of travel. OpenAI's own data: "Users predominantly using a language other than
+  English now represent over half of active users. The leading non-English languages on ChatGPT
+  are Spanish, Portuguese, and Arabic" - **a right-to-left language, third**, and the fastest
+  relative growth is in Africa, in Asia and in lower-HDI countries [CHATGPT-LANG]. A rule that
+  leaves right-to-left text laid out backwards is failing a growing majority's languages, in the
+  markets where the growth is.
 
 **Still owed, and not to be written as a finding until it is in hand:**
 
 1. **How many people read right-to-left scripts** - from censuses and the UN, one language at a
    time (Arabic, Persian, Urdu, Hebrew, and the others the rule supports), never from a
    second-hand summary [SPEAKERS].
-2. **That most of these systems' users are already not writing in English** - OpenAI reports it;
-   the page refuses an automated fetch, so the sentence has to be copied from the page or found
-   in the paper [CHATGPT-LANG].
-3. **How often people write their own language in Latin letters when talking to a chat** - this
-   one we can measure ourselves, on source B, and it is the strongest of the three because it
+2. **How often people write their own language in Latin letters when talking to a chat** - this
+   one we can measure ourselves, on source B, and it is the strongest of the two because it
    shows what readers do when the direction problem is left unfixed.
 
 ### I.0.1 What this work adds, and what it still cannot do
