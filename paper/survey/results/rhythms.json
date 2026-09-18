@@ -1,0 +1,11 @@
+{
+  "about": "Which frames of each rhythm recording are the answer itself. A recording also catches the sent message and the chat's own status lines (a thinking timer, tool rows), so the answer's frames are picked by hand, and why is written beside them. The lab (paper/demo/build.mjs) replays only these frames: their sizes, and the times between them.",
+  "chats": {
+    "vscode": {
+      "recording": "claude-code-rhythm.json",
+      "recorded": "2026-09-17",
+      "answerFrames": [24, 25, 26],
+      "why": "Frame 0 (489 characters, at 31.6 s) is the sent message. Frames 1-13 add 1 to 9 characters at a time over 40 s - a status line and a timer while Claude thought. Frames 14-23 (82.0-85.7 s) are short status rows. The answer is frames 24-26: 633, 134 and 1,140 characters, at 91.9, 92.7 and 93.7 s."
+    }
+  }
+}
