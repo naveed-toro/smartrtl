@@ -71,8 +71,8 @@ nothing else.
 
 ```
 first letter right-to-left                            -> right-to-left
-first letter left-to-right, an RTL letter within 45   -> right-to-left
-first letter left-to-right, none within 45            -> left-to-right
+first letter left-to-right, an RTL letter within 63   -> right-to-left
+first letter left-to-right, none within 63            -> left-to-right
 ```
 
 45 was measured on the answers of Claude and ChatGPT

@@ -2,7 +2,7 @@
  * ONLY THE FORMULA.
  *
  * From 0.7.0 the one thing this extension does to text is give it the direction the formula
- * says - openingLetters, 45 letters, in packages/core - in the four places: the box you type
+ * says - openingLetters, 63 letters, in packages/core - in the four places: the box you type
  * into, a message you send, an answer while it streams, and the finished answer. Claude Code's
  * own guess is switched off on those elements, and nothing else of ours acts on text.
  *

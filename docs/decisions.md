@@ -10,7 +10,7 @@ search for, in several languages.
 
 ## What is in here
 
-Fifty-two sections, in the order they were written, which is the order the faults were
+Fifty-three sections, in the order they were written, which is the order the faults were
 found. The ones worth reading first are marked.
 
  1. [The root cause](#1-the-root-cause)
@@ -4508,4 +4508,57 @@ So the owner took the recorder out in 0.8.0: the extension is the formula and Cl
 long-message fix, and nothing else - no measuring code in the panel, no record in its storage.
 The record 0.7.3 kept is removed from the webview's storage the first time 0.8.0 starts. The
 readings stay here and in `paper/results/README.md`.
+
+---
+
+## 53. The window is 63 letters, where the reading put it
+
+> 0.9.0. The owner's decision, the second deliberate change to the frozen rule.
+
+### Why it was asked again
+
+45 was chosen in section 50 by a rule written before the numbers: the shortest window whose
+mistakes were within half a percentage point of the best. "Shortest" was a virtue then because
+the paper still expected to propose **holding** a streamed block until its direction settled, and
+every letter of the window was a letter the reader waited. Section 52 ended that: no hold is
+proposed. With the waiting gone, the only thing left to separate one window from another is how
+often each leaves a line in the wrong direction - and that the proxy could not settle, because 45
+and 63 are seven texts apart on it.
+
+### What was read
+
+Four formulas never go back on their own answer: Any RTL, our first formula, and the window at
+63 and at 45. They agree on every text except 493 - 20 from Claude's answers, 473 from ChatGPT's -
+so those 493, and only those, decide between them. Every one was read and given the direction it
+should have (labeller `claude`, the assistant's first reading; paper/results/README.md).
+
+| | wrong, of 447 judged | Urdu shown left-to-right | English shown right-to-left | went back |
+|---|---|---|---|---|
+| Any RTL | 233 | 0 | 233 | 0 |
+| Our first formula | 200 | 9 | 191 | 0 |
+| **Firefox's formula, 63** | **139** | 46 | 93 | 0 |
+| Firefox's formula, 45 | 160 | 107 | 53 | 0 |
+
+45 turns sooner and less often - 79 of the 473 lines against 63's 240 - and that is its whole
+advantage. It buys it by settling before the right-to-left text arrives on 107 lines where 63
+does not. In the owner's order - the direction left on the screen first, then never going back,
+then turning early - 63 wins, and the extension follows the paper.
+
+### The two questions section 42 asks of any change
+
+1. **Does the answer still only move one way?** Yes, and for the same reason: a longer window
+   only delays the moment it settles. Checked over every prefix of every test text.
+2. **Do the five headings survive?** Yes - their Urdu arrives within a few letters, far inside
+   either window.
+
+### What changed with it
+
+`OPENING_LETTERS` is 63; `direction.test.js` asserts it, and adds the two lines that measure the
+difference (Urdu at letter 52, which 45 left left-to-right, and at letter 65, which neither
+window reaches); `frozen.test.js` carries the new hashes. Nothing else of the rule moved.
+
+### What is still owed
+
+The labels are the assistant's reading, not a person's. The owner checks them, and if his own
+labels move the count, this section is written again.
 

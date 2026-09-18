@@ -7,8 +7,8 @@
  *    finished - each takes its direction from one rule, openingLetters in @smartrtl/core:
  *
  *      first letter right-to-left                            -> right-to-left
- *      first letter left-to-right, an RTL letter within 45   -> right-to-left
- *      first letter left-to-right, none within 45            -> left-to-right
+ *      first letter left-to-right, an RTL letter within 63   -> right-to-left
+ *      first letter left-to-right, none within 63            -> left-to-right
  *
  *    Claude Code's own guess - unicode-bidi: plaintext on its markdown blocks and on the box,
  *    dir="auto" on a sent message - is switched off on exactly the elements the formula

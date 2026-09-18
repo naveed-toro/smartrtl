@@ -28,15 +28,16 @@ const fs = require("node:fs");
 const path = require("node:path");
 const crypto = require("node:crypto");
 
-// Changed on purpose on 2026-09-17, by the owner's decision, for 0.6.0: the rule for an
-// answer became openingLetters (45 letters). Section 42's first question - the answer only
-// ever moves one way - still holds, and the five headings still read right to left; both
-// are asserted in direction.test.js. docs/decisions.md section 50.
+// Changed on purpose twice, both times by the owner's decision, both times with the two
+// questions of section 42 asked first - the answer only ever moves one way, and the five
+// headings still read right to left, both asserted in direction.test.js.
+//   2026-09-17, 0.6.0: the rule became openingLetters, looking 45 letters in (section 50).
+//   2026-09-18, 0.9.0: the window became 63, where the labelled texts put it (section 53).
 const FROZEN = {
   "src/direction.js":
-    "8977154f0d7c1cbcd7ae948d0c691b4219f58217bf5b2e47fd7405ac02081c2f",
+    "8b72c365e1d7ec8609e7207fd48b3760b1834ee276892a45515cb2faaed34998",
   "test/direction.test.js":
-    "d93d47e185758a57b56fe2029bd8619055e732802fc248a97d5a38ac4556c1a5"
+    "c390740d6bdde46ba9e7b818dd3958b16b6e385a118c2252ba071b9abb222799"
 };
 
 const ROOT = path.resolve(__dirname, "..");

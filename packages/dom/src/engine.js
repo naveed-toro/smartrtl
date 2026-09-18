@@ -3,7 +3,7 @@
  *
  * The engine, from 0.7.0: nothing but the formula, applied as a direction tag.
  *
- * Three places, each decided by the one rule in @smartrtl/core - openingLetters, 45 letters:
+ * Three places, each decided by the one rule in @smartrtl/core - openingLetters, 63 letters:
  *
  *   an answer       every block (paragraph, heading, list item, table cell) by its own text
  *   the box         the box you type into, by the draft in it

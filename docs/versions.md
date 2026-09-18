@@ -1,4 +1,4 @@
-# The sixty-two builds, and what each one actually contained
+# The sixty-three builds, and what each one actually contained
 
 Compiled by opening every `.vsix` and reading what is inside it, not from memory. The
 second table was rebuilt the same way after the fact, which is why some of its rows say
@@ -1010,6 +1010,17 @@ of once it is taller than **half** the panel, not only once it is taller than al
 Payload: 135,021 bytes - 21,591 more than 0.5.2, for the long-message fix
 becoming a part of its own, a second way into the same trap, and the reasons written beside
 both.
+
+### 0.9.0 — the window is 63 letters
+
+- [x] **the rule looks 63 letters in, not 45** - the owner's decision after the 493 texts the
+      four one-way formulas disagree on were read one by one: 63 leaves 139 of 447 in the wrong
+      direction, 45 leaves 160 **(the owner, 2026-09-18; decisions.md 53)**
+- [x] **the two questions asked first** - the answer still only moves one way, over every prefix
+      of every test text, and the five headings still read right to left **(lab)**
+- [x] **nothing else acts on text** - the payload is the rule and Claude Code's long-message fix;
+      every other behaviour was taken out in 0.7.0-0.8.0 and the tests hold it there **(lab)**
+- [ ] read in the real panel **(unseen)**
 
 ### 0.8.0 — clean: the formula, and nothing measuring it
 

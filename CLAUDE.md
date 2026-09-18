@@ -12,12 +12,13 @@ Claude Code's panel first, a browser extension and a markdown editor after it.
 ## The formula is frozen
 
 `packages/core/src/direction.js` holds the rule this entire project exists to apply -
-`openingLetters`, since 0.6.0 (the owner's decision, `docs/decisions.md` section 50):
+`openingLetters`, since 0.6.0, looking 63 letters in since 0.9.0 (the owner's decisions,
+`docs/decisions.md` sections 50 and 53):
 
 ```
 first letter RTL                               -> RTL
-first letter LTR, an RTL letter within 45      -> RTL
-first letter LTR, none within 45               -> LTR
+first letter LTR, an RTL letter within 63      -> RTL
+first letter LTR, none within 63               -> LTR
 ```
 
 From 0.7.0 it is the only thing the extension applies to text, in all four places
@@ -50,7 +51,7 @@ right.
 
 **Its real value is a property, not its accuracy.** The rule's answer only ever moves one
 way: text is appended and never unwritten, so once an RTL letter has arrived within the first
-45 letters the answer is RTL whatever else arrives, and once 45 letters have passed without
+63 letters the answer is RTL whatever else arrives, and once 63 letters have passed without
 one it is LTR for good. That is
 what lets `packages/dom/src/engine.js` decide from a half-written block while an answer is
 still streaming. Deciding on sight costs 3 frames; waiting for the block to settle was
@@ -64,7 +65,7 @@ So a "more accurate" formula does not cost a little accuracy somewhere else. It 
 real-time behaviour of the whole extension.
 
 The one case the rule gets wrong on purpose - an English sentence whose RTL phrase comes within
-its first 45 letters - is not a defect it tolerates. It is the price of that property. Section 5 of
+its first 63 letters - is not a defect it tolerates. It is the price of that property. Section 5 of
 `docs/decisions.md` gave it up deliberately, and section 42 is why it stays given up.
 
 ### If you think it should change

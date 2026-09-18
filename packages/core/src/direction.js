@@ -136,27 +136,29 @@
   }
 
   /**
-   * How far into a text the rule for an answer looks: 45 letters.
+   * How far into a text the rule for an answer looks: 63 letters.
    *
-   * Firefox's proposal for dir="auto" in 2010 looked at the first 63 letters and gave no
-   * reason for 63. Measured on 64,476 mixed texts from Claude's and ChatGPT's answers, 45 is
-   * the shortest window whose mistakes are within half a percentage point of the best
-   * window's on both, and every letter beyond it only makes a streamed block wait longer
-   * (paper/results/README.md, "choosing X"; docs/decisions.md section 50).
+   * fantasai proposed exactly this window for Firefox's dir="auto" in 2010 (Mozilla bug
+   * 548206) and gave no reason for 63; it was never adopted. 0.6.0 to 0.8.0 used 45, taken
+   * from a proxy while the paper still expected to propose holding a stream back, when every
+   * letter of waiting was a cost. With no hold proposed, and with the 493 texts the four
+   * one-way formulas disagree on read line by line, 63 leaves the fewest of them in the wrong
+   * direction: 139 against 45's 160, because 45 settles before the right-to-left text arrives
+   * on 107 lines where 63 does not (paper/results/README.md, "the four"; decisions.md 53).
    */
-  var OPENING_LETTERS = 45;
+  var OPENING_LETTERS = 63;
 
   /**
-   * The rule for an answer, from 0.6.0.
+   * The rule for an answer, from 0.6.0; its window measured again in 0.9.0.
    *
    *   first letter right-to-left                          -> rtl
-   *   first letter left-to-right, an RTL letter within 45  -> rtl
-   *   first letter left-to-right, none within 45           -> ltr
+   *   first letter left-to-right, an RTL letter within 63  -> rtl
+   *   first letter left-to-right, none within 63           -> ltr
    *
    * Letters are Unicode letters; digits, punctuation and spaces are not counted. The answer
-   * still only ever moves one way: "ltr" before 45 letters can become "rtl" when an RTL
-   * letter arrives, and once 45 letters have passed nothing can change it. An English
-   * sentence whose Urdu phrase comes within its first 45 letters is still read as
+   * still only ever moves one way: "ltr" before 63 letters can become "rtl" when an RTL
+   * letter arrives, and once 63 letters have passed nothing can change it. An English
+   * sentence whose Urdu phrase comes within its first 63 letters is still read as
    * right-to-left - the case section 5 gave up, now given up for a measured reason.
    *
    * @returns {"rtl"|"ltr"|null} null when there is no letter yet

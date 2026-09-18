@@ -84,9 +84,9 @@ test("no input crashes it", () => {
   }
 });
 
-test("from 0.6.0, an answer's block: an RTL letter within its first 45 letters (section 50)", () => {
+test("from 0.9.0, an answer's block: an RTL letter within its first 63 letters (sections 50, 53)", () => {
   const { openingLetters, openingSettled, OPENING_LETTERS } = require("../src/direction.js");
-  assert.equal(OPENING_LETTERS, 45);
+  assert.equal(OPENING_LETTERS, 63);
   // the five headings still read right to left
   for (const h of ["useMemo اور useCallback", "args - اصل arguments", "children بطور props",
     "Debounce بمقابلہ Throttle", "JavaScript میں Debounce فنکشن"]) {
@@ -94,7 +94,7 @@ test("from 0.6.0, an answer's block: an RTL letter within its first 45 letters (
   }
   assert.equal(openingLetters("یہ سب ایک ہی اردو جواب کی سطریں ہیں۔"), "rtl");
   assert.equal(openingLetters("2024 کا سال"), "rtl", "digits are not letters");
-  // English with no RTL, or with RTL only after 45 letters, reads left to right
+  // English with no RTL, or with RTL only after 63 letters, reads left to right
   assert.equal(openingLetters("The build tool comparison is documented upstream."), "ltr");
   assert.equal(openingLetters("Check the native RTL claim yourself, two minutes and no risk, and then look for ایک"), "ltr");
   // the case section 5 gave up is still given up: the Urdu phrase is letter 23
@@ -104,7 +104,11 @@ test("from 0.6.0, an answer's block: an RTL letter within its first 45 letters (
   // one way only, and settled for good
   assert.equal(openingSettled("React is a"), false);
   assert.equal(openingSettled("React ایک"), true);
-  assert.equal(openingSettled("a".repeat(45)), true);
+  assert.equal(openingSettled("a".repeat(62)), false, "62 letters, none right-to-left: not settled");
+  assert.equal(openingSettled("a".repeat(63)), true);
+  // the window 0.6.0-0.8.0 used was 45: these two are why it was measured again (section 53)
+  assert.equal(openingLetters("useEffect, useMemo, useCallback, useRef and useContext hooks کو سمجھنا"), "rtl", "the Urdu is letter 52 - 45 left this line left-to-right");
+  assert.equal(openingLetters("Microsoft Visual Studio Code, GitHub Copilot, Claude Code and Cursor editors میں"), "ltr", "the Urdu is letter 65, past the window");
   const grow = "React is a JavaScript library for building user interfaces and then اردو";
   let last = null;
   for (let i = 1; i <= grow.length; i++) {
