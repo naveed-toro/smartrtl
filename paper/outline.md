@@ -125,6 +125,42 @@ write to these systems, so it is what they read back - and **one turn in five (2
 49.0%) mixes both directions inside a single message**, which is exactly the case the whole paper
 is about, typed by the reader themselves.
 
+### I.0.2 Who this hurts, and what they do about it (the owner, 2026-09-18)
+
+The owner's account of the readers he knows, kept here with what supports it and what does not.
+It is about Urdu in Pakistan; the paper will say so, and will not stretch it to other languages.
+
+- **Not everyone who speaks the language reads it.** A large part of the population never
+  finished school - or never went - and cannot read Urdu script comfortably even though they
+  speak Urdu. For them `abc` is not a preference, it is the only way in. **To cite:** the
+  literacy rate and the out-of-school figure from Pakistan's own statistics, and the reading
+  levels the ASER household survey measures.
+- **The habit has a history.** Urdu in Latin letters is what the SMS years on keypad phones
+  taught a generation, because those phones could not write the script. **To cite:** a source
+  on Urdu SMS and keypad input.
+- **Then came a writing era.** Facebook made ordinary people write Urdu again, in its own script
+  and in `abc`, and reading each other's posts and comments became a daily habit - fading now as
+  video takes over, but not gone. **To cite:** a source on Roman Urdu on social media and the
+  objections to it ("write it in ا ب پ, I cannot read this").
+- **And the readers who do read the script are exactly the ones these systems fail.** The people
+  who write and read Urdu well are the ones asking a model in Urdu - and getting an answer laid
+  out backwards. What they can do about it is skip the line, or ask the chat to send it in Latin
+  letters instead.
+- **The two shapes of that answer, in the owner's words:** English first and then Urdu can still
+  be read, with effort. English, then Urdu, then English again is not read at all.
+
+**Measured for the last point** (results/README.md, switches.json): the second shape is the
+common one, not the rare one. **80.2% of the mixed lines in Claude's Urdu answers, and 66.4% in
+ChatGPT's Arabic, Persian, Hebrew and Urdu answers, change direction more than once.** Among the
+lines that open left-to-right - the lines every formula in this paper argues about - 55.1% and
+32.7% do. So the reader's hardest case is most of what these systems produce for them.
+
+**One more of the owner's observations, to test, not to assert:** an Urdu reader usually leaves
+the phone and the laptop in English, while Arabic and Persian readers more often set the
+interface to their own language. If that holds, the Urdu reader meets an English interface and a
+right-to-left answer in the same window - which is the worst arrangement for this fault. Nothing
+in the corpus can show this; it needs its own question put to real users.
+
 ### I.0.1 What this work adds, and what it still cannot do
 
 The paper does not argue from opinion. It eliminates:

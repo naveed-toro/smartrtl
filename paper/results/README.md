@@ -38,6 +38,25 @@ claim as a finding of ours and keeps only what is measured here.
   their own script and uses it.
 - Urdu and Hebrew counts here are small (38 and 243 turns); nothing is claimed from them alone.
 
+## switches.json - how often a line changes direction more than once
+
+`node measure-switches.mjs`. A line that opens in English and turns Urdu can still be read: the
+reader starts on the wrong side and carries on. A line that opens in English, turns Urdu, and
+turns back - and again - is the case the owner describes as the one nobody reads: there is no side
+to start from, and the reader either skips it or asks the chat to send it in Latin letters.
+
+| | mixed lines | change direction twice or more | open left-to-right | of those, twice or more |
+|---|---|---|---|---|
+| A, Claude answers (Urdu) | 5,144 | **80.2%** | 1,750 (34.0%) | **55.1%** |
+| B, ChatGPT answers (Arabic, Persian, Hebrew, Urdu) | 60,699 | **66.4%** | 13,416 (22.1%) | **32.7%** |
+
+**What it means.** The hard case is not the exception - it is most of the mixed text these systems
+write. Two thirds to four fifths of mixed lines move between the two directions more than once,
+and among the lines that open left-to-right - the ones every formula in this paper argues about -
+a third to a half do. Whatever direction a formula gives such a line, the runs inside it are then
+laid out by the browser around that choice, so the cost of choosing wrongly is paid several times
+in one line.
+
 ## four.json - the four candidates on the chat data
 
 `node measure-four.mjs`. Any RTL, our first formula, and Firefox's formula at 63 and at 45 letters
