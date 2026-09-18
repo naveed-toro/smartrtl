@@ -1,0 +1,1690 @@
+<title>Bidi Stream Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Noto+Naskh+Arabic:wght@400;600&family=Noto+Sans+Hebrew:wght@400;600&display=swap">
+<style>
+  :root {
+    --ground: #eef0f3;
+    --surface: #ffffff;
+    --surface-2: #f6f7f9;
+    --ink: #15181d;
+    --muted: #5d6470;
+    --line: #dde1e7;
+    --accent: #0e6b69;
+    --accent-ink: #ffffff;
+    --accent-soft: #dcefee;
+    --rtl: #b35a00;
+    --rtl-soft: #f7e6d3;
+    --ltr: #2457c5;
+    --ltr-soft: #dfe8fa;
+    --none: #b9bfc8;
+    --back: #c0262d;
+    --back-soft: #f8dcdd;
+    --ok: #1d7a3e;
+    --bubble: #e7eaef;
+    --shadow: 0 1px 2px rgba(20, 24, 32, .06), 0 4px 16px rgba(20, 24, 32, .05);
+    --ui: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+    --text: system-ui, -apple-system, "Segoe UI", "Noto Naskh Arabic", "Noto Sans Hebrew", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #111317; --surface: #1a1d23; --surface-2: #20242b; --ink: #e8eaee; --muted: #9aa2ae;
+      --line: #2c313a; --accent: #4fb3ad; --accent-ink: #0c1414; --accent-soft: #1d3634;
+      --rtl: #f0a24d; --rtl-soft: #3a2a18; --ltr: #7ea6f5; --ltr-soft: #1c2a45; --none: #4a515c;
+      --back: #f07178; --back-soft: #43222a; --ok: #58c27d; --bubble: #262b33;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 4px 16px rgba(0, 0, 0, .25);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #111317; --surface: #1a1d23; --surface-2: #20242b; --ink: #e8eaee; --muted: #9aa2ae;
+    --line: #2c313a; --accent: #4fb3ad; --accent-ink: #0c1414; --accent-soft: #1d3634;
+    --rtl: #f0a24d; --rtl-soft: #3a2a18; --ltr: #7ea6f5; --ltr-soft: #1c2a45; --none: #4a515c;
+    --back: #f07178; --back-soft: #43222a; --ok: #58c27d; --bubble: #262b33;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 4px 16px rgba(0, 0, 0, .25);
+  }
+
+  html, body { height: 100%; }
+  body { background: var(--ground); color: var(--ink); font: 14px/1.5 var(--ui); }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  a { color: var(--accent); }
+
+  .app { height: 100%; display: grid; grid-template-rows: auto auto 1fr; padding-inline: 16px; }
+
+  /* header */
+  .top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; padding-block: 12px 10px; }
+  .top h1 { margin: 0; font-size: 17px; font-weight: 600; letter-spacing: -.01em; }
+  .top p { margin: 0; color: var(--muted); font-size: 13px; }
+  .top .prov { margin-inline-start: auto; font: 11.5px/1.4 var(--mono); color: var(--muted); }
+
+  .tabs { display: none; gap: 4px; padding-bottom: 8px; }
+  .tabs button { flex: 1; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 7px; }
+  .tabs button[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+
+  .panes { --left: 280px; --right: 380px; min-height: 0; display: grid; grid-template-columns: var(--left) 12px minmax(0, 1fr) 12px var(--right); padding-bottom: 12px; }
+  .gutter { cursor: col-resize; position: relative; touch-action: none; }
+  .gutter::after { content: ""; position: absolute; top: 40%; bottom: 40%; left: 5px; width: 2px; border-radius: 2px; background: var(--line); }
+  .gutter:hover::after, .gutter.dragging::after { top: 0; bottom: 0; background: var(--accent); }
+  body.resizing { cursor: col-resize; user-select: none; }
+  .pane { min-height: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); }
+  .pane.scroll { overflow: auto; }
+
+  /* left: formulas and stream */
+  .rail { padding: 14px; display: flex; flex-direction: column; gap: 18px; }
+  .section-title { margin: 0 0 8px; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .formulas { display: flex; flex-direction: column; gap: 6px; }
+  .formula { min-width: 0; overflow-wrap: break-word; text-align: start; background: var(--surface); border: 1px solid var(--line); border-radius: 9px; padding: 8px 10px; display: grid; gap: 2px; }
+  .formula:hover { border-color: var(--accent); }
+  .formula[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent); }
+  .formula .row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+  .formula .name { font-weight: 600; }
+  .formula .key { margin-inline-start: auto; font: 11px var(--mono); color: var(--muted); }
+  .formula .what { color: var(--muted); font-size: 12.5px; line-height: 1.4; }
+  .formula .who { font-size: 11.5px; color: var(--muted); line-height: 1.35; }
+  .formula .situation { font-size: 12px; color: var(--ink); line-height: 1.35; }
+  .src { font-size: 11.5px; color: var(--muted); text-decoration-color: var(--line); text-underline-offset: 2px; }
+  .chip { display: inline-block; font-size: 10.5px; font-weight: 600; letter-spacing: .03em; border-radius: 99px; padding: 1px 7px; border: 1px solid currentColor; white-space: nowrap; }
+  .chip.baseline { color: var(--muted); }
+  .chip.adopted { color: var(--accent); }
+  .chip.proposed { color: var(--rtl); }
+  .chip.ours { color: var(--ltr); }
+  .chip.ai-today { color: var(--back); }
+  .chip.custom { color: var(--muted); }
+  .group { font-size: 11.5px; font-weight: 600; color: var(--ink); margin: 10px 0 0; padding-bottom: 3px; border-bottom: 1px solid var(--line); }
+  .group:first-child { margin-top: 0; }
+  .fwrap { display: grid; gap: 2px; }
+  .fline { display: flex; gap: 8px; padding-inline: 10px; align-items: center; }
+
+  .seg { display: flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .seg button { flex: 1; border: 0; background: var(--surface); padding: 6px 4px; font-size: 13px; }
+  .seg button + button { border-inline-start: 1px solid var(--line); }
+  .seg button[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
+  .field { display: grid; gap: 6px; }
+  .field label, .field .label { font-size: 12.5px; color: var(--muted); display: flex; justify-content: space-between; }
+  .field output { font: 12px var(--mono); color: var(--ink); }
+  input[type="range"] { width: 100%; accent-color: var(--accent); }
+  .check { display: flex; gap: 8px; align-items: center; font-size: 13px; }
+  .note { font-size: 12px; color: var(--muted); margin: 0; }
+  .speed-note { line-height: 1.45; }
+  .speed-note b { color: var(--ink); font-weight: 600; }
+  .speed-note .seen { color: var(--back); }
+  .speed-note .unseen { color: var(--ok); }
+  .addf { border: 1px dashed var(--line); border-radius: 9px; padding: 10px; display: grid; gap: 8px; }
+  .addf summary { cursor: pointer; font-weight: 500; }
+  .addf input, .addf textarea { width: 100%; border: 1px solid var(--line); border-radius: 7px; background: var(--surface-2); padding: 6px 8px; }
+  .addf textarea { font: 12px/1.45 var(--mono); min-height: 120px; resize: vertical; }
+  .btn { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 6px 12px; }
+  .btn:hover { border-color: var(--accent); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .btn:disabled { opacity: .5; cursor: default; }
+
+  /* centre: a chat like every chat */
+  .chat { display: grid; grid-template-rows: auto 1fr auto; min-height: 0; }
+  .machine { border-bottom: 1px solid var(--line); padding: 10px clamp(12px, 4vw, 40px); display: grid; gap: 6px; }
+  .machine .row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .machine .title { font-weight: 600; }
+  .machine .seg { display: inline-flex; }
+  .machine .seg button { padding: 4px 10px; font-size: 12.5px; flex: none; }
+  .machine .status { font: 12px var(--mono); color: var(--muted); }
+  .machine .src { font-size: 11.5px; color: var(--muted); margin: 4px 0 0; }
+  .machine .about summary { cursor: pointer; font-size: 11.5px; color: var(--muted); width: max-content; }
+  .btn.run { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); min-width: 5.5em; }
+  .btn.run.on { background: var(--back); border-color: var(--back); }
+  .totals td.lead { font-weight: 600; }
+  .verdict-bar { font-size: 12.5px; line-height: 1.45; border: 1px solid var(--line); border-radius: 9px; padding: 6px 10px; background: var(--surface-2); display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; }
+  .verdict-bar:empty { display: none; }
+  .verdict-bar b { font-weight: 600; }
+  .verdict-bar.ok { border-color: color-mix(in srgb, var(--ok) 50%, var(--line)); }
+  .verdict-bar.no { border-color: var(--back); background: var(--back-soft); }
+  .verdict-bar .good { color: var(--ok); font-weight: 600; } .verdict-bar .bad { color: var(--back); font-weight: 600; }
+  .streaming-with { font-size: 12px; color: var(--muted); }
+  .streaming-with b { color: var(--ink); font-weight: 600; }
+  .totals-who { font-size: 12px; color: var(--muted); margin: -2px 0 8px; }
+  .totals-who b { color: var(--ink); }
+  .thread { overflow: auto; padding: 20px clamp(12px, 4vw, 40px); display: flex; flex-direction: column; gap: 18px; }
+  .turn { display: grid; gap: 6px; max-width: 760px; width: 100%; margin-inline: auto; }
+  .turn .who { font-size: 11.5px; color: var(--muted); display: flex; gap: 10px; align-items: center; }
+  .turn .who .actions { margin-inline-start: auto; display: flex; gap: 6px; }
+  .turn .who button { border: 0; background: none; color: var(--accent); padding: 0; font-size: 12px; }
+  .sent { justify-self: end; max-width: 85%; background: var(--bubble); border-radius: 16px; padding: 10px 14px; white-space: pre-wrap; overflow-wrap: anywhere; font: 15.5px/1.6 var(--text); max-height: 12.5em; overflow-y: auto; }
+  .answer { font: 15.5px/1.7 var(--text); overflow-wrap: anywhere; }
+  .answer > :first-child { margin-top: 0; }
+  .answer > :last-child { margin-bottom: 0; }
+  .answer h1, .answer h2, .answer h3 { line-height: 1.35; margin: 1em 0 .4em; }
+  .answer h1 { font-size: 1.35em; } .answer h2 { font-size: 1.2em; } .answer h3 { font-size: 1.05em; }
+  .answer p, .answer ul, .answer ol, .answer table, .answer pre, .answer blockquote { margin: .55em 0; }
+  .answer code { font: .88em var(--mono); background: var(--surface-2); border: 1px solid var(--line); border-radius: 5px; padding: 0 4px; }
+  .answer pre { background: var(--surface-2); border: 1px solid var(--line); border-radius: 9px; padding: 10px 12px; overflow-x: auto; }
+  .answer pre code { border: 0; background: none; padding: 0; }
+  .answer .tablewrap { overflow-x: auto; }
+  .answer table { border-collapse: collapse; }
+  .answer th, .answer td { border: 1px solid var(--line); padding: 5px 10px; }
+  .answer blockquote { border-inline-start: 3px solid var(--line); padding-inline-start: 12px; color: var(--muted); }
+  .answer.streaming > :last-child::after { content: ""; display: inline-block; width: .55em; height: 1em; vertical-align: -.12em; background: var(--muted); margin-inline-start: 2px; border-radius: 1px; }
+  .flip { outline: 2px solid var(--ltr); outline-offset: 3px; border-radius: 3px; animation: flip .5s ease-out forwards; }
+  .flip.back { outline-color: var(--back); animation-duration: .9s; }
+  @keyframes flip { to { outline-color: transparent; } }
+  @media (prefers-reduced-motion: reduce) { .flip { animation: none; } }
+
+  .composer { border-top: 1px solid var(--line); padding: 12px clamp(12px, 4vw, 40px) 14px; }
+  .composer .box { max-width: 760px; margin-inline: auto; background: var(--surface-2); border: 1px solid var(--line); border-radius: 18px; padding: 10px 10px 8px 14px; display: grid; gap: 6px; }
+  .composer .box:focus-within { border-color: var(--accent); }
+  .composer textarea { border: 0; background: none; resize: none; outline: none; font: 15.5px/1.55 var(--text); max-height: 40vh; min-height: 26px; padding: 2px 0; }
+  .composer .bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .composer select { border: 1px solid var(--line); background: var(--surface); border-radius: 7px; padding: 3px 6px; font-size: 12.5px; max-width: 12rem; }
+  .composer .dirchip { font: 11.5px var(--mono); color: var(--muted); }
+  .composer .send { margin-inline-start: auto; width: 34px; height: 34px; border-radius: 50%; border: 0; background: var(--ink); color: var(--surface); display: grid; place-items: center; }
+  .composer .send:disabled { opacity: .35; cursor: default; }
+  .composer .hint { max-width: 760px; margin: 6px auto 0; font-size: 11.5px; color: var(--muted); text-align: center; }
+
+  /* right: inspect */
+  .inspect { padding: 14px; display: flex; flex-direction: column; gap: 16px; }
+  .inspect header { display: grid; gap: 2px; }
+  .inspect header h2 { margin: 0; font-size: 15px; }
+  .inspect header p { margin: 0; color: var(--muted); font-size: 12.5px; }
+  .blocks { display: flex; flex-direction: column; gap: 6px; }
+  .inspect > section, .blocks { min-width: 0; }
+  .block { border: 1px solid var(--line); border-radius: 9px; padding: 6px 8px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; min-width: 0; }
+  .block .how { flex-basis: 100%; font-size: 11.5px; color: var(--muted); }
+  .block .how.back { color: var(--back); font-weight: 600; }
+  .block.no { border-color: var(--back); background: var(--back-soft); }
+  .block.ok { border-color: color-mix(in srgb, var(--ok) 45%, var(--line)); }
+  .block .tag { font: 11px var(--mono); color: var(--muted); min-width: 2.2em; }
+  .block .preview { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; unicode-bidi: plaintext; font: 13px var(--text); }
+  .pill { font: 500 11px var(--mono); border-radius: 5px; padding: 0 5px; }
+  .pill.rtl { background: var(--rtl-soft); color: var(--rtl); }
+  .pill.ltr { background: var(--ltr-soft); color: var(--ltr); }
+  .mark { display: flex; gap: 3px; align-items: center; }
+  .mark button { border: 1px solid var(--line); background: var(--surface); border-radius: 5px; font: 10.5px var(--mono); padding: 1px 6px; }
+  .mark button[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+  .mark.guess button[aria-pressed="true"] { background: var(--surface); color: var(--ink); border: 1px dashed var(--ink); }
+  .mark .from { font-size: 10.5px; color: var(--muted); min-width: 4.6em; text-align: end; }
+  .mark.guess .from { color: var(--rtl); font-weight: 600; }
+  .verdict { font-weight: 600; min-width: 1em; text-align: center; }
+  .verdict.ok { color: var(--ok); } .verdict.no { color: var(--back); }
+  .chats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .chats button { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 6px 4px; font-size: 13px; }
+  .chats button[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+  .log-wrap summary { cursor: pointer; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .compare { width: 100%; border-collapse: collapse; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+  .compare th { text-align: start; font-weight: 500; color: var(--muted); font-size: 11px; padding: 4px 4px; border-bottom: 1px solid var(--line); }
+  .compare td { padding: 5px 4px; border-bottom: 1px solid var(--line); }
+  .compare td.n { text-align: end; font-family: var(--mono); }
+  .compare tr { cursor: pointer; }
+  .compare tr:hover td { background: var(--surface-2); }
+  .compare tr.current td { background: var(--accent-soft); }
+  .compare td.bad { color: var(--back); font-weight: 600; }
+  .compare td.good { color: var(--ok); font-weight: 600; }
+  .compare .muted { color: var(--muted); font-weight: 400; }
+  .log { display: flex; flex-direction: column; gap: 4px; }
+  .log .item { display: flex; gap: 4px; align-items: stretch; }
+  .log .item > button.run { flex: 1; min-width: 0; }
+  .log .item > button.del { flex: none; width: 30px; display: grid; place-items: center; padding: 0; color: var(--muted); font-size: 15px; }
+  .log .item > button.del:hover { color: var(--back); border-color: var(--back); }
+  .log .item > button.star { flex: none; width: 30px; display: grid; place-items: center; padding: 0; color: var(--muted); font-size: 15px; }
+  .log .item > button.star[aria-pressed="true"] { color: #c98a00; border-color: #c98a00; }
+  .log .item.starred > button.run { border-color: #c98a00; }
+  .log .item > button.del.armed { width: auto; padding: 0 8px; color: #fff; background: var(--back); border-color: var(--back); font-size: 12px; }
+  .log-confirm { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; border: 1px solid var(--back); background: var(--back-soft); border-radius: 8px; padding: 8px; margin: 6px 0; font-size: 12.5px; }
+  .log-confirm[hidden] { display: none; }
+  .btn.danger { background: var(--back); border-color: var(--back); color: #fff; }
+  .log button { text-align: start; border: 1px solid var(--line); background: var(--surface); border-radius: 7px; padding: 6px 8px; display: grid; gap: 1px; }
+  .log button:hover { border-color: var(--accent); }
+  .log .l1 { display: flex; gap: 8px; font-size: 11.5px; color: var(--muted); }
+  .log .l2 { unicode-bidi: plaintext; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font: 13px var(--text); }
+  .empty { color: var(--muted); font-size: 12.5px; margin: 0; }
+
+
+  @media (max-width: 1180px) {
+    .panes { --left: 250px; --right: 330px; }
+  }
+  @media (max-width: 920px) {
+    .tabs { display: flex; }
+    .panes { grid-template-columns: minmax(0, 1fr); }
+    .gutter { display: none; }
+    .panes > .pane { display: none; }
+    .panes > .pane.shown { display: grid; }
+    .panes > .rail.shown, .panes > .inspect.shown { display: flex; }
+    .top .prov { margin-inline-start: 0; }
+  }
+</style>
+
+<div class="app">
+  <header class="top">
+    <h1>Bidi Stream Lab</h1>
+    <p>A neutral AI chat. What you send streams back, and a direction rule decides every block as it arrives.</p>
+    <span class="prov" id="prov"></span>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Views">
+    <button role="tab" id="tab-rail" aria-selected="false" data-pane="rail">Formula</button>
+    <button role="tab" id="tab-chat" aria-selected="true" data-pane="chat">Chat</button>
+    <button role="tab" id="tab-inspect" aria-selected="false" data-pane="inspect">Right / wrong</button>
+  </nav>
+
+  <main class="panes">
+    <aside class="pane scroll rail" id="rail" aria-label="Formula and stream">
+      <section>
+        <h2 class="section-title">Formula</h2>
+        <div class="formulas" id="formulas"></div>
+        <details class="addf" id="addf">
+          <summary>Add a formula</summary>
+          <label class="note" for="f-name">Name</label>
+          <input id="f-name" type="text" placeholder="e.g. First 40 letters, majority">
+          <label class="note" for="f-code">Body of <code>(text, ctx)</code> - return "rtl", "ltr" or null (leave the block alone)</label>
+          <textarea id="f-code" spellcheck="false">// ctx: { firstStrong, ltr, rtl, words, prose, count(text), bidiClass(codePoint) }
+const head = [...text].slice(0, 40).join("");
+const c = ctx.count(head);
+return c.rtl > c.ltr ? "rtl" : "ltr";</textarea>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="btn primary" id="f-save" type="button">Add</button>
+            <span class="note" id="f-msg" role="status"></span>
+          </div>
+        </details>
+      </section>
+
+      <section class="field">
+        <h2 class="section-title">Applies to</h2>
+        <div class="chats" id="chats" role="group" aria-label="Applies to"></div>
+        <p class="note" id="chat-note"></p>
+      </section>
+
+      <section class="field">
+        <h2 class="section-title">Stream</h2>
+        <div class="field" id="speed-field">
+          <label for="speed">Delay per token <output id="speed-out"></output></label>
+          <input id="speed" type="range" min="0" max="400" step="5" value="15">
+          <p class="note speed-note" id="speed-note" aria-live="polite"></p>
+        </div>
+        <label class="check"><input type="checkbox" id="highlight" checked> Outline a block when its direction changes</label>
+        <p class="note">Every paragraph, heading, list item and table cell gets its own decision. <kbd>Esc</kbd> finishes a stream at once.</p>
+      </section>
+    </aside>
+
+    <div class="gutter" id="gutter-left" role="separator" aria-orientation="vertical" aria-label="Resize the left panel" tabindex="0"></div>
+    <section class="pane chat shown" id="chat" aria-label="Chat">
+      <div class="machine" id="machine">
+        <div class="row">
+          <span class="title">Machine</span>
+          <div class="seg" id="m-set" role="group" aria-label="Which machine">
+            <button type="button" data-v="all" aria-pressed="true">1 · All answers</button>
+            <button type="button" data-v="disputed" aria-pressed="false">2 · Lines the four disagree on</button>
+            <button type="button" data-v="file" aria-pressed="false">3 · Your chats</button>
+          </div>
+          <button class="btn run" id="m-run" type="button">Start</button>
+          <div class="seg" id="m-order" role="group" aria-label="Order">
+            <button type="button" data-v="order" aria-pressed="true">In order</button>
+            <button type="button" data-v="random" aria-pressed="false">Random</button>
+          </div>
+          <div class="seg" id="m-view" role="group" aria-label="View">
+            <button type="button" data-v="watch" aria-pressed="true">Watch</button>
+            <button type="button" data-v="fast" aria-pressed="false">Fast</button>
+          </div>
+          <label class="btn" id="m-file-label" hidden>Load chat JSON…<input type="file" id="m-file" accept=".json,application/json" hidden></label>
+          <button class="btn" id="m-reset" type="button" title="Stops the machine, empties its totals and clears every message on the screen. The session log is kept - delete runs there.">Reset</button>
+        </div>
+        <p class="status" id="m-status" aria-live="polite"></p>
+        <details class="about"><summary>About this data</summary><p class="src" id="m-src"></p></details>
+      </div>
+      <div class="thread" id="thread" aria-live="off"></div>
+      <div class="composer">
+        <div class="box">
+          <textarea id="input" rows="1" placeholder="Type or paste text - it streams back as the answer" aria-label="Message"></textarea>
+          <div class="bar">
+            <select id="examples" aria-label="Load an example">
+              <option value="">Examples…</option>
+            </select>
+            <span class="dirchip" id="dirchip" aria-live="polite"></span>
+            <button class="send" id="send" type="button" aria-label="Send" disabled>
+              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 13V3M3.5 7.5 8 3l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+        </div>
+        <p class="hint">Enter sends · Shift+Enter new line · nothing is generated: the answer is your own text</p>
+      </div>
+    </section>
+    <div class="gutter" id="gutter-right" role="separator" aria-orientation="vertical" aria-label="Resize the right panel" tabindex="0"></div>
+
+    <aside class="pane scroll inspect" id="inspect" aria-label="Inspect">
+      <header>
+        <h2 id="i-title">Inspect</h2>
+        <p id="i-sub"></p>
+      </header>
+      <section id="m-totals" hidden>
+        <h3 class="section-title" id="totals-title">The machine, all answers so far</h3>
+        <p class="totals-who" id="totals-who"></p>
+        <table class="compare totals" id="totals">
+          <thead><tr><th>Formula</th><th class="n">right</th><th class="n">wrong</th><th class="n">went back</th><th class="n muted">turned</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <p class="note" id="totals-note"></p>
+      </section>
+      <section>
+        <h3 class="section-title">Every formula on this message</h3>
+        <table class="compare" id="compare">
+          <thead><tr><th>Formula</th><th class="n">right</th><th class="n">wrong</th><th class="n" title="lines that turned and came back to a direction they had already shown - the text jumps right and left while it streams">went back</th><th class="n muted" title="lines shown one way while streaming, then the other, once - arrives with the text">turned</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <p class="note" id="compare-note"></p>
+        <p class="note"><b>Went back</b> is the fault a reader sees: a line already read one way jumps to the other side, and back, while the answer streams. <b>Turned</b> is a single one-way turn that comes with the text arriving. Both are counted with the answer arriving token by token, the same tokens for every formula, whichever chat is chosen. They say after how many letters a formula makes up its mind - not whether an eye sees it: that depends on how fast the chat paints.</p>
+      </section>
+      <section>
+        <h3 class="section-title">Each line, and the way it should read</h3>
+        <div class="blocks" id="blocks"></div>
+      </section>
+      <details class="log-wrap">
+        <summary>Session log</summary>
+        <p class="note" id="log-state">Starting…</p>
+        <div style="display:flex;gap:8px;margin:6px 0">
+          <button class="btn" id="export" type="button" hidden>Export log (JSON)</button>
+          <button class="btn" id="log-clear" type="button">Delete all…</button>
+        </div>
+        <div class="log-confirm" id="log-confirm" hidden>
+          <span id="log-confirm-text"></span>
+          <button class="btn danger" id="log-confirm-yes" type="button">Delete</button>
+          <button class="btn" id="log-confirm-no" type="button">Cancel</button>
+        </div>
+        <div class="log" id="log"></div>
+      </details>
+    </aside>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/18.0.13/lib/marked.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.4.15/purify.min.js"></script>
+
+<!-- Google Closure Library, closure/goog/i18n/bidi.js, unmodified (Apache License 2.0). Pinned commit in PROVENANCE. -->
+<script>
+var goog = {
+  LOCALE: "en",
+  provide: function (name) { name.split(".").reduce(function (o, k) { return (o[k] = o[k] || {}); }, window); },
+  define: function (_n, v) { return v; },
+  require: function () {}
+};
+goog.global = window;
+</script>
+<script>
+/*@CLOSURE_BIDI@*/
+</script>
+
+<!-- paper/rules/rules.js: every formula, the same file the measurements run. -->
+<script>
+/*@RULES@*/
+</script>
+
+<!-- SmartRTL, packages/core/src/direction.js, unmodified. -->
+<script>
+/*@SMARTRTL@*/
+</script>
+
+<script>
+(function () {
+  "use strict";
+
+  var PROVENANCE = /*@PROVENANCE@*/;
+  var RANGES = /*@BIDI_RANGES@*/;
+
+  // ---------------------------------------------------------------- Unicode bidi classes
+  function bidiClass(cp) {
+    var lo = 0, hi = RANGES.length - 1;
+    while (lo <= hi) {
+      var mid = (lo + hi) >> 1, r = RANGES[mid];
+      if (cp < r[0]) hi = mid - 1;
+      else if (cp > r[1]) lo = mid + 1;
+      else return r[2];
+    }
+    return null;
+  }
+  // UAX #9 P2: first L, R or AL, skipping isolates.
+  function firstStrong(text) {
+    var depth = 0;
+    for (var ch of text) {
+      var c = bidiClass(ch.codePointAt(0));
+      if (c === "LRI" || c === "RLI" || c === "FSI") { depth++; continue; }
+      if (c === "PDI") { if (depth) depth--; continue; }
+      if (c === "B") depth = 0;
+      if (!depth && (c === "L" || c === "R" || c === "AL")) return c;
+    }
+    return null;
+  }
+  function count(text) {
+    var ltr = 0, rtl = 0;
+    for (var ch of text) {
+      var c = bidiClass(ch.codePointAt(0));
+      if (c === "L") ltr++; else if (c === "R" || c === "AL") rtl++;
+    }
+    return { ltr: ltr, rtl: rtl };
+  }
+  // ---------------------------------------------------------------- the formulas
+  // paper/rules/rules.js - the same file the measurements run. decide(text, ctx) ->
+  // "rtl" | "ltr" | null (null: leave the block alone). native: the browser applies it itself
+  // ("auto" = dir="auto", "plaintext" = unicode-bidi: plaintext); the lab records what it decides.
+  var GROUPS = [
+    ["baseline", "What most chats do"],
+    ["adopted", "Adopted - and what for"],
+    ["proposed", "Proposed, never adopted - and what for"],
+    ["ai-today", "Built for AI chats today"],
+    ["ours", "This work"],
+    ["custom", "Added in this lab"]
+  ];
+  var BUILT_IN = [{ id: "none", group: "baseline", name: "No rule", chip: "Baseline",
+    who: "A chat that sets no direction", what: "Every block takes the page's left-to-right.", situation: "Pages that never considered right-to-left text",
+    decide: function () { return null; } }]
+    .concat(window.BidiFormulas.createFormulas({ bidiClass: bidiClass }).formulas.filter(function (f) { return !f.archived; }).map(function (f) {
+      var chip = f.proposed ? "Suggested" : { adopted: "Adopted", proposed: "Proposed", "ai-today": "AI chats", ours: "Ours" }[f.group];
+      return Object.assign({}, f, { chip: chip + " · " + f.year });
+    }));
+  var custom = [];
+  var formulas = function () { return BUILT_IN.concat(custom); };
+  var byId = function (id) { return formulas().find(function (f) { return f.id === id; }) || formulas().find(function (f) { return f.id === "any-rtl-63"; }) || BUILT_IN[1]; };
+
+  // Everything a formula may read. prose: the text without inline code, when the caller knows it.
+  function ctx(text, prose) {
+    var c = count(text);
+    return { bidiClass: bidiClass, closure: goog.i18n.bidi, smartrtl: window.SmartRTL, prose: prose,
+      firstStrong: firstStrong(text), ltr: c.ltr, rtl: c.rtl, words: text.split(/\s+/).filter(Boolean), count: count };
+  }
+  function decideSafely(f, text, prose) {
+    try { var d = f.decide(text, ctx(text, prose)); return d === "rtl" || d === "ltr" ? d : null; } catch (e) { return null; }
+  }
+  // What the reader actually sees for a decision: nothing set means the page's own ltr.
+  function seen(f, text, prose) { return decideSafely(f, text, prose) || "ltr"; }
+  var strong = function (text) { var c = count(text); return c.ltr + c.rtl > 0; };
+
+  // ---------------------------------------------------------------- state
+  var state = {
+    formula: "any-rtl-63", scope: "block", chat: "chatgpt", delay: 15, highlight: true,
+    messages: [], current: -1, stream: null
+  };
+  try {
+    var saved = JSON.parse(localStorage.getItem("bidi-lab-prefs") || "{}");
+    ["formula", "chat", "delay", "highlight"].forEach(function (k) { if (saved[k] !== undefined) state[k] = saved[k]; });
+  } catch (e) {}
+  function savePrefs() {
+    try { localStorage.setItem("bidi-lab-prefs", JSON.stringify({ formula: state.formula, chat: state.chat, delay: state.delay, highlight: state.highlight })); } catch (e) {}
+  }
+
+  var $ = function (id) { return document.getElementById(id); };
+  function el(tag, attrs, kids) {
+    var n = document.createElement(tag);
+    for (var k in attrs || {}) {
+      if (k === "text") n.textContent = attrs[k];
+      else if (k === "class") n.className = attrs[k];
+      else if (attrs[k] !== null && attrs[k] !== undefined) n.setAttribute(k, attrs[k]);
+    }
+    (kids || []).forEach(function (c) { if (c) n.appendChild(c); });
+    return n;
+  }
+
+  // ---------------------------------------------------------------- markdown and blocks
+  function render(markdown) {
+    var html = window.marked ? window.marked.parse(markdown, { gfm: true, breaks: false }) : escapeHtml(markdown);
+    return window.DOMPurify ? window.DOMPurify.sanitize(html) : html;
+  }
+  function escapeHtml(s) { return "<p>" + s.replace(/[&<>]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]; }) + "</p>"; }
+
+  // A block is what a browser gives a direction to on its own.
+  function blocksOf(root) {
+    var out = [];
+    root.querySelectorAll("h1,h2,h3,h4,h5,h6,p,li,th,td").forEach(function (b) {
+      if (b.closest("pre")) return;
+      if (b.tagName === "P" && b.parentElement && /^(LI|TD|TH)$/.test(b.parentElement.tagName)) return;
+      out.push(b);
+    });
+    return out;
+  }
+  function ownText(node) {
+    var s = "";
+    node.childNodes.forEach(function (n) {
+      if (n.nodeType === 3) s += n.nodeValue;
+      else if (n.nodeType === 1 && !/^(UL|OL|PRE)$/.test(n.tagName)) s += ownText(n);
+    });
+    return s;
+  }
+  function proseText(node) {
+    var s = "";
+    node.childNodes.forEach(function (n) {
+      if (n.nodeType === 3) s += n.nodeValue;
+      else if (n.nodeType === 1 && n.tagName === "CODE") s += " ";
+      else if (n.nodeType === 1 && !/^(UL|OL|PRE)$/.test(n.tagName)) s += proseText(n);
+    });
+    return s;
+  }
+  function wrapTables(root) {
+    root.querySelectorAll("table").forEach(function (t) {
+      if (t.parentElement.classList.contains("tablewrap")) return;
+      var w = el("div", { class: "tablewrap" });
+      t.parentNode.insertBefore(w, t); w.appendChild(t);
+    });
+  }
+
+  // The same parse for everyone: [{key, tag, text}] for a markdown prefix.
+  var scratch = document.createElement("div");
+  function unitsOf(markdown) {
+    scratch.innerHTML = render(markdown);
+    return blocksOf(scratch).map(function (b, i) { return { key: i + ":" + b.tagName, tag: b.tagName, text: ownText(b), prose: proseText(b) }; });
+  }
+
+  // ---------------------------------------------------------------- applying a formula
+  function clearDir(n) { n.removeAttribute("dir"); n.style.unicodeBidi = ""; }
+  function applyTo(root, f, scope, text) {
+    var blocks = blocksOf(root);
+    clearDir(root);
+    blocks.forEach(clearDir);
+    var result = {};
+    if (scope === "message" && !f.blockOnly) {
+      var whole = blocks.map(ownText).join("\n"), wholeProse = blocks.map(proseText).join("\n");
+      if (f.native === "auto") root.setAttribute("dir", "auto");
+      else { var d = decideSafely(f, whole, wholeProse); if (d) root.setAttribute("dir", d); }
+      var s = seen(f, whole, wholeProse);
+      blocks.forEach(function (b, i) { result[i + ":" + b.tagName] = { dir: strong(whole) ? s : null, text: ownText(b), node: b }; });
+      return result;
+    }
+    blocks.forEach(function (b, i) {
+      var t = ownText(b), p = proseText(b);
+      if (f.native === "auto") b.setAttribute("dir", "auto");
+      else if (f.native === "plaintext") { b.style.unicodeBidi = "plaintext"; }
+      else { var d = decideSafely(f, t, p); if (d) b.setAttribute("dir", d); }
+      result[i + ":" + b.tagName] = { dir: strong(t) ? seen(f, t, p) : null, text: t, node: b };
+    });
+    return result;
+  }
+  function applyToComposer(ta, f) {
+    clearDir(ta);
+    var t = ta.value;
+    if (f.native === "auto") ta.setAttribute("dir", "auto");
+    else if (f.native === "plaintext") { ta.setAttribute("dir", "auto"); ta.style.unicodeBidi = "plaintext"; }
+    else { var d = decideSafely(f, t); if (d) ta.setAttribute("dir", d); }
+    return strong(t) ? seen(f, t) : null;
+  }
+
+  // ---------------------------------------------------------------- the chats, and how each puts an answer on the screen
+  // RHYTHMS comes from paper/survey/results: a chat recorded with survey/rhythm.js replays its
+  // answer's real pieces and the real time between them; a chat not recorded yet streams token by
+  // token at the delay on the slider.
+  var RHYTHMS = /*@RHYTHMS@*/;
+  var CHATS = [
+    { id: "chatgpt", name: "ChatGPT" },
+    { id: "claude", name: "Claude" },
+    { id: "gemini", name: "Gemini" },
+    { id: "vscode", name: "VS Code · Claude Code" }
+  ].map(function (c) { c.rhythm = RHYTHMS[c.id] || null; return c; });
+  function chatById(id) { return CHATS.find(function (c) { return c.id === id; }) || CHATS[0]; }
+  // A recorded chat: the text cut where its recorded pieces end, repeating their sizes.
+  function pieceEnds(text, rhythm) {
+    var cps = Array.from(text), ends = [], pos = 0, i = 0, k = 0;
+    while (i < cps.length) {
+      var n = rhythm.pieces[k++ % rhythm.pieces.length];
+      for (var j = 0; j < n && i < cps.length; j++, i++) pos += cps[i].length;
+      ends.push(pos);
+    }
+    return ends;
+  }
+
+  // ---------------------------------------------------------------- tokens
+  function seeded(text) {
+    var h = 2166136261;
+    for (var i = 0; i < text.length; i++) { h ^= text.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return function () {
+      h += 0x6d2b79f5; var t = h;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  // Where each token ends: 1-4 characters, from a seed taken from the text itself.
+  function boundaries(text) {
+    var cps = Array.from(text), ends = [], pos = 0, i = 0;
+    var rand = seeded(text);
+    while (i < cps.length) {
+      var n = 1 + Math.floor(rand() * 4);
+      for (var k = 0; k < n && i < cps.length; k++, i++) pos += cps[i].length;
+      ends.push(pos);
+    }
+    return ends;
+  }
+
+  // ---------------------------------------------------------------- history of one run
+  function newTrack() { return { seq: {}, tags: {}, texts: {} }; }
+  function record(track, result) {
+    for (var key in result) {
+      var r = result[key];
+      if (!track.seq[key]) track.seq[key] = [];
+      track.seq[key].push(r.dir);
+      track.tags[key] = key.split(":")[1];
+      track.texts[key] = r.text;
+    }
+  }
+  function summarise(track, finalKeys) {
+    var rows = [];
+    (finalKeys || Object.keys(track.seq)).forEach(function (key) {
+      var seq = (track.seq[key] || []).filter(function (d) { return d; });
+      if (!seq.length) return;
+      var changes = 0, back = false, given = {}; given[seq[0]] = 1;
+      for (var i = 1; i < seq.length; i++) {
+        if (seq[i] === seq[i - 1]) continue;
+        changes++; if (given[seq[i]]) back = true; given[seq[i]] = 1;
+      }
+      var fin = seq[seq.length - 1];
+      var other = seq.filter(function (d) { return d !== fin; }).length / seq.length;
+      rows.push({ key: key, tag: track.tags[key], text: track.texts[key], seq: track.seq[key], final: fin, changes: changes, back: back, other: other });
+    });
+    return rows;
+  }
+
+  // Where a formula leaves each line of a finished message - what the reader is left with.
+  function finalLines(text, f) {
+    return unitsOf(text).filter(function (u) { return strong(u.text); })
+      .map(function (u) { return { key: u.key, tag: u.tag, text: u.text, dir: seen(f, u.text, u.prose) }; });
+  }
+  // How each line arrived under a formula: every direction it was shown in, in order, and the
+  // letter it had reached when it was shown that way. Token by token for every formula alike.
+  function lettersIn(t) { var m = t.match(/\p{L}/gu); return m ? m.length : 0; }
+  function prefixesOf(msg) {
+    if (!msg.prefixes) msg.prefixes = boundaries(msg.text).map(function (end) { return unitsOf(msg.text.slice(0, end)); });
+    return msg.prefixes;
+  }
+  function arrivalOf(msg, f) {
+    msg.arrival = msg.arrival || {};
+    if (msg.arrival[f.id]) return msg.arrival[f.id];
+    var lines = {};
+    prefixesOf(msg).forEach(function (units) {
+      units.forEach(function (u) {
+        if (!strong(u.text)) return;
+        var d = seen(f, u.text, u.prose), h = lines[u.key] || (lines[u.key] = { steps: [] });
+        var last = h.steps[h.steps.length - 1];
+        if (!last || last.dir !== d) h.steps.push({ dir: d, letter: lettersIn(u.text) });
+      });
+    });
+    Object.keys(lines).forEach(function (k) {
+      var h = lines[k], given = {};
+      h.turns = h.steps.length - 1;
+      h.back = h.steps.some(function (x, i) { var seenBefore = !!given[x.dir]; given[x.dir] = 1; return i > 0 && seenBefore; });
+    });
+    return (msg.arrival[f.id] = lines);
+  }
+  function howItArrived(h) {
+    if (!h || !h.steps.length) return "";
+    var names = { rtl: "RTL", ltr: "LTR" };
+    if (!h.turns) return names[h.steps[0].dir] + " from the first letter - never turned";
+    return h.steps.map(function (x, i) { return i ? names[x.dir] + " by letter " + x.letter : names[x.dir] + " first"; }).join(", then ") + (h.back ? " - went back" : "");
+  }
+
+  function score(msg, f) {
+    var right = 0, wrong = 0, unmarked = 0, turned = 0, back = 0, arrival = arrivalOf(msg, f);
+    finalLines(msg.text, f).forEach(function (l) {
+      var m = msg.marks[l.key];
+      if (!m) unmarked++; else if (m === "either" || m === l.dir) right++; else wrong++;
+      var h = arrival[l.key];
+      if (h && h.turns) turned++;
+      if (h && h.back) back++;
+    });
+    return { right: right, wrong: wrong, unmarked: unmarked, turned: turned, back: back };
+  }
+
+  // ---------------------------------------------------------------- the thread
+  function addTurn(text, opts) {
+    var msg = { id: "m" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), text: text, formula: state.formula,
+      scope: state.scope, delay: state.delay, track: newTrack(), rows: [], marks: {}, markFrom: {}, composerChanges: opts.composerChanges || 0,
+      logRef: null, example: !!opts.example, machine: opts.machine || null };
+    var you = el("div", { class: "turn" }, [
+      el("div", { class: "who", text: opts.machine ? "Machine " + (opts.machine.line ? "2 · line " : opts.machine.mine ? "3 · your response " : "1 · answer ") + opts.machine.n.toLocaleString("en") : "You" }),
+      el("div", { class: "sent", text: opts.machine ? opts.machine.label : text })
+    ]);
+    var replay = el("button", { type: "button", text: "Replay" });
+    var answer = el("div", { class: "answer" });
+    var who = el("div", { class: "who" }, [el("span", { text: "Answer" }), el("span", { class: "actions" }, [replay])]);
+    var verdictBar = el("div", { class: "verdict-bar", "aria-live": "polite" });
+    var turn = el("div", { class: "turn" }, [who, answer, verdictBar]);
+    $("thread").appendChild(you);
+    $("thread").appendChild(turn);
+    follow = true;
+    scrollThread();
+    msg.sentNode = you.querySelector(".sent");
+    msg.answerNode = answer;
+    msg.verdictNode = verdictBar;
+    replay.addEventListener("click", function () { focusMessage(msg); stream(msg, true); });
+    state.messages.push(msg);
+    return msg;
+  }
+
+  function focusMessage(msg) { state.current = state.messages.indexOf(msg); }
+
+  function stopStream(finish) {
+    var s = state.stream;
+    if (!s) return;
+    clearTimeout(s.timer);
+    state.stream = null;
+    if (finish) s.finish();
+  }
+
+  function stream(msg, replaying) {
+    stopStream(true);
+    var f = byId(state.formula);
+    var chat = chatById(state.chat);
+    msg.formula = f.id; msg.scope = "block"; msg.chat = chat.id; msg.delay = state.delay; msg.track = newTrack();
+    var ends = chat.rhythm ? pieceEnds(msg.text, chat.rhythm) : boundaries(msg.text), i = 0, last = {};
+    applySent(msg, f);
+    msg.answerNode.classList.add("streaming");
+    if (msg.verdictNode) { msg.verdictNode.textContent = ""; msg.verdictNode.className = "verdict-bar"; msg.verdictNode.appendChild(el("span", { class: "streaming-with" }, [el("span", { text: "Streaming with " }), el("b", { text: f.name })])); }
+
+    function draw(prefix) {
+      msg.answerNode.innerHTML = render(prefix);
+      wrapTables(msg.answerNode);
+      var result = applyTo(msg.answerNode, f, "block", prefix);
+      record(msg.track, result);
+      if (state.highlight) {
+        for (var key in result) {
+          var d = result[key].dir, prev = last[key];
+          if (d && prev && d !== prev.dir) {
+            var wentBack = prev.given[d];
+            result[key].node.classList.add("flip");
+            if (wentBack) result[key].node.classList.add("back");
+          }
+          if (d) { last[key] = { dir: d, given: Object.assign({}, prev ? prev.given : {}) }; last[key].given[d] = 1; }
+        }
+      }
+    }
+    function finish() {
+      draw(msg.text);
+      msg.answerNode.classList.remove("streaming");
+      msg.rows = summarise(msg.track, unitsOf(msg.text).map(function (u) { return u.key; }));
+      state.stream = null;
+      paintInspect();
+      paintVerdict(msg);
+      logRun(msg);
+      if (msg.onDone) msg.onDone();
+    }
+    function tick() {
+      if (i >= ends.length) { finish(); return; }
+      draw(msg.text.slice(0, ends[i++]));
+      if (state.current === state.messages.indexOf(msg)) queueInspect(msg);
+      var s = state.stream;
+      var wait = chat.rhythm ? chat.rhythm.gapsMs[(i - 1) % chat.rhythm.gapsMs.length] : state.delay;
+      if (s) s.timer = setTimeout(tick, wait);
+      scrollThread();
+    }
+    state.stream = { msg: msg, timer: 0, finish: finish };
+    focusMessage(msg);
+    paintInspect();
+    tick();
+  }
+
+  function applySent(msg, f) {
+    var n = msg.sentNode;
+    clearDir(n);
+    if (msg.machine) return;
+    if (f.native === "auto") n.setAttribute("dir", "auto");
+    else if (f.native === "plaintext") { n.setAttribute("dir", "auto"); n.style.unicodeBidi = "plaintext"; }
+    else { var d = decideSafely(f, msg.text); if (d) n.setAttribute("dir", d); }
+  }
+
+  // A finished message under a newly chosen formula: final state at once, no stream.
+  function redraw(msg) {
+    var f = byId(state.formula);
+    msg.answerNode.innerHTML = render(msg.text);
+    wrapTables(msg.answerNode);
+    applyTo(msg.answerNode, f, "block", msg.text);
+    applySent(msg, f);
+  }
+
+  // The chat follows the answer to its end while it arrives. Scrolling up to read stops following;
+  // scrolling back to the bottom, or sending a new message, follows again.
+  var follow = true;
+  function scrollThread() {
+    if (follow) { var t = $("thread"); t.scrollTop = t.scrollHeight; }
+  }
+  $("thread").addEventListener("wheel", function (e) { if (e.deltaY < 0) follow = false; }, { passive: true });
+  $("thread").addEventListener("touchmove", function () { follow = false; }, { passive: true });
+  $("thread").addEventListener("scroll", function () {
+    var t = $("thread");
+    if (t.scrollHeight - t.scrollTop - t.clientHeight < 24) follow = true;
+  }, { passive: true });
+
+  // ---------------------------------------------------------------- inspect
+  var inspectQueued = false;
+  function queueInspect() {
+    if (inspectQueued) return;
+    inspectQueued = true;
+    requestAnimationFrame(function () { inspectQueued = false; if (state.stream) $("i-title").textContent = "Message " + (state.current + 1) + " · streaming"; });
+  }
+
+  function paintInspect() {
+    var msg = state.messages[state.current];
+    var f = byId(state.formula);
+    var body = $("compare").tBodies[0], list = $("blocks");
+    body.textContent = ""; list.textContent = "";
+    if (!msg) { $("i-title").textContent = "Right / wrong"; $("i-sub").textContent = ""; $("compare-note").textContent = ""; return; }
+    var streaming = state.stream && state.stream.msg === msg;
+    $("i-title").textContent = "Message " + (state.current + 1) + (streaming ? " · streaming" : "");
+    $("i-sub").textContent = byId(msg.formula).name + " · " + chatById(msg.chat || state.chat).name + (msg.formula !== state.formula ? " — replay to see " + f.name : "");
+    if (streaming) { $("compare-note").textContent = "Counted when the answer has arrived."; return; }
+
+    // every formula, on the lines of this message
+    var marked = 0;
+    formulas().forEach(function (g) {
+      var sc = score(msg, g);
+      marked = sc.right + sc.wrong;
+      var tr = el("tr", { class: g.id === state.formula ? "current" : "", tabindex: "0" }, [
+        el("td", { text: g.name }),
+        el("td", { class: "n" + (marked && sc.right === marked ? " good" : ""), text: marked ? sc.right : "–" }),
+        el("td", { class: "n" + (sc.wrong ? " bad" : ""), text: marked ? sc.wrong : "–" }),
+        el("td", { class: "n" + (sc.back ? " bad" : " good"), text: sc.back }),
+        el("td", { class: "n muted", text: sc.turned })
+      ]);
+      var pick = function () { chooseFormula(g.id); };
+      tr.addEventListener("click", pick);
+      tr.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } });
+      body.appendChild(tr);
+    });
+
+    // each line: where the chosen formula put it, and the way it should read
+    var lines = finalLines(msg.text, f), open = 0, arrival = arrivalOf(msg, f);
+    if (!lines.length) list.appendChild(el("p", { class: "empty", text: "No line here holds a letter with a direction." }));
+    lines.forEach(function (l) {
+      var m = msg.marks[l.key];
+      if (!m) open++;
+      var from = m ? (msg.markFrom[l.key] || "you") : null;
+      var mark = el("span", { class: "mark" + (from === "guess" ? " guess" : "") });
+      mark.appendChild(el("span", { class: "from", text: FROM[from] ? FROM[from][0] : "", title: FROM[from] ? FROM[from][1] : "" }));
+      [["rtl", "RTL"], ["ltr", "LTR"]].forEach(function (v) {
+        var b = el("button", { type: "button", "aria-pressed": String(m === v[0]), text: v[1],
+          title: from === "guess" && m === v[0] ? "A guess - click to confirm it" : "This line should read " + (v[0] === "rtl" ? "right to left" : "left to right") });
+        b.addEventListener("click", function () {
+          // a guess clicked as it stands is confirmed; a confirmed mark clicked again is cleared
+          if (m === v[0] && from !== "guess") setMark(msg, l.key, null);
+          else setMark(msg, l.key, v[0], "you");
+        });
+        mark.appendChild(b);
+      });
+      var ok = m ? m === l.dir : null;
+      list.appendChild(el("div", { class: "block" + (ok === true ? " ok" : ok === false ? " no" : "") }, [
+        el("span", { class: "tag", text: l.tag.toLowerCase() }),
+        el("span", { class: "preview", text: l.text.trim().slice(0, 120) }),
+        el("span", { class: "pill " + l.dir, text: l.dir, title: f.name + " gives it this direction" }),
+        el("span", { class: "verdict " + (ok === true ? "ok" : ok === false ? "no" : ""), text: ok === true ? "✓" : ok === false ? "✗" : "" }),
+        mark,
+        el("span", { class: "how" + (arrival[l.key] && arrival[l.key].back ? " back" : ""), text: howItArrived(arrival[l.key]) })
+      ]));
+    });
+    var guesses = lines.filter(function (l) { return msg.marks[l.key] && msg.markFrom[l.key] === "guess"; }).length;
+    $("compare-note").textContent = (open
+      ? open + " of " + lines.length + " lines not marked yet - mark the way each should read, below, and the counts fill in. "
+      : "All " + lines.length + " lines marked. ")
+      + (guesses ? guesses + " of the marks " + (guesses === 1 ? "is a guess" : "are guesses") + " (an English opening with Urdu after it) - click to confirm, or switch it. " : "")
+      + "Click a row to switch formula.";
+  }
+
+  // Under every finished answer: the formula it streamed with, and what that formula did with it -
+  // right or wrong at the end, and whether a line turned or went back on the way.
+  function paintVerdict(msg) {
+    var bar = msg.verdictNode;
+    if (!bar) return;
+    bar.textContent = ""; bar.className = "verdict-bar";
+    var f = byId(msg.formula), sc = score(msg, f), parts = [];
+    var add = function (cls, text) { parts.push(el("span", { class: cls || "", text: text })); };
+    parts.push(el("b", { text: f.name }));
+    if (msg.lineLabel !== undefined) {
+      // machine 2: one line, read one way
+      var names = { rtl: "RTL", ltr: "LTR" }, shown = seen(f, msg.lineText);
+      if (msg.lineLabel === "rtl" || msg.lineLabel === "ltr") {
+        var ok = shown === msg.lineLabel;
+        add("", "should read " + names[msg.lineLabel] + ", shown " + names[shown]);
+        add(ok ? "good" : "bad", ok ? "✓ right" : "✗ wrong");
+        bar.classList.add(ok ? "ok" : "no");
+      } else if (msg.lineLabel === "either") { add("", "shown " + names[shown]); add("good", "✓ either way reads correctly"); bar.classList.add("ok"); }
+      else { add("", "shown " + names[shown] + " - the reader could not say which way (not counted)"); }
+    } else {
+      var marked = sc.right + sc.wrong;
+      if (marked) {
+        add(sc.wrong ? "bad" : "good", sc.right + " of " + marked + " lines right" + (sc.wrong ? ", " + sc.wrong + " wrong" : " ✓"));
+        bar.classList.add(sc.wrong ? "no" : "ok");
+      }
+      if (sc.unmarked) add("", sc.unmarked + " not marked");
+    }
+    add(sc.back ? "bad" : "good", sc.back ? "went back on " + sc.back + (sc.back === 1 ? " line" : " lines") : "never went back");
+    add("", sc.turned ? "turned one way on " + sc.turned + (sc.turned === 1 ? " line" : " lines") : "never turned");
+    parts.forEach(function (p) { bar.appendChild(p); });
+  }
+
+  function setMark(msg, key, value, from) {
+    if (value) { msg.marks[key] = value; msg.markFrom[key] = from || "you"; }
+    else { delete msg.marks[key]; delete msg.markFrom[key]; }
+    paintInspect();
+    paintVerdict(msg);
+    saveMarks(msg);
+  }
+
+  // ---------------------------------------------------------------- formula list and controls
+  function paintFormulas() {
+    var box = $("formulas");
+    box.textContent = "";
+    var n = 0;
+    GROUPS.forEach(function (g) {
+      var members = formulas().filter(function (f) { return f.group === g[0]; });
+      if (!members.length) return;
+      box.appendChild(el("div", { class: "group", text: g[1] }));
+      members.forEach(function (f) {
+        n++;
+        var b = el("button", { type: "button", class: "formula", "aria-pressed": String(f.id === state.formula) }, [
+          el("span", { class: "row" }, [el("span", { class: "name", text: f.name }), el("span", { class: "chip " + f.group, text: f.chip }), n <= 9 ? el("span", { class: "key", text: String(n) }) : null]),
+          f.situation ? el("span", { class: "situation", text: "Made for: " + f.situation }) : null,
+          el("span", { class: "what", text: f.what }),
+          f.who ? el("span", { class: "who", text: f.who }) : null
+        ]);
+        b.addEventListener("click", function () { chooseFormula(f.id); });
+        var wrap = el("div", { class: "fwrap" }, [b]);
+        if (f.src || f.custom) {
+          var line = el("div", { class: "fline" }, [f.src ? el("a", { class: "src", href: f.src, target: "_blank", rel: "noopener", text: "Source ↗" }) : null]);
+          if (f.custom) {
+            var del = el("button", { type: "button", class: "btn", style: "padding:0 6px;font-size:11px;margin-inline-start:auto", text: "Remove" });
+            del.addEventListener("click", function () { removeFormula(f); });
+            line.appendChild(del);
+          }
+          wrap.appendChild(line);
+        }
+        box.appendChild(wrap);
+      });
+    });
+  }
+
+  function chooseFormula(id) {
+    state.formula = id;
+    savePrefs();
+    paintFormulas();
+    stopStream(true);
+    state.messages.forEach(redraw);
+    composerInput(true);
+    paintInspect();
+    if (machine && machine.sums) paintTotals();
+  }
+
+  function paintChats() {
+    var box = $("chats");
+    box.textContent = "";
+    CHATS.forEach(function (c) {
+      var b = el("button", { type: "button", "aria-pressed": String(c.id === state.chat), text: c.name });
+      b.addEventListener("click", function () { state.chat = c.id; savePrefs(); paintChats(); paintSpeed(); });
+      box.appendChild(b);
+    });
+    var c = chatById(state.chat), r = c.rhythm;
+    $("chat-note").textContent = r
+      ? "Measured in " + c.name + " (" + r.recorded + "): the answer came in pieces of " + r.pieces.map(function (n) { return n.toLocaleString("en"); }).join(", ") + " characters, " + r.gapsMs.map(function (n) { return (n / 1000).toFixed(1); }).join(" and ") + " s apart. A line reaches the screen whole, so it cannot be seen turning."
+      : c.name + " streams its answer token by token; its real speed is not measured yet (survey/rhythm.js), so tokens come at the delay below.";
+    $("speed-field").hidden = !!r;
+  }
+  // What a delay means, by the owner's eye test (60 Hz, paper/results/README.md): no turn of 1-2
+  // frames (up to 33 ms) was noticed; 4 of 5 at 4 frames (66 ms). A line that opens with an English
+  // word turns when its first Urdu token arrives, so it stands the other way for one or two tokens.
+  function paintSpeed() {
+    var d = state.delay;
+    $("speed").value = d;
+    $("speed-out").textContent = d + " ms";
+    var note = $("speed-note");
+    note.textContent = "";
+    var lo = d, hi = 2 * d;
+    var verdict = hi <= 33 ? ["unseen", "too short to be noticed in the eye test - it looks like text arriving"]
+      : lo >= 66 ? ["seen", "long enough that the eye test noticed it"]
+      : ["", "between what the eye test missed (up to 33 ms) and noticed (66 ms)"];
+    [
+      el("span", { text: d ? Math.round(1000 / d) + " tokens a second. " : "As fast as the screen draws. " }),
+      el("span", { text: "A line that opens in English turns when its first Urdu token arrives - here after about " + (d ? lo + "-" + hi + " ms" : "one frame") + ": " }),
+      el("span", { class: verdict[0], text: verdict[1] + "." })
+    ].forEach(function (n) { note.appendChild(n); });
+  }
+  $("speed").addEventListener("input", function () { state.delay = +this.value; savePrefs(); paintSpeed(); });
+  $("highlight").checked = state.highlight;
+  $("highlight").addEventListener("change", function () { state.highlight = this.checked; savePrefs(); });
+
+  // ---------------------------------------------------------------- composer
+  var composerLast = null, composerChanges = 0;
+  function composerInput(silent) {
+    var ta = $("input");
+    ta.style.height = "auto";
+    ta.style.height = Math.min(ta.scrollHeight, window.innerHeight * 0.4) + "px";
+    var d = applyToComposer(ta, byId(state.formula));
+    if (!silent && d && composerLast && d !== composerLast) composerChanges++;
+    if (d) composerLast = d;
+    if (!ta.value) { composerLast = null; composerChanges = 0; }
+    $("send").disabled = !ta.value.trim();
+    $("dirchip").textContent = d ? d + (composerChanges ? " · changed " + composerChanges + "×" : "") : "";
+  }
+  $("input").addEventListener("input", function () { composerInput(false); });
+  $("input").addEventListener("keydown", function (e) {
+    if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(); }
+  });
+  $("send").addEventListener("click", send);
+  function send() {
+    var ta = $("input"), text = ta.value;
+    if (!text.trim()) return;
+    var msg = addTurn(text, { composerChanges: composerChanges });
+    if (!markExample(msg)) markByLetters(msg);
+    ta.value = ""; composerInput(true);
+    stream(msg);
+  }
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && state.stream) { stopStream(true); return; }
+    var inField = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement && document.activeElement.tagName);
+    if (inField || e.ctrlKey || e.metaKey || e.altKey) return;
+    var n = parseInt(e.key, 10), order = [];
+    GROUPS.forEach(function (g) { formulas().forEach(function (f) { if (f.group === g[0]) order.push(f); }); });
+    if (n >= 1 && n <= 9 && order[n - 1]) chooseFormula(order[n - 1].id);
+  });
+
+  // ---------------------------------------------------------------- examples (public text only)
+  var EXAMPLES = [
+    { name: "Urdu answer with code terms", text: "## useMemo اور useCallback\n\nReact میں `useMemo` کسی حساب کا نتیجہ یاد رکھتا ہے، اور `useCallback` پورا function یاد رکھتا ہے۔ دونوں کا مقصد غیر ضروری re-render سے بچنا ہے۔\n\n### کب کون سا استعمال کریں\n\n- `useMemo` جب حساب مہنگا ہو، مثلاً 10,000 اشیاء کی فہرست کو sort کرنا\n- `useCallback` جب function کسی child component کو props میں جا رہا ہو\n- Debounce بمقابلہ Throttle کا فرق بھی یہیں سمجھ آتا ہے\n\n| Hook | کیا یاد رکھتا ہے | کب |\n|---|---|---|\n| useMemo | نتیجہ | مہنگا حساب |\n| useCallback | function | child کو props |\n\n```js\nconst total = useMemo(() => sum(items), [items]);\n```\n\nجواب عموماً 250–400ms میں آ جاتا ہے۔" },
+    { name: "Five Urdu headings", text: "# useMemo اور useCallback\n\n## args - اصل arguments\n\n## children بطور props\n\n## Debounce بمقابلہ Throttle\n\n## JavaScript میں Debounce فنکشن" },
+    { name: "English with one Urdu phrase", text: "In Urdu this idea is called ایونٹ لوپ, but the mechanics are identical to JavaScript's event loop.\n\n1. The call stack runs synchronous code first.\n2. Microtasks run before the next task.\n3. Rendering happens between tasks." },
+    { name: "Arabic (W3C's example)", text: "## HTML و CSS: تصميم و إنشاء مواقع الويب\n\nPython هي لغة برمجة سهلة التعلم، وتُستخدم في تحليل البيانات والذكاء الاصطناعي.\n\n- مكتبة pandas لتحليل الجداول\n- مكتبة NumPy للعمليات الحسابية" },
+    { name: "Persian", text: "React یک کتابخانه جاوااسکریپت برای ساخت رابط کاربری است.\n\n- هر component یک تابع است\n- state داده‌ای است که با گذشت زمان تغییر می‌کند" },
+    { name: "Hebrew", text: "Node.js מאפשר להריץ JavaScript מחוץ לדפדפן.\n\n- התקינו את החבילה עם npm install\n- הריצו את הקובץ עם node index.js" }
+  ];
+  // The way each line of an example should read, in order - its lines that hold a letter with a
+  // direction. A line of plain English reads left to right; a line whose sentence is Urdu, Arabic,
+  // Persian or Hebrew reads right to left, whatever it opens with.
+  var R = "rtl", L = "ltr";
+  EXAMPLES[0].should = [R, R, R, R, R, R, L, R, R, L, R, R, L, L, R, R];
+  EXAMPLES[1].should = [R, R, R, R, R];
+  EXAMPLES[2].should = [L, L, L, L];
+  EXAMPLES[3].should = [R, R, R, R];
+  EXAMPLES[4].should = [R, R, R];
+  EXAMPLES[5].should = [R, R, R];
+  // Where the four candidates part: a long English opening before the Urdu, an Urdu word late in
+  // an English sentence, a quoted word early in an English sentence, book lists, a sentence with its
+  // translation, commands, and a table. Written for the lab; each line says which way it reads.
+  var E = "either";
+  EXAMPLES.push(
+    { name: "Urdu list, long English openings", text: "## React hooks کی فہرست\n\n- useEffect, useMemo, useCallback, useRef and useContext hooks کو سمجھنا ضروری ہے۔\n- React Native, TypeScript and Redux Toolkit کے ساتھ موبائل ایپ بنانا آسان ہے۔\n- `npm install` کے بعد `npm run dev` چلائیں۔\n- Microsoft Visual Studio Code, GitHub Copilot, Claude Code and Cursor editors میں سے کوئی ایک چنیں۔", should: [R, R, R, R, R] },
+    { name: "English, Urdu word late", text: "When you ship this app to production, remember that the translation file for Urdu is called ترجمہ and it lives in the locales folder.\n\nPress the key marked ب to switch the keyboard to Urdu.\n\nThe settings screen of the mobile application has a field labelled زبان where you choose the language.", should: [L, L, L] },
+    { name: "English, quoted Arabic early", text: "Explanation: In Tunisian dialect, \"برشا\" means \"a lot\" and \"توة\" means \"now\".\n\nThe word \"شكرا\" is used exactly as in Standard Arabic.", should: [L, L] },
+    { name: "Arabic book list", text: "### كتب مقترحة\n\n1. \"The Pragmatic Programmer: Your Journey to Mastery\" - David Thomas و Andrew Hunt: يشرح هذا الكتاب مبادئ البرمجة العملية.\n2. \"Clean Code\" - Robert C. Martin: دليل لكتابة شيفرة واضحة.\n3. \"Designing Data-Intensive Applications: The Big Ideas Behind Reliable, Scalable, and Maintainable Systems\" - Martin Kleppmann: يتناول تصميم الأنظمة الكبيرة.", should: [R, R, R, R] },
+    { name: "Persian, English terms first", text: "\"Designing Data-Intensive Applications\" نوشته Martin Kleppmann: این کتاب طراحی سیستم‌های بزرگ را توضیح می‌دهد.\n\nBERT (Bidirectional Encoder Representations from Transformers): مدلی برای پردازش زبان طبیعی است.", should: [R, R] },
+    { name: "Sentence and its translation", text: "Good morning! Waking up next to you is the best start to my day. صباح الخير! الاستيقاظ بجانبك هو أجمل بداية ليومي.\n\nWir müssen zusammenarbeiten. (علينا أن نعمل معًا.)", should: [E, E] },
+    { name: "Hebrew setup steps", text: "## התקנה\n\n- `git clone https://github.com/user/repo.git` — מוריד את הקוד למחשב.\n- ב-Google Cloud Console > APIs & Services > Credentials", should: [R, R, R] },
+    { name: "Urdu table of commands", text: "| کمانڈ | کام |\n|---|---|\n| npm install | پیکیجز انسٹال کرتا ہے |\n| npm run build | پروڈکشن کے لیے فائلیں بناتا ہے |", should: [R, R, L, R, L, R] }
+  );
+  function markExample(msg) {
+    var x = EXAMPLES.find(function (e) { return e.text === msg.text; });
+    if (!x) return false;
+    var lines = unitsOf(msg.text).filter(function (u) { return strong(u.text); });
+    if (lines.length !== x.should.length) return false; // never mark a line with another line's answer
+    lines.forEach(function (u, i) { msg.marks[u.key] = x.should[i]; msg.markFrom[u.key] = "example"; });
+    return true;
+  }
+  // Your own text is marked the way a reader would, by its letters:
+  //   only one direction's letters                  -> that direction, confirmed
+  //   opens right-to-left, whatever follows        -> right-to-left, confirmed
+  //   opens left-to-right, right-to-left after it  -> right-to-left, a GUESS: most such lines are
+  //                                                   Urdu, but an English sentence carrying an
+  //                                                   Urdu phrase is not - click to confirm or switch
+  // The guess is the Any RTL rule, so an unconfirmed guess favours the formulas close to it; the
+  // panel says how many marks are guesses, and the log keeps which were.
+  function markByLetters(msg) {
+    unitsOf(msg.text).forEach(function (u) {
+      if (!strong(u.text) || msg.marks[u.key]) return;
+      var c = count(u.text), first = firstStrong(u.text), opensRtl = first === "R" || first === "AL";
+      if (!c.rtl) { msg.marks[u.key] = "ltr"; msg.markFrom[u.key] = "sure"; }
+      else if (opensRtl || !c.ltr) { msg.marks[u.key] = "rtl"; msg.markFrom[u.key] = "sure"; }
+      else { msg.marks[u.key] = "rtl"; msg.markFrom[u.key] = "guess"; }
+    });
+  }
+  // what each kind of mark is called beside the switches
+  var FROM = {
+    example: ["confirmed", "Checked by hand for this example"],
+    sure: ["confirmed", "The line is one language, or opens right-to-left"],
+    you: ["yours", "Marked by you"],
+    guess: ["guess", "Opens in English with Urdu after it - most such lines are Urdu. Click to confirm, or switch it."],
+    read: ["read", "Read line by line - by Claude (the assistant) for this first reading, to be checked by a person"],
+    proxy: ["by words", "The machine's proxy, not a person: 50% or more right-to-left words reads right-to-left, 20% or less left-to-right"]
+  };
+  EXAMPLES.forEach(function (x, i) { $("examples").appendChild(el("option", { value: String(i), text: x.name })); });
+  $("examples").addEventListener("change", function () {
+    var x = EXAMPLES[+this.value]; this.value = "";
+    if (!x) return;
+    $("input").value = x.text; composerInput(true); $("input").focus();
+  });
+
+  // ---------------------------------------------------------------- the machine
+  // Streams the public chat data answer after answer and adds up, for every formula, what the
+  // right panel counts for one message. Only answers holding a mixed line are in it: on every
+  // other answer the formulas cannot disagree. Which way a line should read is the paper's proxy
+  // (results/README.md) - by the share of right-to-left words - not a person's label; lines in
+  // between (21-49%) are not counted.
+  var MACHINE = /*@MACHINE@*/;
+  // Machine 2: every line on which the four candidates left by machine 1 disagree, with the way
+  // each should read, read line by line (paper/results/README.md, "the four").
+  var DISPUTED = /*@DISPUTED@*/;
+  var CANDIDATES = ["any-rtl", "smartrtl", "any-rtl-63", "opening-letters-45"];
+  var HELP = window.BidiFormulas.createFormulas({ bidiClass: bidiClass }).helpers;
+  var machine = { running: false, set: "all", order: "order", view: "watch", pos: { all: 0, disputed: 0 }, parts: {}, sums: {}, timer: 0, lastPaint: 0 };
+  try {
+    var mp = JSON.parse(localStorage.getItem("bidi-lab-machine") || "{}");
+    if (mp.set === "all" || mp.set === "disputed" || mp.set === "file") machine.set = mp.set;
+    if (mp.order) machine.order = mp.order; if (mp.view) machine.view = mp.view;
+    if (mp.pos && typeof mp.pos === "object") { if (mp.pos.all < MACHINE.total) machine.pos.all = mp.pos.all || 0; if (mp.pos.disputed < DISPUTED.total) machine.pos.disputed = mp.pos.disputed || 0; }
+  } catch (e) {}
+  function saveMachine() { try { localStorage.setItem("bidi-lab-machine", JSON.stringify({ set: machine.set, pos: machine.pos, order: machine.order, view: machine.view })); } catch (e) {} }
+  function totalOf(set) { return set === "disputed" ? DISPUTED.total : set === "file" ? machine.file.items.length : MACHINE.total; }
+  function emptySums() { return { totals: {}, answers: 0, judged: 0, unjudged: 0, guesses: 0 }; }
+  machine.sums = { all: emptySums(), disputed: emptySums(), file: emptySums() };
+  machine.pos.file = 0;
+  machine.file = { name: "", items: [] };
+
+  /* Machine 3 reads a chat export in this browser - nothing is uploaded, saved or logged - and
+     streams every AI response in it. It knows the exports of ChatGPT (conversations.json: mapping
+     -> message.author.role "assistant"), Claude (conversations.json: chat_messages -> sender
+     "assistant") and plain lists of {role, content} (role "assistant" or "model"), or of strings. */
+  function chatResponses(json) {
+    var out = [];
+    var textOf = function (c) {
+      if (typeof c === "string") return c;
+      if (Array.isArray(c)) return c.map(textOf).filter(Boolean).join("\n\n");
+      if (c && typeof c === "object") {
+        if (Array.isArray(c.parts)) return c.parts.map(textOf).filter(Boolean).join("\n\n");
+        if (typeof c.text === "string") return c.text;
+        if (c.content !== undefined) return textOf(c.content);
+      }
+      return "";
+    };
+    var push = function (text, where, model) { text = String(text || "").trim(); if (text) out.push([String(out.length + 1), where, model || "", text]); };
+    (function walk(node, title) {
+      if (Array.isArray(node)) { node.forEach(function (x) { walk(x, title); }); return; }
+      if (!node || typeof node !== "object") { if (typeof node === "string" && title === "\u0000list") push(node, "response", ""); return; }
+      var name = node.title || node.name || title || "";
+      if (node.mapping && typeof node.mapping === "object") { // ChatGPT
+        Object.keys(node.mapping).map(function (k) { return node.mapping[k].message; })
+          .filter(function (m) { return m && m.author && m.author.role === "assistant" && m.content && (m.content.content_type === "text" || m.content.content_type === "multimodal_text"); })
+          .sort(function (a, b) { return (a.create_time || 0) - (b.create_time || 0); })
+          .forEach(function (m) { push(textOf(m.content), name, (m.metadata && m.metadata.model_slug) || "ChatGPT"); });
+        return;
+      }
+      if (Array.isArray(node.chat_messages)) { // Claude
+        node.chat_messages.filter(function (m) { return m.sender === "assistant"; })
+          .forEach(function (m) { push(m.text || textOf(m.content), name, "Claude"); });
+        return;
+      }
+      var role = node.role || (node.author && node.author.role) || node.sender;
+      if ((role === "assistant" || role === "model" || role === "bot") && (node.content !== undefined || node.parts || node.text !== undefined)) {
+        push(textOf(node.content !== undefined ? node.content : node.parts || node.text), name, node.model || "");
+        return;
+      }
+      Object.keys(node).forEach(function (k) { if (node[k] && typeof node[k] === "object") walk(node[k], name); });
+    })(json, Array.isArray(json) && json.every(function (x) { return typeof x === "string"; }) ? "\u0000list" : "");
+    return out;
+  }
+
+  function sums() { return machine.sums[machine.set]; }
+  function shownFormulas() { return machine.set === "disputed" ? formulas().filter(function (f) { return CANDIDATES.indexOf(f.id) > -1; }) : formulas(); }
+
+  function markByLabel(msg, label) {
+    if (label !== "rtl" && label !== "ltr" && label !== "either") return;
+    unitsOf(msg.text).forEach(function (u) { if (strong(u.text)) { msg.marks[u.key] = label; msg.markFrom[u.key] = "read"; } });
+  }
+  function markByWords(msg) {
+    unitsOf(msg.text).forEach(function (u) {
+      if (!strong(u.text)) return;
+      var w = HELP.strongWords(u.text), share = w.filter(function (x) { return x === "R"; }).length / (w.length || 1);
+      var d = share >= 0.5 ? "rtl" : share <= 0.2 ? "ltr" : null;
+      if (d) { msg.marks[u.key] = d; msg.markFrom[u.key] = "proxy"; }
+    });
+  }
+  function answerAt(i) {
+    if (machine.set === "file") return Promise.resolve(machine.file.items[i]);
+    if (machine.set === "disputed") {
+      if (machine.parts[DISPUTED.file]) return Promise.resolve(machine.parts[DISPUTED.file][i]);
+      $("m-status").textContent = "Loading " + DISPUTED.file + "…";
+      return fetch(DISPUTED.file).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+        .then(function (rows) { machine.parts[DISPUTED.file] = rows; return rows[i]; });
+    }
+    var p = MACHINE.parts.find(function (x) { return i >= x.from && i < x.from + x.count; });
+    if (machine.parts[p.file]) return Promise.resolve(machine.parts[p.file][i - p.from]);
+    $("m-status").textContent = "Loading " + p.file + "…";
+    return fetch(p.file).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function (rows) { machine.parts[p.file] = rows; return rows[i - p.from]; });
+  }
+  function nextIndex() {
+    var n = totalOf(machine.set);
+    if (machine.order === "random") return Math.floor(Math.random() * n);
+    var i = machine.pos[machine.set];
+    machine.pos[machine.set] = (i + 1) % n;
+    saveMachine();
+    return i;
+  }
+  // Machine 2 judges the whole line the way the reader did - one direction for the line - and
+  // takes went back and turned from the line arriving token by token, as machine 1 does.
+  function addUp(msg, label) {
+    var sm = sums();
+    if (machine.set === "disputed") {
+      sm.answers++;
+      if (label === "rtl" || label === "ltr" || label === "either") sm.judged++; else sm.unjudged++;
+    } else {
+      var lines = unitsOf(msg.text).filter(function (u) { return strong(u.text); });
+      var judged = lines.filter(function (u) { return msg.marks[u.key]; }).length;
+      sm.answers++; sm.judged += judged; sm.unjudged += lines.length - judged;
+      sm.guesses += lines.filter(function (u) { return msg.markFrom[u.key] === "guess"; }).length;
+    }
+    shownFormulas().forEach(function (f) {
+      var t = sm.totals[f.id] || (sm.totals[f.id] = { right: 0, wrong: 0, back: 0, turned: 0 });
+      var sc = score(msg, f);
+      if (machine.set === "disputed") {
+        if (label === "rtl" || label === "ltr" || label === "either") {
+          if (label === "either" || seen(f, msg.lineText) === label) t.right++; else t.wrong++;
+        }
+      } else { t.right += sc.right; t.wrong += sc.wrong; }
+      t.back += sc.back; t.turned += sc.turned;
+    });
+  }
+  function paintTotals() {
+    var sm = sums(), disputed = machine.set === "disputed";
+    $("m-totals").hidden = !sm.answers;
+    var mine = machine.set === "file";
+    $("totals-title").textContent = disputed ? "Machine 2 · the four, on the lines they disagree on" : mine ? "Machine 3 · every formula, your chats" : "Machine 1 · every formula, all answers so far";
+    var who = $("totals-who"); who.textContent = "";
+    [el("span", { text: "Every row below is tested on every " + (disputed ? "line" : "answer") + " - " + (disputed ? "all four" : "all " + shownFormulas().length + " formulas") + " at once, on the same text. The chat streams with " }),
+     el("b", { text: byId(state.formula).name }), el("span", { text: " (the highlighted row); click a row to watch another." })].forEach(function (n) { who.appendChild(n); });
+    var body = $("totals").tBodies[0];
+    body.textContent = "";
+    if (!sm.answers) return;
+    var rows = shownFormulas().map(function (f) { return { f: f, t: sm.totals[f.id] || { right: 0, wrong: 0, back: 0, turned: 0 } }; });
+    var best = Math.min.apply(null, rows.map(function (r) { return r.t.wrong; }));
+    rows.forEach(function (r) {
+      var f = r.f, t = r.t, n = t.right + t.wrong;
+      var pct = function (x) { return n ? " (" + (100 * x / n).toFixed(1) + "%)" : ""; };
+      var tr = el("tr", { class: f.id === state.formula ? "current" : "", tabindex: "0" }, [
+        el("td", { class: disputed && t.wrong === best ? "lead" : "", text: f.name + (disputed && t.wrong === best ? "  ★" : "") }),
+        el("td", { class: "n", text: t.right.toLocaleString("en") }),
+        el("td", { class: "n" + (t.wrong ? " bad" : ""), text: t.wrong.toLocaleString("en") + pct(t.wrong) }),
+        el("td", { class: "n" + (t.back ? " bad" : " good"), text: t.back.toLocaleString("en") }),
+        el("td", { class: "n muted", text: t.turned.toLocaleString("en") })
+      ]);
+      tr.addEventListener("click", function () { chooseFormula(f.id); });
+      body.appendChild(tr);
+    });
+    $("totals-note").textContent = disputed
+      ? sm.answers.toLocaleString("en") + " of " + DISPUTED.total.toLocaleString("en") + " lines, " + sm.judged.toLocaleString("en") + " judged, " + sm.unjudged.toLocaleString("en") + " unclear (garbled text, bare formulas) and not counted. "
+        + "Which way each line should read was read line by line - " + DISPUTED.labeller + ". \"Either\" counts as right for all four. "
+        + DISPUTED.privateNote
+      : mine
+      ? sm.answers.toLocaleString("en") + " responses from " + machine.file.name + ", " + sm.judged.toLocaleString("en") + " lines with a direction. Which way each should read is marked by its letters, as for a message you type: one language, or opening right-to-left - confirmed; opening in English with Urdu after it - a guess, " + sm.guesses.toLocaleString("en") + " of them. Watch a response and switch a guess on the right to correct it; the counts here are taken when a response finishes."
+      : sm.answers.toLocaleString("en") + " answers, " + sm.judged.toLocaleString("en") + " lines counted, " + sm.unjudged.toLocaleString("en")
+        + " not counted (between 21% and 49% right-to-left words, where the proxy cannot say). Which way a line should read is judged by its share of right-to-left words, not by a person. Went back and turned are per line, token by token. A formula that goes back, or is wrong far more often, drops out; four are left - machine 2.";
+  }
+  function paintMachine() {
+    $("m-run").textContent = machine.running ? "Stop" : "Start";
+    $("m-run").classList.toggle("on", machine.running);
+    [["m-set", machine.set], ["m-order", machine.order], ["m-view", machine.view]].forEach(function (g) {
+      $(g[0]).querySelectorAll("button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.v === g[1])); });
+    });
+    var what = machine.set === "disputed" ? "line" : machine.set === "file" ? "response" : "answer";
+    $("m-file-label").hidden = machine.set !== "file";
+    $("m-run").disabled = machine.set === "file" && !machine.file.items.length;
+    if (!machine.running) $("m-status").textContent = machine.order === "order"
+      ? "Next: " + what + " " + (machine.pos[machine.set] + 1).toLocaleString("en") + " of " + totalOf(machine.set).toLocaleString("en")
+      : "Random " + what + "s from " + totalOf(machine.set).toLocaleString("en");
+    $("m-src").textContent = machine.set === "disputed" ? DISPUTED.source : machine.set === "file" ? FILE_SOURCE : MACHINE.source;
+    if (machine.set === "file" && !machine.file.items.length && !machine.running) $("m-status").textContent = "Load a chat export (JSON) to stream your own AI responses - it stays in this browser.";
+  }
+  function trimThread() {
+    while (state.messages.length > 24) {
+      var old = state.messages.shift();
+      old.sentNode.parentNode.remove(); old.answerNode.parentNode.remove();
+      state.current = Math.max(0, state.current - 1);
+    }
+  }
+  function machineStep() {
+    if (!machine.running) return;
+    // in order, the machine stops when it has been through every item once - counting an item
+    // twice would weigh it twice; Reset totals and Start go through them again
+    if (machine.order === "order" && sums().answers >= totalOf(machine.set)) {
+      machine.running = false; paintMachine(); paintTotals();
+      $("m-status").textContent = "Done: all " + totalOf(machine.set).toLocaleString("en") + (machine.set === "disputed" ? " lines" : machine.set === "file" ? " responses" : " answers") + " counted once. Reset to go through them again.";
+      return;
+    }
+    var i = nextIndex(), run = machine.run;
+    answerAt(i).then(function (row) {
+      // a step still loading when the machine was stopped, switched or restarted belongs to that run
+      if (!machine.running || run !== machine.run) return;
+      var disputed = machine.set === "disputed", mineFile = machine.set === "file";
+      // machine 1 rows: [answerId, language, model, markdown]; machine 2 rows: [textId, kind, markdown, label, text]
+      var md = disputed ? row[2] : row[3], label = disputed ? row[3] : null;
+      var title = disputed ? "Line " + (i + 1) + " of " + DISPUTED.total + " · " + row[1] + " · read: " + (label === "unclear" ? "unclear" : label) : MACHINE.dataset.split("/").pop() + " · " + row[1] + " · " + row[2] + " · " + row[0];
+      if (mineFile) title = "Your chats · " + (row[1] || "response") + (row[2] ? " · " + row[2] : "");
+      $("m-status").textContent = (disputed ? title : mineFile ? "Response " + (i + 1).toLocaleString("en") + " of " + totalOf("file").toLocaleString("en") + " · " + (row[1] || "") : "Answer " + (i + 1).toLocaleString("en") + " of " + MACHINE.total.toLocaleString("en") + " · " + row[1] + " · " + row[2])
+        + (machine.view === "watch" ? " · streaming with " + byId(state.formula).name : " · scoring " + shownFormulas().length + " formulas, nothing drawn");
+      var fill = function (msg) { if (disputed) { msg.lineText = row[4]; msg.lineLabel = label; markByLabel(msg, label); } else if (mineFile) markByLetters(msg); else markByWords(msg); };
+      if (machine.view === "fast") {
+        var msg = { text: md, marks: {}, markFrom: {} };
+        fill(msg); addUp(msg, label);
+        var now = performance.now();
+        if (now - machine.lastPaint > 400) { machine.lastPaint = now; paintTotals(); }
+        machine.timer = setTimeout(machineStep, 0);
+        return;
+      }
+      var m = addTurn(md, { machine: { n: i + 1, label: title, line: disputed, mine: mineFile } });
+      m.chat = state.chat;
+      fill(m);
+      m.onDone = function () { addUp(m, label); paintTotals(); paintInspect(); if (machine.running) machine.timer = setTimeout(machineStep, disputed ? 900 : 600); };
+      stream(m);
+      trimThread();
+    }).catch(function (e) {
+      machine.running = false; paintMachine();
+      $("m-status").textContent = "Could not load the answers (" + (e && e.message) + "). The machine needs the page's data files.";
+    });
+  }
+  $("m-run").addEventListener("click", function () {
+    machine.running = !machine.running;
+    machine.run = (machine.run || 0) + 1;
+    clearTimeout(machine.timer);
+    if (!machine.running) { stopStream(true); paintTotals(); }
+    paintMachine();
+    if (machine.running) machineStep();
+  });
+  $("m-order").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; machine.order = b.dataset.v; saveMachine(); paintMachine(); });
+  $("m-view").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; machine.view = b.dataset.v; saveMachine(); paintMachine(); });
+  // Reset starts the screen again: the machine stops, its totals empty, and every message in the
+  // chat - typed or streamed by a machine - is cleared. The session log saved for the paper is kept.
+  $("m-reset").addEventListener("click", function () {
+    if (machine.running) { machine.running = false; machine.run = (machine.run || 0) + 1; clearTimeout(machine.timer); }
+    if (state.stream) { clearTimeout(state.stream.timer); state.stream = null; }
+    machine.sums[machine.set] = emptySums();
+    $("thread").textContent = "";
+    state.messages = []; state.current = -1;
+    paintMachine(); paintTotals(); paintInspect();
+  });
+  $("m-set").addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b || b.dataset.v === machine.set) return;
+    if (machine.running) { machine.running = false; machine.run = (machine.run || 0) + 1; clearTimeout(machine.timer); stopStream(true); }
+    machine.set = b.dataset.v; saveMachine(); paintMachine(); paintTotals();
+  });
+  var FILE_SOURCE = "Your own AI chats, from an export you load: ChatGPT (Settings > Data controls > Export: conversations.json), Claude (Settings > Privacy > Export data: conversations.json), or any JSON list of {role, content}. The file is read in this browser only - it is not uploaded, not saved, and your responses are not written to the session log.";
+  $("m-file").addEventListener("change", function () {
+    var f = this.files && this.files[0];
+    if (!f) return;
+    if (machine.running) { machine.running = false; machine.run = (machine.run || 0) + 1; clearTimeout(machine.timer); stopStream(true); }
+    $("m-status").textContent = "Reading " + f.name + "…";
+    f.text().then(function (t) {
+      var items = chatResponses(JSON.parse(t)).filter(function (r) { return strong(r[3]); });
+      machine.file = { name: f.name, items: items };
+      machine.pos.file = 0; machine.sums.file = emptySums();
+      paintMachine(); paintTotals();
+      $("m-status").textContent = items.length
+        ? items.length.toLocaleString("en") + " AI responses found in " + f.name + ". Start streams them with " + byId(state.formula).name + "."
+        : "No AI responses found in " + f.name + ". It needs a ChatGPT or Claude export, or a list of {role, content}.";
+    }).catch(function (e) {
+      $("m-status").textContent = "Could not read " + f.name + ": " + (e && e.message) + ". It needs to be a JSON file.";
+    });
+    this.value = "";
+  });
+  MACHINE.source = MACHINE.total.toLocaleString("en") + " real ChatGPT answers in Arabic, Persian, Hebrew and Urdu that hold a line mixing both directions - " + MACHINE.dataset + " (AI2, ODC-BY), revision " + MACHINE.revision.slice(0, 8) + "; conversations it flags as toxic left out. In order, the answers come as the paper's sample holds them.";
+  DISPUTED.source = DISPUTED.total + " lines from the same ChatGPT answers on which Any RTL, our first formula and Firefox's formula at 63 and at 45 letters do not all agree - every such line, read one by one for the way it should read. The 20 such lines from Claude's answers are private and not on this page.";
+
+  // ---------------------------------------------------------------- panels resized by dragging
+  // The two gutters beside the chat move like an editor's: drag, or focus one and use the arrow
+  // keys; double-click puts a panel back to its size. What you set is kept as you set it; a
+  // smaller window only shows it smaller (the chat keeps at least 360px, each side at most 45%).
+  (function () {
+    var panes = document.querySelector(".panes");
+    var DEFAULT = { left: 280, right: 380 }, MIN = { left: 240, right: 260 };
+    var wanted = { left: DEFAULT.left, right: DEFAULT.right }, shown = { left: DEFAULT.left, right: DEFAULT.right };
+    try { var w = JSON.parse(localStorage.getItem("bidi-lab-panes") || "{}"); if (w.left > 0) wanted.left = w.left; if (w.right > 0) wanted.right = w.right; } catch (e) {}
+    function apply() {
+      var total = panes.clientWidth, max = Math.floor(window.innerWidth * 0.45);
+      var clamp = function (side, other) { return Math.round(Math.max(MIN[side], Math.min(wanted[side], max, total - other - 24 - 360))); };
+      shown.left = clamp("left", Math.min(wanted.right, max));
+      shown.right = clamp("right", shown.left);
+      panes.style.setProperty("--left", shown.left + "px");
+      panes.style.setProperty("--right", shown.right + "px");
+    }
+    function save() { try { localStorage.setItem("bidi-lab-panes", JSON.stringify(wanted)); } catch (e) {} }
+    [["gutter-left", "left"], ["gutter-right", "right"]].forEach(function (g) {
+      var gutter = $(g[0]), side = g[1];
+      gutter.addEventListener("pointerdown", function (e) {
+        e.preventDefault();
+        gutter.setPointerCapture(e.pointerId);
+        gutter.classList.add("dragging"); document.body.classList.add("resizing");
+        var startX = e.clientX, start = shown[side];
+        function move(ev) { wanted[side] = start + (side === "left" ? ev.clientX - startX : startX - ev.clientX); apply(); wanted[side] = shown[side]; }
+        function up() {
+          gutter.removeEventListener("pointermove", move); gutter.removeEventListener("pointerup", up); gutter.removeEventListener("pointercancel", up);
+          gutter.classList.remove("dragging"); document.body.classList.remove("resizing"); save();
+        }
+        gutter.addEventListener("pointermove", move); gutter.addEventListener("pointerup", up); gutter.addEventListener("pointercancel", up);
+      });
+      gutter.addEventListener("keydown", function (e) {
+        var step = e.shiftKey ? 60 : 20, grow = side === "left" ? 1 : -1;
+        if (e.key === "ArrowLeft") wanted[side] = shown[side] - step * grow; else if (e.key === "ArrowRight") wanted[side] = shown[side] + step * grow; else return;
+        e.preventDefault(); apply(); wanted[side] = shown[side]; save();
+      });
+      gutter.addEventListener("dblclick", function () { wanted[side] = DEFAULT[side]; apply(); save(); });
+    });
+    window.addEventListener("resize", apply);
+    apply();
+  })();
+
+  // ---------------------------------------------------------------- tabs (narrow screens)
+  document.querySelectorAll(".tabs button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      document.querySelectorAll(".tabs button").forEach(function (x) { x.setAttribute("aria-selected", String(x === b)); });
+      ["rail", "chat", "inspect"].forEach(function (id) { $(id).classList.toggle("shown", id === b.dataset.pane); });
+      if (b.dataset.pane === "inspect") paintInspect();
+    });
+  });
+  $("rail").classList.add("shown"); $("inspect").classList.add("shown");
+  var narrow = window.matchMedia("(max-width: 920px)");
+  function syncPanes() {
+    if (narrow.matches) {
+      var active = document.querySelector('.tabs button[aria-selected="true"]').dataset.pane;
+      ["rail", "chat", "inspect"].forEach(function (id) { $(id).classList.toggle("shown", id === active); });
+    } else ["rail", "chat", "inspect"].forEach(function (id) { $(id).classList.add("shown"); });
+  }
+  narrow.addEventListener("change", syncPanes);
+  syncPanes();
+
+  // ---------------------------------------------------------------- session log and saved formulas
+  var db = null, downloads = null, localLog = [];
+  var logDocs = [];
+  function runRecord(msg) {
+    return {
+      at: new Date().toISOString(), formula: msg.formula, formulaName: byId(msg.formula).name, chat: msg.chat,
+      stream: chatById(msg.chat).rhythm ? "recorded pieces" : "token", delayMs: chatById(msg.chat).rhythm ? null : msg.delay, input: msg.text, composerChanges: msg.composerChanges,
+      blocks: msg.rows.map(function (r) { return { key: r.key, tag: r.tag, preview: r.text.trim().slice(0, 80), final: r.final, changes: r.changes, wentBack: r.back }; }),
+      marks: msg.marks, markFrom: msg.markFrom, lab: PROVENANCE
+    };
+  }
+  function logRun(msg) {
+    if (msg.example || msg.machine) return;
+    var rec = runRecord(msg);
+    if (db) {
+      db.collection("runs").add(rec).then(function (ref) { msg.logRef = ref; }).catch(function (e) {
+        localLog.unshift(rec); paintLog();
+        $("log-state").textContent = e && e.code === "quota_exceeded" ? "The log is full. Export it, then remove old runs." : "Could not save this run to the lab's log; it is kept in this tab.";
+      });
+    } else { localLog.unshift(rec); paintLog(); }
+  }
+  var markTimers = {};
+  function saveMarks(msg) {
+    if (msg.example || msg.machine) return;
+    if (!db || !msg.logRef) { var r = localLog.find(function (x) { return x.input === msg.text; }); if (r) { r.marks = Object.assign({}, msg.marks); r.markFrom = Object.assign({}, msg.markFrom); } return; }
+    clearTimeout(markTimers[msg.id]);
+    markTimers[msg.id] = setTimeout(function () { msg.logRef.update({ marks: Object.assign({}, msg.marks), markFrom: Object.assign({}, msg.markFrom) }).catch(function () {}); }, 700);
+  }
+  // The log is managed here and only here: × deletes one run (click twice - the first click asks),
+  // "Delete all…" deletes every saved run after a confirmation. Deleting is permanent. Reset does
+  // not touch the log.
+  try { localStorage.removeItem("bidi-lab-log-since"); } catch (e) {} // left by an earlier version
+  function deleteRun(r) {
+    if (db && r._id) return db.doc("runs/" + r._id).delete();
+    localLog = localLog.filter(function (x) { return x !== r; });
+    paintLog();
+    return Promise.resolve();
+  }
+  function paintLog() {
+    var box = $("log");
+    box.textContent = "";
+    var items = db ? logDocs : localLog;
+    $("log-clear").disabled = !items.some(function (r) { return !r.starred; });
+    if (!items.length) { box.appendChild(el("p", { class: "empty", text: "Nothing in the log." })); return; }
+    items.slice(0, 60).forEach(function (r) {
+      var back = (r.blocks || []).filter(function (b) { return b.wentBack; }).length;
+      var when = new Date(r.at);
+      var b = el("button", { type: "button", class: "run", title: "Load into the composer" }, [
+        el("span", { class: "l1" }, [
+          el("span", { text: when.toLocaleDateString() + " " + when.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) }),
+          el("span", { text: r.formulaName || r.formula }),
+          el("span", { text: (r.blocks || []).length + " blocks" }),
+          back ? el("span", { style: "color:var(--back)", text: back + " went back" }) : null
+        ]),
+        el("span", { class: "l2", text: (r.input || "").replace(/\s+/g, " ").slice(0, 140) })
+      ]);
+      b.addEventListener("click", function () { $("input").value = r.input || ""; composerInput(true); $("input").focus(); });
+      // a star keeps a run: Delete all… passes over it; × still deletes it, on purpose
+      var star = el("button", { type: "button", class: "star", "aria-pressed": String(!!r.starred), title: r.starred ? "Starred - Delete all keeps it. Click to unstar." : "Star this run - Delete all will keep it", "aria-label": r.starred ? "Unstar this run" : "Star this run", text: r.starred ? "★" : "☆" });
+      star.addEventListener("click", function () {
+        var next = !r.starred;
+        star.disabled = true;
+        var done = function () { star.disabled = false; };
+        if (db && r._id) {
+          db.doc("runs/" + r._id).update({ starred: next }).then(done).catch(function (e) {
+            done();
+            $("log-state").textContent = "Could not star that run" + (e && e.code ? " (" + e.code + ")" : "") + " - only people who can edit this lab can.";
+          });
+        } else { r.starred = next; done(); paintLog(); }
+      });
+      var del = el("button", { type: "button", class: "del", title: "Delete this run from the log", "aria-label": "Delete this run", text: "×" });
+      var armed = 0;
+      del.addEventListener("click", function () {
+        if (!armed) {
+          del.classList.add("armed"); del.textContent = "Delete?";
+          armed = setTimeout(function () { armed = 0; del.classList.remove("armed"); del.textContent = "×"; }, 3000);
+          return;
+        }
+        clearTimeout(armed); del.disabled = true;
+        deleteRun(r).catch(function (e) {
+          del.disabled = false; armed = 0; del.classList.remove("armed"); del.textContent = "×";
+          $("log-state").textContent = "Could not delete that run" + (e && e.code ? " (" + e.code + ")" : "") + " - only people who can edit this lab can delete.";
+        });
+      });
+      box.appendChild(el("div", { class: "item" + (r.starred ? " starred" : "") }, [star, b, del]));
+    });
+    if (items.length > 60) box.appendChild(el("p", { class: "empty", text: "Showing the newest 60 of " + items.length + "." }));
+  }
+  $("log-clear").addEventListener("click", function () {
+    var all = db ? logDocs : localLog, kept = all.filter(function (r) { return r.starred; }).length;
+    $("log-confirm-text").textContent = "Delete every run that is not starred" + (db ? "" : " (" + (all.length - kept) + ")") + "? " + (kept ? kept + " starred " + (kept === 1 ? "run is" : "runs are") + " kept. " : "") + "This cannot be undone - export first if you may need them.";
+    $("log-confirm").hidden = false;
+    $("log-confirm-no").focus();
+  });
+  $("log-confirm-no").addEventListener("click", function () { $("log-confirm").hidden = true; });
+  $("log-confirm-yes").addEventListener("click", function () {
+    $("log-confirm").hidden = true;
+    if (!db) { localLog = localLog.filter(function (r) { return r.starred; }); paintLog(); return; }
+    // every run, not only the ones on screen: read in pages and delete one at a time
+    var deleted = 0, kept = 0;
+    $("log-state").textContent = "Deleting…";
+    (function round() {
+      return db.collection("runs").limit(1000).get().then(function (snap) {
+        var gone = snap.docs.filter(function (d) { var v = d.data(); return !(v && v.starred); });
+        kept = snap.size - gone.length;
+        if (!gone.length) return;
+        return gone.reduce(function (p, d) { return p.then(function () { return db.doc("runs/" + d.id).delete().then(function () { deleted++; }); }); }, Promise.resolve())
+          .then(round);
+      });
+    })().then(function () {
+      $("log-state").textContent = "Deleted " + deleted + " runs." + (kept ? " Kept " + kept + " starred." : " The log is empty.");
+    }).catch(function (e) {
+      $("log-state").textContent = "Stopped after deleting " + deleted + " runs" + (e && e.code ? " (" + e.code + ")" : "") + " - only people who can edit this lab can delete.";
+    });
+  });
+  $("export").addEventListener("click", function () {
+    if (!downloads) return;
+    var items = db ? logDocs : localLog;
+    var data = JSON.stringify({ exported: new Date().toISOString(), lab: PROVENANCE, runs: items }, null, 2);
+    downloads.save({ filename: "bidi-stream-lab-log.json", data: data }).catch(function () {});
+  });
+
+  function addFormulaFromCode(name, code, id) {
+    var fn = new Function("text", "ctx", code);
+    return { id: id, group: "custom", name: name, chip: "Yours", custom: true, what: "A formula added in this lab.", code: code,
+      src: null, decide: function (t, c) { return fn(t, c); } };
+  }
+  var canEval = true;
+  try { new Function("return 1")(); } catch (e) { canEval = false; }
+  if (!canEval) { $("f-save").disabled = true; $("f-msg").textContent = "This viewer does not allow running typed code."; }
+  $("f-save").addEventListener("click", function () {
+    var name = $("f-name").value.trim(), code = $("f-code").value;
+    if (!name) { $("f-msg").textContent = "Give it a name."; return; }
+    var id = "c-" + name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) + "-" + Date.now().toString(36);
+    var f;
+    try { f = addFormulaFromCode(name, code, id); f.decide("test اردو", ctx("test اردو")); }
+    catch (e) { $("f-msg").textContent = "It does not run: " + e.message; return; }
+    if (db) {
+      db.doc("formulas/" + id).set({ name: name, code: code, createdAt: new Date().toISOString() })
+        .then(function () { $("f-msg").textContent = "Added."; })
+        .catch(function () { $("f-msg").textContent = "Could not save it; it is kept in this tab."; custom.push(f); paintFormulas(); });
+    } else { custom.push(f); paintFormulas(); $("f-msg").textContent = "Added for this tab."; }
+    $("f-name").value = "";
+  });
+  function removeFormula(f) {
+    if (db) db.doc("formulas/" + f.id).delete().catch(function () {});
+    custom = custom.filter(function (x) { return x.id !== f.id; });
+    if (state.formula === f.id) chooseFormula("any-rtl-63"); else paintFormulas();
+  }
+
+  function startCapabilities() {
+    if (!window.claude || typeof window.claude.use !== "function") {
+      $("log-state").textContent = "Runs are kept in this tab only - this page is open outside the lab's home.";
+      paintLog();
+      return;
+    }
+    window.claude.use("db").then(function (d) {
+      db = d;
+      if (!db) { $("log-state").textContent = "Runs are kept in this tab only - this view cannot save the log."; paintLog(); return; }
+      $("log-state").textContent = "Every message you send is saved to this lab's log, with the formula and what each block did.";
+      db.collection("runs").orderBy("at", "desc").limit(200).onSnapshot(function (snap) {
+        logDocs = snap.docs.map(function (x) { return Object.assign({ _id: x.id }, x.data()); });
+        paintLog();
+      }, function () { $("log-state").textContent = "The log stopped updating. Reload to reconnect."; });
+      if (canEval) db.collection("formulas").onSnapshot(function (snap) {
+        custom = [];
+        snap.docs.forEach(function (x) {
+          var v = x.data();
+          try { custom.push(addFormulaFromCode(v.name, v.code, x.id)); } catch (e) {}
+        });
+        paintFormulas();
+      }, function () {});
+    });
+    window.claude.use("downloads").then(function (d) { downloads = d; $("export").hidden = !d; });
+  }
+
+  // ---------------------------------------------------------------- start
+  $("prov").textContent = "Unicode " + PROVENANCE.unicode + " · Closure @" + PROVENANCE.closure.commit.slice(0, 7) + " · SmartRTL " + PROVENANCE.smartrtl.sha256.slice(0, 7) + " · rules " + PROVENANCE.rules.sha256.slice(0, 7);
+  paintFormulas(); paintChats(); paintSpeed(); composerInput(true);
+
+  // Open in a working state: one example already answered, clearly marked as an example.
+  var first = addTurn(EXAMPLES[0].text, { example: true });
+  first.sentNode.parentNode.querySelector(".who").textContent = "You · example";
+  first.chat = state.chat;
+  markExample(first);
+  (function instant() {
+    var f = byId(state.formula);
+    first.formula = f.id; first.scope = "block"; first.track = newTrack();
+    boundaries(first.text).forEach(function (end) {
+      first.answerNode.innerHTML = render(first.text.slice(0, end));
+      record(first.track, applyTo(first.answerNode, f, "block", first.text));
+    });
+    redraw(first);
+    first.rows = summarise(first.track, unitsOf(first.text).map(function (u) { return u.key; }));
+    paintVerdict(first);
+    focusMessage(first);
+    paintInspect();
+  })();
+
+  paintMachine();
+  startCapabilities();
+})();
+</script>

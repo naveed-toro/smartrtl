@@ -1,0 +1,3070 @@
+<title>Bidi Stream Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Noto+Naskh+Arabic:wght@400;600&family=Noto+Sans+Hebrew:wght@400;600&display=swap">
+<style>
+  :root {
+    --ground: #eef0f3;
+    --surface: #ffffff;
+    --surface-2: #f6f7f9;
+    --ink: #15181d;
+    --muted: #5d6470;
+    --line: #dde1e7;
+    --accent: #0e6b69;
+    --accent-ink: #ffffff;
+    --accent-soft: #dcefee;
+    --rtl: #b35a00;
+    --rtl-soft: #f7e6d3;
+    --ltr: #2457c5;
+    --ltr-soft: #dfe8fa;
+    --none: #b9bfc8;
+    --back: #c0262d;
+    --back-soft: #f8dcdd;
+    --ok: #1d7a3e;
+    --bubble: #e7eaef;
+    --shadow: 0 1px 2px rgba(20, 24, 32, .06), 0 4px 16px rgba(20, 24, 32, .05);
+    --ui: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+    --text: system-ui, -apple-system, "Segoe UI", "Noto Naskh Arabic", "Noto Sans Hebrew", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #111317; --surface: #1a1d23; --surface-2: #20242b; --ink: #e8eaee; --muted: #9aa2ae;
+      --line: #2c313a; --accent: #4fb3ad; --accent-ink: #0c1414; --accent-soft: #1d3634;
+      --rtl: #f0a24d; --rtl-soft: #3a2a18; --ltr: #7ea6f5; --ltr-soft: #1c2a45; --none: #4a515c;
+      --back: #f07178; --back-soft: #43222a; --ok: #58c27d; --bubble: #262b33;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 4px 16px rgba(0, 0, 0, .25);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #111317; --surface: #1a1d23; --surface-2: #20242b; --ink: #e8eaee; --muted: #9aa2ae;
+    --line: #2c313a; --accent: #4fb3ad; --accent-ink: #0c1414; --accent-soft: #1d3634;
+    --rtl: #f0a24d; --rtl-soft: #3a2a18; --ltr: #7ea6f5; --ltr-soft: #1c2a45; --none: #4a515c;
+    --back: #f07178; --back-soft: #43222a; --ok: #58c27d; --bubble: #262b33;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 4px 16px rgba(0, 0, 0, .25);
+  }
+
+  html, body { height: 100%; }
+  body { background: var(--ground); color: var(--ink); font: 14px/1.5 var(--ui); }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  a { color: var(--accent); }
+
+  .app { height: 100%; display: grid; grid-template-rows: auto auto 1fr; padding-inline: 16px; }
+
+  /* header */
+  .top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; padding-block: 12px 10px; }
+  .top h1 { margin: 0; font-size: 17px; font-weight: 600; letter-spacing: -.01em; }
+  .top p { margin: 0; color: var(--muted); font-size: 13px; }
+  .top .prov { margin-inline-start: auto; font: 11.5px/1.4 var(--mono); color: var(--muted); }
+
+  .tabs { display: none; gap: 4px; padding-bottom: 8px; }
+  .tabs button { flex: 1; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 7px; }
+  .tabs button[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+
+  .panes { --left: 280px; --right: 380px; min-height: 0; display: grid; grid-template-columns: var(--left) 12px minmax(0, 1fr) 12px var(--right); padding-bottom: 12px; }
+  .gutter { cursor: col-resize; position: relative; touch-action: none; }
+  .gutter::after { content: ""; position: absolute; top: 40%; bottom: 40%; left: 5px; width: 2px; border-radius: 2px; background: var(--line); }
+  .gutter:hover::after, .gutter.dragging::after { top: 0; bottom: 0; background: var(--accent); }
+  body.resizing { cursor: col-resize; user-select: none; }
+  .pane { min-height: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); }
+  .pane.scroll { overflow: auto; }
+
+  /* left: formulas and stream */
+  .rail { padding: 14px; display: flex; flex-direction: column; gap: 18px; }
+  .section-title { margin: 0 0 8px; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .formulas { display: flex; flex-direction: column; gap: 6px; }
+  .formula { min-width: 0; overflow-wrap: break-word; text-align: start; background: var(--surface); border: 1px solid var(--line); border-radius: 9px; padding: 8px 10px; display: grid; gap: 2px; }
+  .formula:hover { border-color: var(--accent); }
+  .formula[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent); }
+  .formula .row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+  .formula .name { font-weight: 600; }
+  .formula .key { margin-inline-start: auto; font: 11px var(--mono); color: var(--muted); }
+  .formula .what { color: var(--muted); font-size: 12.5px; line-height: 1.4; }
+  .formula .who { font-size: 11.5px; color: var(--muted); line-height: 1.35; }
+  .formula .situation { font-size: 12px; color: var(--ink); line-height: 1.35; }
+  .src { font-size: 11.5px; color: var(--muted); text-decoration-color: var(--line); text-underline-offset: 2px; }
+  .chip { display: inline-block; font-size: 10.5px; font-weight: 600; letter-spacing: .03em; border-radius: 99px; padding: 1px 7px; border: 1px solid currentColor; white-space: nowrap; }
+  .chip.baseline { color: var(--muted); }
+  .chip.adopted { color: var(--accent); }
+  .chip.proposed { color: var(--rtl); }
+  .chip.ours { color: var(--ltr); }
+  .chip.ai-today { color: var(--back); }
+  .chip.custom { color: var(--muted); }
+  .group { font-size: 11.5px; font-weight: 600; color: var(--ink); margin: 10px 0 0; padding-bottom: 3px; border-bottom: 1px solid var(--line); }
+  .group:first-child { margin-top: 0; }
+  .fwrap { display: grid; gap: 2px; }
+  .fline { display: flex; gap: 8px; padding-inline: 10px; align-items: center; }
+
+  .seg { display: flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .seg button { flex: 1; border: 0; background: var(--surface); padding: 6px 4px; font-size: 13px; }
+  .seg button + button { border-inline-start: 1px solid var(--line); }
+  .seg button[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
+  .field { display: grid; gap: 6px; }
+  .field label, .field .label { font-size: 12.5px; color: var(--muted); display: flex; justify-content: space-between; }
+  .field output { font: 12px var(--mono); color: var(--ink); }
+  input[type="range"] { width: 100%; accent-color: var(--accent); }
+  .check { display: flex; gap: 8px; align-items: center; font-size: 13px; }
+  .note { font-size: 12px; color: var(--muted); margin: 0; }
+  .speed-note { line-height: 1.45; }
+  .speed-note b { color: var(--ink); font-weight: 600; }
+  .speed-note .seen { color: var(--back); }
+  .speed-note .unseen { color: var(--ok); }
+  .addf { border: 1px dashed var(--line); border-radius: 9px; padding: 10px; display: grid; gap: 8px; }
+  .addf summary { cursor: pointer; font-weight: 500; }
+  .addf input, .addf textarea { width: 100%; border: 1px solid var(--line); border-radius: 7px; background: var(--surface-2); padding: 6px 8px; }
+  .addf textarea { font: 12px/1.45 var(--mono); min-height: 120px; resize: vertical; }
+  .btn { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 6px 12px; }
+  .btn:hover { border-color: var(--accent); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .btn:disabled { opacity: .5; cursor: default; }
+
+  /* centre: a chat like every chat */
+  .chat { display: grid; grid-template-rows: auto 1fr auto; min-height: 0; }
+  .machine { border-bottom: 1px solid var(--line); padding: 10px clamp(12px, 4vw, 40px); display: grid; gap: 6px; }
+  .machine .row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .machine .title { font-weight: 600; }
+  .machine .seg { display: inline-flex; }
+  .machine .seg button { padding: 4px 10px; font-size: 12.5px; flex: none; }
+  .machine .status { font: 12px var(--mono); color: var(--muted); }
+  .machine .src { font-size: 11.5px; color: var(--muted); margin: 4px 0 0; }
+  .machine .about summary { cursor: pointer; font-size: 11.5px; color: var(--muted); width: max-content; }
+  .btn.run { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); min-width: 5.5em; }
+  .btn.run.on { background: var(--back); border-color: var(--back); }
+  .totals td.lead { font-weight: 600; }
+  .verdict-bar { font-size: 12.5px; line-height: 1.45; border: 1px solid var(--line); border-radius: 9px; padding: 6px 10px; background: var(--surface-2); display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; }
+  .verdict-bar:empty { display: none; }
+  .verdict-bar b { font-weight: 600; }
+  .verdict-bar.ok { border-color: color-mix(in srgb, var(--ok) 50%, var(--line)); }
+  .verdict-bar.no { border-color: var(--back); background: var(--back-soft); }
+  .verdict-bar .good { color: var(--ok); font-weight: 600; } .verdict-bar .bad { color: var(--back); font-weight: 600; }
+  .streaming-with { font-size: 12px; color: var(--muted); }
+  .streaming-with b { color: var(--ink); font-weight: 600; }
+  .totals-who { font-size: 12px; color: var(--muted); margin: -2px 0 8px; }
+  .totals-who b { color: var(--ink); }
+  .thread { overflow: auto; padding: 20px clamp(12px, 4vw, 40px); display: flex; flex-direction: column; gap: 18px; }
+  .turn { display: grid; gap: 6px; max-width: 760px; width: 100%; margin-inline: auto; }
+  .turn .who { font-size: 11.5px; color: var(--muted); display: flex; gap: 10px; align-items: center; }
+  .turn .who .actions { margin-inline-start: auto; display: flex; gap: 6px; }
+  .turn .who button { border: 0; background: none; color: var(--accent); padding: 0; font-size: 12px; }
+  .sent { justify-self: end; max-width: 85%; background: var(--bubble); border-radius: 16px; padding: 10px 14px; white-space: pre-wrap; overflow-wrap: anywhere; font: 15.5px/1.6 var(--text); max-height: 12.5em; overflow-y: auto; }
+  .answer { font: 15.5px/1.7 var(--text); overflow-wrap: anywhere; }
+  .answer > :first-child { margin-top: 0; }
+  .answer > :last-child { margin-bottom: 0; }
+  .answer h1, .answer h2, .answer h3 { line-height: 1.35; margin: 1em 0 .4em; }
+  .answer h1 { font-size: 1.35em; } .answer h2 { font-size: 1.2em; } .answer h3 { font-size: 1.05em; }
+  .answer p, .answer ul, .answer ol, .answer table, .answer pre, .answer blockquote { margin: .55em 0; }
+  .answer code { font: .88em var(--mono); background: var(--surface-2); border: 1px solid var(--line); border-radius: 5px; padding: 0 4px; }
+  .answer pre { background: var(--surface-2); border: 1px solid var(--line); border-radius: 9px; padding: 10px 12px; overflow-x: auto; }
+  .answer pre code { border: 0; background: none; padding: 0; }
+  .answer .tablewrap { overflow-x: auto; }
+  .answer table { border-collapse: collapse; }
+  .answer th, .answer td { border: 1px solid var(--line); padding: 5px 10px; }
+  .answer blockquote { border-inline-start: 3px solid var(--line); padding-inline-start: 12px; color: var(--muted); }
+  .answer.streaming > :last-child::after { content: ""; display: inline-block; width: .55em; height: 1em; vertical-align: -.12em; background: var(--muted); margin-inline-start: 2px; border-radius: 1px; }
+  .flip { outline: 2px solid var(--ltr); outline-offset: 3px; border-radius: 3px; animation: flip .5s ease-out forwards; }
+  .flip.back { outline-color: var(--back); animation-duration: .9s; }
+  @keyframes flip { to { outline-color: transparent; } }
+  @media (prefers-reduced-motion: reduce) { .flip { animation: none; } }
+
+  .composer { border-top: 1px solid var(--line); padding: 12px clamp(12px, 4vw, 40px) 14px; }
+  .composer .box { max-width: 760px; margin-inline: auto; background: var(--surface-2); border: 1px solid var(--line); border-radius: 18px; padding: 10px 10px 8px 14px; display: grid; gap: 6px; }
+  .composer .box:focus-within { border-color: var(--accent); }
+  .composer textarea { border: 0; background: none; resize: none; outline: none; font: 15.5px/1.55 var(--text); max-height: 40vh; min-height: 26px; padding: 2px 0; }
+  .composer .bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .composer select { border: 1px solid var(--line); background: var(--surface); border-radius: 7px; padding: 3px 6px; font-size: 12.5px; max-width: 12rem; }
+  .composer .dirchip { font: 11.5px var(--mono); color: var(--muted); }
+  .composer .send { margin-inline-start: auto; width: 34px; height: 34px; border-radius: 50%; border: 0; background: var(--ink); color: var(--surface); display: grid; place-items: center; }
+  .composer .send:disabled { opacity: .35; cursor: default; }
+  .composer .hint { max-width: 760px; margin: 6px auto 0; font-size: 11.5px; color: var(--muted); text-align: center; }
+
+  /* right: inspect */
+  .inspect { padding: 14px; display: flex; flex-direction: column; gap: 16px; }
+  .inspect header { display: grid; gap: 2px; }
+  .inspect header h2 { margin: 0; font-size: 15px; }
+  .inspect header p { margin: 0; color: var(--muted); font-size: 12.5px; }
+  .blocks { display: flex; flex-direction: column; gap: 6px; }
+  .inspect > section, .blocks { min-width: 0; }
+  .block { border: 1px solid var(--line); border-radius: 9px; padding: 6px 8px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; min-width: 0; }
+  .block .how { flex-basis: 100%; font-size: 11.5px; color: var(--muted); }
+  .block .how.back { color: var(--back); font-weight: 600; }
+  .block.no { border-color: var(--back); background: var(--back-soft); }
+  .block.ok { border-color: color-mix(in srgb, var(--ok) 45%, var(--line)); }
+  .block .tag { font: 11px var(--mono); color: var(--muted); min-width: 2.2em; }
+  .block .preview { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; unicode-bidi: plaintext; font: 13px var(--text); }
+  .pill { font: 500 11px var(--mono); border-radius: 5px; padding: 0 5px; }
+  .pill.rtl { background: var(--rtl-soft); color: var(--rtl); }
+  .pill.ltr { background: var(--ltr-soft); color: var(--ltr); }
+  .mark { display: flex; gap: 3px; align-items: center; }
+  .mark button { border: 1px solid var(--line); background: var(--surface); border-radius: 5px; font: 10.5px var(--mono); padding: 1px 6px; }
+  .mark button[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+  .mark.guess button[aria-pressed="true"] { background: var(--surface); color: var(--ink); border: 1px dashed var(--ink); }
+  .mark .from { font-size: 10.5px; color: var(--muted); min-width: 4.6em; text-align: end; }
+  .mark.guess .from { color: var(--rtl); font-weight: 600; }
+  .verdict { font-weight: 600; min-width: 1em; text-align: center; }
+  .verdict.ok { color: var(--ok); } .verdict.no { color: var(--back); }
+  .chats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .chats button { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 6px 4px; font-size: 13px; }
+  .chats button[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+  .log-wrap summary { cursor: pointer; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .compare { width: 100%; border-collapse: collapse; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+  .compare th { text-align: start; font-weight: 500; color: var(--muted); font-size: 11px; padding: 4px 4px; border-bottom: 1px solid var(--line); }
+  .compare td { padding: 5px 4px; border-bottom: 1px solid var(--line); }
+  .compare td.n { text-align: end; font-family: var(--mono); }
+  .compare tr { cursor: pointer; }
+  .compare tr:hover td { background: var(--surface-2); }
+  .compare tr.current td { background: var(--accent-soft); }
+  .compare td.bad { color: var(--back); font-weight: 600; }
+  .compare td.good { color: var(--ok); font-weight: 600; }
+  .compare .muted { color: var(--muted); font-weight: 400; }
+  .log { display: flex; flex-direction: column; gap: 4px; }
+  .log .item { display: flex; gap: 4px; align-items: stretch; }
+  .log .item > button.run { flex: 1; min-width: 0; }
+  .log .item > button.del { flex: none; width: 30px; display: grid; place-items: center; padding: 0; color: var(--muted); font-size: 15px; }
+  .log .item > button.del:hover { color: var(--back); border-color: var(--back); }
+  .log .item > button.star { flex: none; width: 30px; display: grid; place-items: center; padding: 0; color: var(--muted); font-size: 15px; }
+  .log .item > button.star[aria-pressed="true"] { color: #c98a00; border-color: #c98a00; }
+  .log .item.starred > button.run { border-color: #c98a00; }
+  .log .item > button.del.armed { width: auto; padding: 0 8px; color: #fff; background: var(--back); border-color: var(--back); font-size: 12px; }
+  .log-confirm { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; border: 1px solid var(--back); background: var(--back-soft); border-radius: 8px; padding: 8px; margin: 6px 0; font-size: 12.5px; }
+  .log-confirm[hidden] { display: none; }
+  .btn.danger { background: var(--back); border-color: var(--back); color: #fff; }
+  .log button { text-align: start; border: 1px solid var(--line); background: var(--surface); border-radius: 7px; padding: 6px 8px; display: grid; gap: 1px; }
+  .log button:hover { border-color: var(--accent); }
+  .log .l1 { display: flex; gap: 8px; font-size: 11.5px; color: var(--muted); }
+  .log .l2 { unicode-bidi: plaintext; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font: 13px var(--text); }
+  .empty { color: var(--muted); font-size: 12.5px; margin: 0; }
+
+
+  @media (max-width: 1180px) {
+    .panes { --left: 250px; --right: 330px; }
+  }
+  @media (max-width: 920px) {
+    .tabs { display: flex; }
+    .panes { grid-template-columns: minmax(0, 1fr); }
+    .gutter { display: none; }
+    .panes > .pane { display: none; }
+    .panes > .pane.shown { display: grid; }
+    .panes > .rail.shown, .panes > .inspect.shown { display: flex; }
+    .top .prov { margin-inline-start: 0; }
+  }
+</style>
+
+<div class="app">
+  <header class="top">
+    <h1>Bidi Stream Lab</h1>
+    <p>A neutral AI chat. What you send streams back, and a direction rule decides every block as it arrives.</p>
+    <span class="prov" id="prov"></span>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Views">
+    <button role="tab" id="tab-rail" aria-selected="false" data-pane="rail">Formula</button>
+    <button role="tab" id="tab-chat" aria-selected="true" data-pane="chat">Chat</button>
+    <button role="tab" id="tab-inspect" aria-selected="false" data-pane="inspect">Right / wrong</button>
+  </nav>
+
+  <main class="panes">
+    <aside class="pane scroll rail" id="rail" aria-label="Formula and stream">
+      <section>
+        <h2 class="section-title">Formula</h2>
+        <div class="formulas" id="formulas"></div>
+        <details class="addf" id="addf">
+          <summary>Add a formula</summary>
+          <label class="note" for="f-name">Name</label>
+          <input id="f-name" type="text" placeholder="e.g. First 40 letters, majority">
+          <label class="note" for="f-code">Body of <code>(text, ctx)</code> - return "rtl", "ltr" or null (leave the block alone)</label>
+          <textarea id="f-code" spellcheck="false">// ctx: { firstStrong, ltr, rtl, words, prose, count(text), bidiClass(codePoint) }
+const head = [...text].slice(0, 40).join("");
+const c = ctx.count(head);
+return c.rtl > c.ltr ? "rtl" : "ltr";</textarea>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="btn primary" id="f-save" type="button">Add</button>
+            <span class="note" id="f-msg" role="status"></span>
+          </div>
+        </details>
+      </section>
+
+      <section class="field">
+        <h2 class="section-title">Applies to</h2>
+        <div class="chats" id="chats" role="group" aria-label="Applies to"></div>
+        <p class="note" id="chat-note"></p>
+      </section>
+
+      <section class="field">
+        <h2 class="section-title">Stream</h2>
+        <div class="field" id="speed-field">
+          <label for="speed">Delay per token <output id="speed-out"></output></label>
+          <input id="speed" type="range" min="0" max="400" step="5" value="15">
+          <p class="note speed-note" id="speed-note" aria-live="polite"></p>
+        </div>
+        <label class="check"><input type="checkbox" id="highlight" checked> Outline a block when its direction changes</label>
+        <p class="note">Every paragraph, heading, list item and table cell gets its own decision. <kbd>Esc</kbd> finishes a stream at once.</p>
+      </section>
+    </aside>
+
+    <div class="gutter" id="gutter-left" role="separator" aria-orientation="vertical" aria-label="Resize the left panel" tabindex="0"></div>
+    <section class="pane chat shown" id="chat" aria-label="Chat">
+      <div class="machine" id="machine">
+        <div class="row">
+          <span class="title">Machine</span>
+          <div class="seg" id="m-set" role="group" aria-label="Which machine">
+            <button type="button" data-v="all" aria-pressed="true">1 · All answers</button>
+            <button type="button" data-v="disputed" aria-pressed="false">2 · Lines the four disagree on</button>
+            <button type="button" data-v="file" aria-pressed="false">3 · Your chats</button>
+          </div>
+          <button class="btn run" id="m-run" type="button">Start</button>
+          <div class="seg" id="m-order" role="group" aria-label="Order">
+            <button type="button" data-v="order" aria-pressed="true">In order</button>
+            <button type="button" data-v="random" aria-pressed="false">Random</button>
+          </div>
+          <div class="seg" id="m-view" role="group" aria-label="View">
+            <button type="button" data-v="watch" aria-pressed="true">Watch</button>
+            <button type="button" data-v="fast" aria-pressed="false">Fast</button>
+          </div>
+          <label class="btn" id="m-file-label" hidden>Load chat JSON…<input type="file" id="m-file" accept=".json,application/json" hidden></label>
+          <button class="btn" id="m-reset" type="button" title="Stops the machine, empties its totals and clears every message on the screen. The session log is kept - delete runs there.">Reset</button>
+        </div>
+        <p class="status" id="m-status" aria-live="polite"></p>
+        <details class="about"><summary>About this data</summary><p class="src" id="m-src"></p></details>
+      </div>
+      <div class="thread" id="thread" aria-live="off"></div>
+      <div class="composer">
+        <div class="box">
+          <textarea id="input" rows="1" placeholder="Type or paste text - it streams back as the answer" aria-label="Message"></textarea>
+          <div class="bar">
+            <select id="examples" aria-label="Load an example">
+              <option value="">Examples…</option>
+            </select>
+            <span class="dirchip" id="dirchip" aria-live="polite"></span>
+            <button class="send" id="send" type="button" aria-label="Send" disabled>
+              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 13V3M3.5 7.5 8 3l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+        </div>
+        <p class="hint">Enter sends · Shift+Enter new line · nothing is generated: the answer is your own text</p>
+      </div>
+    </section>
+    <div class="gutter" id="gutter-right" role="separator" aria-orientation="vertical" aria-label="Resize the right panel" tabindex="0"></div>
+
+    <aside class="pane scroll inspect" id="inspect" aria-label="Inspect">
+      <header>
+        <h2 id="i-title">Inspect</h2>
+        <p id="i-sub"></p>
+      </header>
+      <section id="m-totals" hidden>
+        <h3 class="section-title" id="totals-title">The machine, all answers so far</h3>
+        <p class="totals-who" id="totals-who"></p>
+        <table class="compare totals" id="totals">
+          <thead><tr><th>Formula</th><th class="n">right</th><th class="n">wrong</th><th class="n">went back</th><th class="n muted">turned</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <p class="note" id="totals-note"></p>
+      </section>
+      <section>
+        <h3 class="section-title">Every formula on this message</h3>
+        <table class="compare" id="compare">
+          <thead><tr><th>Formula</th><th class="n">right</th><th class="n">wrong</th><th class="n" title="lines that turned and came back to a direction they had already shown - the text jumps right and left while it streams">went back</th><th class="n muted" title="lines shown one way while streaming, then the other, once - arrives with the text">turned</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <p class="note" id="compare-note"></p>
+        <p class="note"><b>Went back</b> is the fault a reader sees: a line already read one way jumps to the other side, and back, while the answer streams. <b>Turned</b> is a single one-way turn that comes with the text arriving. Both are counted with the answer arriving token by token, the same tokens for every formula, whichever chat is chosen. They say after how many letters a formula makes up its mind - not whether an eye sees it: that depends on how fast the chat paints.</p>
+      </section>
+      <section>
+        <h3 class="section-title">Each line, and the way it should read</h3>
+        <div class="blocks" id="blocks"></div>
+      </section>
+      <details class="log-wrap">
+        <summary>Session log</summary>
+        <p class="note" id="log-state">Starting…</p>
+        <div style="display:flex;gap:8px;margin:6px 0">
+          <button class="btn" id="export" type="button" hidden>Export log (JSON)</button>
+          <button class="btn" id="log-clear" type="button">Delete all…</button>
+        </div>
+        <div class="log-confirm" id="log-confirm" hidden>
+          <span id="log-confirm-text"></span>
+          <button class="btn danger" id="log-confirm-yes" type="button">Delete</button>
+          <button class="btn" id="log-confirm-no" type="button">Cancel</button>
+        </div>
+        <div class="log" id="log"></div>
+      </details>
+    </aside>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/18.0.13/lib/marked.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.4.15/purify.min.js"></script>
+
+<!-- Google Closure Library, closure/goog/i18n/bidi.js, unmodified (Apache License 2.0). Pinned commit in PROVENANCE. -->
+<script>
+var goog = {
+  LOCALE: "en",
+  provide: function (name) { name.split(".").reduce(function (o, k) { return (o[k] = o[k] || {}); }, window); },
+  define: function (_n, v) { return v; },
+  require: function () {}
+};
+goog.global = window;
+</script>
+<script>
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/**
+ * @fileoverview Utility functions for supporting Bidi issues.
+ */
+
+
+/**
+ * Namespace for bidi supporting functions.
+ */
+goog.provide('goog.i18n.bidi');
+goog.provide('goog.i18n.bidi.Dir');
+goog.provide('goog.i18n.bidi.DirectionalString');
+goog.provide('goog.i18n.bidi.Format');
+
+
+/**
+ * @define {boolean} FORCE_RTL forces the {@link goog.i18n.bidi.IS_RTL} constant
+ * to say that the current locale is a RTL locale.  This should only be used
+ * if you want to override the default behavior for deciding whether the
+ * current locale is RTL or not.
+ *
+ * {@see goog.i18n.bidi.IS_RTL}
+ */
+goog.i18n.bidi.FORCE_RTL = goog.define('goog.i18n.bidi.FORCE_RTL', false);
+
+
+/**
+ * Constant that defines whether or not the current locale is a RTL locale.
+ * If {@link goog.i18n.bidi.FORCE_RTL} is not true, this constant will default
+ * to check that {@link goog.LOCALE} is one of a few major RTL locales.
+ *
+ * <p>This is designed to be a maximally efficient compile-time constant. For
+ * example, for the default goog.LOCALE, compiling
+ * "if (goog.i18n.bidi.IS_RTL) alert('rtl') else {}" should produce no code. It
+ * is this design consideration that limits the implementation to only
+ * supporting a few major RTL locales, as opposed to the broader repertoire of
+ * something like goog.i18n.bidi.isRtlLanguage.
+ *
+ * <p>Since this constant refers to the directionality of the locale, it is up
+ * to the caller to determine if this constant should also be used for the
+ * direction of the UI.
+ *
+ * {@see goog.LOCALE}
+ *
+ * @type {boolean}
+ *
+ * TODO(user): write a test that checks that this is a compile-time constant.
+ */
+// LINT.IfChange
+goog.i18n.bidi.IS_RTL =
+    goog.i18n.bidi.FORCE_RTL ||
+    ((goog.LOCALE.substring(0, 2).toLowerCase() == 'ar' ||
+      goog.LOCALE.substring(0, 2).toLowerCase() == 'fa' ||
+      goog.LOCALE.substring(0, 2).toLowerCase() == 'he' ||
+      goog.LOCALE.substring(0, 2).toLowerCase() == 'iw' ||
+      goog.LOCALE.substring(0, 2).toLowerCase() == 'ps' ||
+      goog.LOCALE.substring(0, 2).toLowerCase() == 'sd' ||
+      goog.LOCALE.substring(0, 2).toLowerCase() == 'ug' ||
+      goog.LOCALE.substring(0, 2).toLowerCase() == 'ur' ||
+      goog.LOCALE.substring(0, 2).toLowerCase() == 'yi') &&
+     (goog.LOCALE.length == 2 || goog.LOCALE.substring(2, 3) == '-' ||
+      goog.LOCALE.substring(2, 3) == '_')) ||
+    (  // Specific to CKB (Central Kurdish)
+        goog.LOCALE.length >= 3 &&
+        goog.LOCALE.substring(0, 3).toLowerCase() == 'ckb' &&
+        (goog.LOCALE.length == 3 || goog.LOCALE.substring(3, 4) == '-' ||
+         goog.LOCALE.substring(3, 4) == '_')) ||
+    (  // 2 letter language codes with RTL scripts
+        goog.LOCALE.length >= 7 &&
+        ((goog.LOCALE.substring(2, 3) == '-' ||
+          goog.LOCALE.substring(2, 3) == '_') &&
+         (goog.LOCALE.substring(3, 7).toLowerCase() == 'adlm' ||
+          goog.LOCALE.substring(3, 7).toLowerCase() == 'arab' ||
+          goog.LOCALE.substring(3, 7).toLowerCase() == 'hebr' ||
+          goog.LOCALE.substring(3, 7).toLowerCase() == 'nkoo' ||
+          goog.LOCALE.substring(3, 7).toLowerCase() == 'rohg' ||
+          goog.LOCALE.substring(3, 7).toLowerCase() == 'thaa'))) ||
+    (  // 3 letter languages codes with RTL scripts
+        goog.LOCALE.length >= 8 &&
+        ((goog.LOCALE.substring(3, 4) == '-' ||
+          goog.LOCALE.substring(3, 4) == '_') &&
+         (goog.LOCALE.substring(4, 8).toLowerCase() == 'adlm' ||
+          goog.LOCALE.substring(4, 8).toLowerCase() == 'arab' ||
+          goog.LOCALE.substring(4, 8).toLowerCase() == 'hebr' ||
+          goog.LOCALE.substring(4, 8).toLowerCase() == 'nkoo' ||
+          goog.LOCALE.substring(4, 8).toLowerCase() == 'rohg' ||
+          goog.LOCALE.substring(4, 8).toLowerCase() == 'thaa')));
+//    closure/RtlLocalesTest.java)
+
+// TODO(user): Add additional scripts and languages that are RTL,
+// e.g., mende, samaritan, etc.
+
+
+/**
+ * Unicode formatting characters and directionality string constants.
+ * @enum {string}
+ */
+goog.i18n.bidi.Format = {
+  /** Unicode "Left-To-Right Embedding" (LRE) character. */
+  LRE: '\u202A',
+  /** Unicode "Right-To-Left Embedding" (RLE) character. */
+  RLE: '\u202B',
+  /** Unicode "Pop Directional Formatting" (PDF) character. */
+  PDF: '\u202C',
+  /** Unicode "Left-To-Right Mark" (LRM) character. */
+  LRM: '\u200E',
+  /** Unicode "Right-To-Left Mark" (RLM) character. */
+  RLM: '\u200F'
+};
+
+
+/**
+ * Directionality enum.
+ * @enum {number}
+ */
+goog.i18n.bidi.Dir = {
+  /**
+   * Left-to-right.
+   */
+  LTR: 1,
+
+  /**
+   * Right-to-left.
+   */
+  RTL: -1,
+
+  /**
+   * Neither left-to-right nor right-to-left.
+   */
+  NEUTRAL: 0
+};
+
+
+/**
+ * 'right' string constant.
+ * @type {string}
+ */
+goog.i18n.bidi.RIGHT = 'right';
+
+
+/**
+ * 'left' string constant.
+ * @type {string}
+ */
+goog.i18n.bidi.LEFT = 'left';
+
+
+/**
+ * 'left' if locale is RTL, 'right' if not.
+ * @type {string}
+ */
+goog.i18n.bidi.I18N_RIGHT =
+    goog.i18n.bidi.IS_RTL ? goog.i18n.bidi.LEFT : goog.i18n.bidi.RIGHT;
+
+
+/**
+ * 'right' if locale is RTL, 'left' if not.
+ * @type {string}
+ */
+goog.i18n.bidi.I18N_LEFT =
+    goog.i18n.bidi.IS_RTL ? goog.i18n.bidi.RIGHT : goog.i18n.bidi.LEFT;
+
+
+/**
+ * Convert a directionality given in various formats to a goog.i18n.bidi.Dir
+ * constant. Useful for interaction with different standards of directionality
+ * representation.
+ *
+ * @param {goog.i18n.bidi.Dir|number|boolean|null} givenDir Directionality given
+ *     in one of the following formats:
+ *     1. A goog.i18n.bidi.Dir constant.
+ *     2. A number (positive = LTR, negative = RTL, 0 = neutral).
+ *     3. A boolean (true = RTL, false = LTR).
+ *     4. A null for unknown directionality.
+ * @param {boolean=} opt_noNeutral Whether a givenDir of zero or
+ *     goog.i18n.bidi.Dir.NEUTRAL should be treated as null, i.e. unknown, in
+ *     order to preserve legacy behavior.
+ * @return {?goog.i18n.bidi.Dir} A goog.i18n.bidi.Dir constant matching the
+ *     given directionality. If given null, returns null (i.e. unknown).
+ */
+goog.i18n.bidi.toDir = function(givenDir, opt_noNeutral) {
+  'use strict';
+  if (typeof givenDir == 'number') {
+    // This includes the non-null goog.i18n.bidi.Dir case.
+    return givenDir > 0 ?
+        goog.i18n.bidi.Dir.LTR :
+        givenDir < 0 ? goog.i18n.bidi.Dir.RTL :
+                       opt_noNeutral ? null : goog.i18n.bidi.Dir.NEUTRAL;
+  } else if (givenDir == null) {
+    return null;
+  } else {
+    // Must be typeof givenDir == 'boolean'.
+    return givenDir ? goog.i18n.bidi.Dir.RTL : goog.i18n.bidi.Dir.LTR;
+  }
+};
+
+
+/**
+ * A practical pattern to identify strong LTR character in the BMP.
+ * This pattern is not theoretically correct according to the Unicode
+ * standard. It is simplified for performance and small code size.
+ * It also partially supports LTR scripts beyond U+FFFF by including
+ * UTF-16 high surrogate values corresponding to mostly L-class code
+ * point ranges.
+ * However, low surrogate values and private-use regions are not included
+ * in this RegEx.
+ * @type {string}
+ * @private
+ */
+goog.i18n.bidi.ltrChars_ =
+    'A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02B8\u0300-\u0590\u0900-\u1FFF' +
+    '\u200E\u2C00-\uD801\uD804-\uD839\uD83C-\uDBFF' +
+    '\uF900-\uFB1C\uFE00-\uFE6F\uFEFD-\uFFFF';
+
+/**
+ * A practical pattern to identify strong RTL character. This pattern is not
+ * theoretically correct according to the Unicode standard. It is simplified
+ * for performance and small code size.
+ * It also partially supports RTL scripts beyond U+FFFF by including
+ * UTF-16 high surrogate values corresponding to mostly R- or AL-class
+ * code point ranges.
+ * However, low surrogate values and private-use regions are not included
+ * in this RegEx.
+ * @type {string}
+ * @private
+ */
+goog.i18n.bidi.rtlChars_ =
+    '\u0591-\u06EF\u06FA-\u08FF\u200F\uD802-\uD803\uD83A-\uD83B' +
+    '\uFB1D-\uFDFF\uFE70-\uFEFC';
+
+/**
+ * Simplified regular expression for an HTML tag (opening or closing) or an HTML
+ * escape. We might want to skip over such expressions when estimating the text
+ * directionality.
+ * @type {RegExp}
+ * @private
+ */
+goog.i18n.bidi.htmlSkipReg_ = /<[^>]*>|&[^;]+;/g;
+
+
+/**
+ * Returns the input text with spaces instead of HTML tags or HTML escapes, if
+ * opt_isStripNeeded is true. Else returns the input as is.
+ * Useful for text directionality estimation.
+ * Note: the function should not be used in other contexts; it is not 100%
+ * correct, but rather a good-enough implementation for directionality
+ * estimation purposes.
+ * @param {string} str The given string.
+ * @param {boolean=} opt_isStripNeeded Whether to perform the stripping.
+ *     Default: false (to retain consistency with calling functions).
+ * @return {string} The given string cleaned of HTML tags / escapes.
+ * @private
+ */
+goog.i18n.bidi.stripHtmlIfNeeded_ = function(str, opt_isStripNeeded) {
+  'use strict';
+  return opt_isStripNeeded ? str.replace(goog.i18n.bidi.htmlSkipReg_, '') : str;
+};
+
+
+/**
+ * Regular expression to check for RTL characters, BMP and high surrogate.
+ * @type {RegExp}
+ * @private
+ */
+goog.i18n.bidi.rtlCharReg_ = new RegExp('[' + goog.i18n.bidi.rtlChars_ + ']');
+
+
+/**
+ * Regular expression to check for LTR characters.
+ * @type {RegExp}
+ * @private
+ */
+goog.i18n.bidi.ltrCharReg_ = new RegExp('[' + goog.i18n.bidi.ltrChars_ + ']');
+
+
+/**
+ * Test whether the given string has any RTL characters in it.
+ * @param {string} str The given string that need to be tested.
+ * @param {boolean=} opt_isHtml Whether str is HTML / HTML-escaped.
+ *     Default: false.
+ * @return {boolean} Whether the string contains RTL characters.
+ */
+goog.i18n.bidi.hasAnyRtl = function(str, opt_isHtml) {
+  'use strict';
+  return goog.i18n.bidi.rtlCharReg_.test(
+      goog.i18n.bidi.stripHtmlIfNeeded_(str, opt_isHtml));
+};
+
+
+/**
+ * Test whether the given string has any RTL characters in it.
+ * @param {string} str The given string that need to be tested.
+ * @return {boolean} Whether the string contains RTL characters.
+ * @deprecated Use hasAnyRtl.
+ */
+goog.i18n.bidi.hasRtlChar = goog.i18n.bidi.hasAnyRtl;
+
+
+/**
+ * Test whether the given string has any LTR characters in it.
+ * @param {string} str The given string that need to be tested.
+ * @param {boolean=} opt_isHtml Whether str is HTML / HTML-escaped.
+ *     Default: false.
+ * @return {boolean} Whether the string contains LTR characters.
+ */
+goog.i18n.bidi.hasAnyLtr = function(str, opt_isHtml) {
+  'use strict';
+  return goog.i18n.bidi.ltrCharReg_.test(
+      goog.i18n.bidi.stripHtmlIfNeeded_(str, opt_isHtml));
+};
+
+
+/**
+ * Regular expression pattern to check if the first character in the string
+ * is LTR.
+ * @type {RegExp}
+ * @private
+ */
+goog.i18n.bidi.ltrRe_ = new RegExp('^[' + goog.i18n.bidi.ltrChars_ + ']');
+
+
+/**
+ * Regular expression pattern to check if the first character in the string
+ * is RTL.
+ * @type {RegExp}
+ * @private
+ */
+goog.i18n.bidi.rtlRe_ = new RegExp('^[' + goog.i18n.bidi.rtlChars_ + ']');
+
+
+/**
+ * Check if the first character in the string is RTL or not.
+ * @param {string} str The given string that need to be tested.
+ * @return {boolean} Whether the first character in str is an RTL char.
+ */
+goog.i18n.bidi.isRtlChar = function(str) {
+  'use strict';
+  return goog.i18n.bidi.rtlRe_.test(str);
+};
+
+
+/**
+ * Check if the first character in the string is LTR or not.
+ * @param {string} str The given string that need to be tested.
+ * @return {boolean} Whether the first character in str is an LTR char.
+ */
+goog.i18n.bidi.isLtrChar = function(str) {
+  'use strict';
+  return goog.i18n.bidi.ltrRe_.test(str);
+};
+
+
+/**
+ * Check if the first character in the string is neutral or not.
+ * @param {string} str The given string that need to be tested.
+ * @return {boolean} Whether the first character in str is a neutral char.
+ */
+goog.i18n.bidi.isNeutralChar = function(str) {
+  'use strict';
+  return !goog.i18n.bidi.isLtrChar(str) && !goog.i18n.bidi.isRtlChar(str);
+};
+
+
+/**
+ * Regular expressions to check if a piece of text is of LTR directionality
+ * on first character with strong directionality.
+ * @type {RegExp}
+ * @private
+ */
+goog.i18n.bidi.ltrDirCheckRe_ = new RegExp(
+    '^[^' + goog.i18n.bidi.rtlChars_ + ']*[' + goog.i18n.bidi.ltrChars_ + ']');
+
+
+/**
+ * Regular expressions to check if a piece of text is of RTL directionality
+ * on first character with strong directionality.
+ * @type {RegExp}
+ * @private
+ */
+goog.i18n.bidi.rtlDirCheckRe_ = new RegExp(
+    '^[^' + goog.i18n.bidi.ltrChars_ + ']*[' + goog.i18n.bidi.rtlChars_ + ']');
+
+
+/**
+ * Check whether the first strongly directional character (if any) is RTL.
+ * @param {string} str String being checked.
+ * @param {boolean=} opt_isHtml Whether str is HTML / HTML-escaped.
+ *     Default: false.
+ * @return {boolean} Whether RTL directionality is detected using the first
+ *     strongly-directional character method.
+ */
+goog.i18n.bidi.startsWithRtl = function(str, opt_isHtml) {
+  'use strict';
+  return goog.i18n.bidi.rtlDirCheckRe_.test(
+      goog.i18n.bidi.stripHtmlIfNeeded_(str, opt_isHtml));
+};
+
+
+/**
+ * Check whether the first strongly directional character (if any) is RTL.
+ * @param {string} str String being checked.
+ * @param {boolean=} opt_isHtml Whether str is HTML / HTML-escaped.
+ *     Default: false.
+ * @return {boolean} Whether RTL directionality is detected using the first
+ *     strongly-directional character method.
+ * @deprecated Use startsWithRtl.
+ */
+goog.i18n.bidi.isRtlText = goog.i18n.bidi.startsWithRtl;
+
+
+/**
+ * Check whether the first strongly directional character (if any) is LTR.
+ * @param {string} str String being checked.
+ * @param {boolean=} opt_isHtml Whether str is HTML / HTML-escaped.
+ *     Default: false.
+ * @return {boolean} Whether LTR directionality is detected using the first
+ *     strongly-directional character method.
+ */
+goog.i18n.bidi.startsWithLtr = function(str, opt_isHtml) {
+  'use strict';
+  return goog.i18n.bidi.ltrDirCheckRe_.test(
+      goog.i18n.bidi.stripHtmlIfNeeded_(str, opt_isHtml));
+};
+
+
+/**
+ * Check whether the first strongly directional character (if any) is LTR.
+ * @param {string} str String being checked.
+ * @param {boolean=} opt_isHtml Whether str is HTML / HTML-escaped.
+ *     Default: false.
+ * @return {boolean} Whether LTR directionality is detected using the first
+ *     strongly-directional character method.
+ * @deprecated Use startsWithLtr.
+ */
+goog.i18n.bidi.isLtrText = goog.i18n.bidi.startsWithLtr;
+
+
+/**
+ * Regular expression to check if a string looks like something that must
+ * always be LTR even in RTL text, e.g. a URL. When estimating the
+ * directionality of text containing these, we treat these as weakly LTR,
+ * like numbers.
+ * @type {RegExp}
+ * @private
+ */
+goog.i18n.bidi.isRequiredLtrRe_ = /^http:\/\/.*/;
+
+
+/**
+ * Check whether the input string either contains no strongly directional
+ * characters or looks like a url.
+ * @param {string} str String being checked.
+ * @param {boolean=} opt_isHtml Whether str is HTML / HTML-escaped.
+ *     Default: false.
+ * @return {boolean} Whether neutral directionality is detected.
+ */
+goog.i18n.bidi.isNeutralText = function(str, opt_isHtml) {
+  'use strict';
+  str = goog.i18n.bidi.stripHtmlIfNeeded_(str, opt_isHtml);
+  return goog.i18n.bidi.isRequiredLtrRe_.test(str) ||
+      !goog.i18n.bidi.hasAnyLtr(str) && !goog.i18n.bidi.hasAnyRtl(str);
+};
+
+
+/**
+ * Regular expressions to check if the last strongly-directional character in a
+ * piece of text is LTR.
+ * @type {RegExp}
+ * @private
+ */
+goog.i18n.bidi.ltrExitDirCheckRe_ = new RegExp(
+    '[' + goog.i18n.bidi.ltrChars_ + ']' +
+    '[^' + goog.i18n.bidi.rtlChars_ + ']*$');
+
+
+/**
+ * Regular expressions to check if the last strongly-directional character in a
+ * piece of text is RTL.
+ * @type {RegExp}
+ * @private
+ */
+goog.i18n.bidi.rtlExitDirCheckRe_ = new RegExp(
+    '[' + goog.i18n.bidi.rtlChars_ + ']' +
+    '[^' + goog.i18n.bidi.ltrChars_ + ']*$');
+
+
+/**
+ * Check if the exit directionality a piece of text is LTR, i.e. if the last
+ * strongly-directional character in the string is LTR.
+ * @param {string} str String being checked.
+ * @param {boolean=} opt_isHtml Whether str is HTML / HTML-escaped.
+ *     Default: false.
+ * @return {boolean} Whether LTR exit directionality was detected.
+ */
+goog.i18n.bidi.endsWithLtr = function(str, opt_isHtml) {
+  'use strict';
+  return goog.i18n.bidi.ltrExitDirCheckRe_.test(
+      goog.i18n.bidi.stripHtmlIfNeeded_(str, opt_isHtml));
+};
+
+
+/**
+ * Check if the exit directionality a piece of text is LTR, i.e. if the last
+ * strongly-directional character in the string is LTR.
+ * @param {string} str String being checked.
+ * @param {boolean=} opt_isHtml Whether str is HTML / HTML-escaped.
+ *     Default: false.
+ * @return {boolean} Whether LTR exit directionality was detected.
+ * @deprecated Use endsWithLtr.
+ */
+goog.i18n.bidi.isLtrExitText = goog.i18n.bidi.endsWithLtr;
+
+
+/**
+ * Check if the exit directionality a piece of text is RTL, i.e. if the last
+ * strongly-directional character in the string is RTL.
+ * @param {string} str String being checked.
+ * @param {boolean=} opt_isHtml Whether str is HTML / HTML-escaped.
+ *     Default: false.
+ * @return {boolean} Whether RTL exit directionality was detected.
+ */
+goog.i18n.bidi.endsWithRtl = function(str, opt_isHtml) {
+  'use strict';
+  return goog.i18n.bidi.rtlExitDirCheckRe_.test(
+      goog.i18n.bidi.stripHtmlIfNeeded_(str, opt_isHtml));
+};
+
+
+/**
+ * Check if the exit directionality a piece of text is RTL, i.e. if the last
+ * strongly-directional character in the string is RTL.
+ * @param {string} str String being checked.
+ * @param {boolean=} opt_isHtml Whether str is HTML / HTML-escaped.
+ *     Default: false.
+ * @return {boolean} Whether RTL exit directionality was detected.
+ * @deprecated Use endsWithRtl.
+ */
+goog.i18n.bidi.isRtlExitText = goog.i18n.bidi.endsWithRtl;
+
+
+/**
+ * A regular expression for matching right-to-left language codes.
+ * See {@link #isRtlLanguage} for the design.
+ * Note that not all RTL scripts are included.
+ * @type {!RegExp}
+ * @private
+ */
+goog.i18n.bidi.rtlLocalesRe_ = new RegExp(
+    '^(ar|ckb|dv|he|iw|fa|nqo|ps|sd|ug|ur|yi|' +
+        '.*[-_](Adlm|Arab|Hebr|Nkoo|Rohg|Thaa))' +
+        '(?!.*[-_](Latn|Cyrl)($|-|_))($|-|_)',
+    'i');
+
+
+/**
+ * Check if a BCP 47 / III language code indicates an RTL language, i.e. either:
+ * - a language code explicitly specifying one of the right-to-left scripts,
+ *   e.g. "az-Arab", or<p>
+ * - a language code specifying one of the languages normally written in a
+ *   right-to-left script, e.g. "fa" (Farsi), except ones explicitly specifying
+ *   Latin or Cyrillic script (which are the usual LTR alternatives).<p>
+ * The list of right-to-left scripts appears in the 100-199 range in
+ * http://www.unicode.org/iso15924/iso15924-num.html, of which Arabic and
+ * Hebrew are by far the most widely used. We also recognize Thaana, and N'Ko,
+ * which also have significant modern usage. Adlam and Rohingya
+ * scripts are now included since they can be expected to be used in the
+ * future. The rest (Syriac, Samaritan, Mandaic, etc.) seem to have extremely
+ * limited or no modern usage and are not recognized to save on code size. The
+ * languages usually written in a right-to-left script are taken as those with
+ * Suppress-Script: Hebr|Arab|Thaa|Nkoo|Adlm|Rohg in
+ * http://www.iana.org/assignments/language-subtag-registry,
+ * as well as Central (or Sorani) Kurdish (ckb), Sindhi (sd) and Uyghur (ug).
+ * Other subtags of the language code, e.g. regions like EG (Egypt), are
+ * ignored.
+ * @param {string} lang BCP 47 (a.k.a III) language code.
+ * @return {boolean} Whether the language code is an RTL language.
+ */
+goog.i18n.bidi.isRtlLanguage = function(lang) {
+  'use strict';
+  return goog.i18n.bidi.rtlLocalesRe_.test(lang);
+};
+
+
+/**
+ * Regular expression for bracket guard replacement in text.
+ * @type {RegExp}
+ * @private
+ */
+goog.i18n.bidi.bracketGuardTextRe_ =
+    /(\(.*?\)+)|(\[.*?\]+)|(\{.*?\}+)|(<.*?>+)/g;
+
+
+/**
+ * Apply bracket guard using LRM and RLM. This is to address the problem of
+ * messy bracket display frequently happens in RTL layout.
+ * This function works for plain text, not for HTML. In HTML, the opening
+ * bracket might be in a different context than the closing bracket (such as
+ * an attribute value).
+ * @param {string} s The string that need to be processed.
+ * @param {boolean=} opt_isRtlContext specifies default direction (usually
+ *     direction of the UI).
+ * @return {string} The processed string, with all bracket guarded.
+ */
+goog.i18n.bidi.guardBracketInText = function(s, opt_isRtlContext) {
+  'use strict';
+  const useRtl = opt_isRtlContext === undefined ? goog.i18n.bidi.hasAnyRtl(s) :
+                                                  opt_isRtlContext;
+  const mark = useRtl ? goog.i18n.bidi.Format.RLM : goog.i18n.bidi.Format.LRM;
+  return s.replace(goog.i18n.bidi.bracketGuardTextRe_, mark + '$&' + mark);
+};
+
+
+/**
+ * Enforce the html snippet in RTL directionality regardless of overall context.
+ * If the html piece was enclosed by tag, dir will be applied to existing
+ * tag, otherwise a span tag will be added as wrapper. For this reason, if
+ * html snippet starts with a tag, this tag must enclose the whole piece. If
+ * the tag already has a dir specified, this new one will override existing
+ * one in behavior (tested on FF and IE).
+ * @param {string} html The string that need to be processed.
+ * @return {string} The processed string, with directionality enforced to RTL.
+ */
+goog.i18n.bidi.enforceRtlInHtml = function(html) {
+  'use strict';
+  if (html.charAt(0) == '<') {
+    return html.replace(/<\w+/, '$& dir=rtl');
+  }
+  // '\n' is important for FF so that it won't incorrectly merge span groups
+  return '\n<span dir=rtl>' + html + '</span>';
+};
+
+
+/**
+ * Enforce RTL on both end of the given text piece using unicode BiDi formatting
+ * characters RLE and PDF.
+ * @param {string} text The piece of text that need to be wrapped.
+ * @return {string} The wrapped string after process.
+ */
+goog.i18n.bidi.enforceRtlInText = function(text) {
+  'use strict';
+  return goog.i18n.bidi.Format.RLE + text + goog.i18n.bidi.Format.PDF;
+};
+
+
+/**
+ * Enforce the html snippet in RTL directionality regardless or overall context.
+ * If the html piece was enclosed by tag, dir will be applied to existing
+ * tag, otherwise a span tag will be added as wrapper. For this reason, if
+ * html snippet starts with a tag, this tag must enclose the whole piece. If
+ * the tag already has a dir specified, this new one will override existing
+ * one in behavior (tested on FF and IE).
+ * @param {string} html The string that need to be processed.
+ * @return {string} The processed string, with directionality enforced to RTL.
+ */
+goog.i18n.bidi.enforceLtrInHtml = function(html) {
+  'use strict';
+  if (html.charAt(0) == '<') {
+    return html.replace(/<\w+/, '$& dir=ltr');
+  }
+  // '\n' is important for FF so that it won't incorrectly merge span groups
+  return '\n<span dir=ltr>' + html + '</span>';
+};
+
+
+/**
+ * Enforce LTR on both end of the given text piece using unicode BiDi formatting
+ * characters LRE and PDF.
+ * @param {string} text The piece of text that need to be wrapped.
+ * @return {string} The wrapped string after process.
+ */
+goog.i18n.bidi.enforceLtrInText = function(text) {
+  'use strict';
+  return goog.i18n.bidi.Format.LRE + text + goog.i18n.bidi.Format.PDF;
+};
+
+
+/**
+ * Regular expression to find dimensions such as "padding: .3 0.4ex 5px 6;"
+ * @type {RegExp}
+ * @private
+ */
+goog.i18n.bidi.dimensionsRe_ =
+    /:\s*([.\d][.\w]*)\s+([.\d][.\w]*)\s+([.\d][.\w]*)\s+([.\d][.\w]*)/g;
+
+
+/**
+ * Regular expression for left.
+ * @type {RegExp}
+ * @private
+ */
+goog.i18n.bidi.leftRe_ = /left/gi;
+
+
+/**
+ * Regular expression for right.
+ * @type {RegExp}
+ * @private
+ */
+goog.i18n.bidi.rightRe_ = /right/gi;
+
+
+/**
+ * Placeholder regular expression for swapping.
+ * @type {RegExp}
+ * @private
+ */
+goog.i18n.bidi.tempRe_ = /%%%%/g;
+
+
+/**
+ * Swap location parameters and 'left'/'right' in CSS specification. The
+ * processed string will be suited for RTL layout. Though this function can
+ * cover most cases, there are always exceptions. It is suggested to put
+ * those exceptions in separate group of CSS string.
+ * @param {string} cssStr CSS spefication string.
+ * @return {string} Processed CSS specification string.
+ */
+goog.i18n.bidi.mirrorCSS = function(cssStr) {
+  'use strict';
+  return cssStr
+      .
+      // reverse dimensions
+      replace(goog.i18n.bidi.dimensionsRe_, ':$1 $4 $3 $2')
+      .replace(goog.i18n.bidi.leftRe_, '%%%%')
+      .  // swap left and right
+      replace(goog.i18n.bidi.rightRe_, goog.i18n.bidi.LEFT)
+      .replace(goog.i18n.bidi.tempRe_, goog.i18n.bidi.RIGHT);
+};
+
+
+/**
+ * Regular expression for hebrew double quote substitution, finding quote
+ * directly after hebrew characters.
+ * @type {RegExp}
+ * @private
+ */
+goog.i18n.bidi.doubleQuoteSubstituteRe_ = /([\u0591-\u05f2])"/g;
+
+
+/**
+ * Regular expression for hebrew single quote substitution, finding quote
+ * directly after hebrew characters.
+ * @type {RegExp}
+ * @private
+ */
+goog.i18n.bidi.singleQuoteSubstituteRe_ = /([\u0591-\u05f2])'/g;
+
+
+/**
+ * Replace the double and single quote directly after a Hebrew character with
+ * GERESH and GERSHAYIM. In such case, most likely that's user intention.
+ * @param {string} str String that need to be processed.
+ * @return {string} Processed string with double/single quote replaced.
+ */
+goog.i18n.bidi.normalizeHebrewQuote = function(str) {
+  'use strict';
+  return str.replace(goog.i18n.bidi.doubleQuoteSubstituteRe_, '$1\u05f4')
+      .replace(goog.i18n.bidi.singleQuoteSubstituteRe_, '$1\u05f3');
+};
+
+
+/**
+ * Regular expression to split a string into "words" for directionality
+ * estimation based on relative word counts.
+ * @type {RegExp}
+ * @private
+ */
+goog.i18n.bidi.wordSeparatorRe_ = /\s+/;
+
+
+/**
+ * Regular expression to check if a string contains any numerals. Used to
+ * differentiate between completely neutral strings and those containing
+ * numbers, which are weakly LTR.
+ *
+ * Native Arabic digits (\u0660 - \u0669) are not included because although they
+ * do flow left-to-right inside a number, this is the case even if the  overall
+ * directionality is RTL, and a mathematical expression using these digits is
+ * supposed to flow right-to-left overall, including unary plus and minus
+ * appearing to the right of a number, and this does depend on the overall
+ * directionality being RTL. The digits used in Farsi (\u06F0 - \u06F9), on the
+ * other hand, are included, since Farsi math (including unary plus and minus)
+ * does flow left-to-right.
+ * TODO: Consider other systems of digits, e.g., Adlam.
+ *
+ * @type {RegExp}
+ * @private
+ */
+goog.i18n.bidi.hasNumeralsRe_ = /[\d\u06f0-\u06f9]/;
+
+
+/**
+ * This constant controls threshold of RTL directionality.
+ * @type {number}
+ * @private
+ */
+goog.i18n.bidi.rtlDetectionThreshold_ = 0.40;
+
+
+/**
+ * Estimates the directionality of a string based on relative word counts.
+ * If the number of RTL words is above a certain percentage of the total number
+ * of strongly directional words, returns RTL.
+ * Otherwise, if any words are strongly or weakly LTR, returns LTR.
+ * Otherwise, returns UNKNOWN, which is used to mean "neutral".
+ * Numbers are counted as weakly LTR.
+ * @param {string} str The string to be checked.
+ * @param {boolean=} opt_isHtml Whether str is HTML / HTML-escaped.
+ *     Default: false.
+ * @return {!goog.i18n.bidi.Dir} Estimated overall directionality of `str`.
+ */
+goog.i18n.bidi.estimateDirection = function(str, opt_isHtml) {
+  'use strict';
+  let rtlCount = 0;
+  let totalCount = 0;
+  let hasWeaklyLtr = false;
+  const tokens = goog.i18n.bidi.stripHtmlIfNeeded_(str, opt_isHtml)
+                     .split(goog.i18n.bidi.wordSeparatorRe_);
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i];
+    if (goog.i18n.bidi.startsWithRtl(token)) {
+      rtlCount++;
+      totalCount++;
+    } else if (goog.i18n.bidi.isRequiredLtrRe_.test(token)) {
+      hasWeaklyLtr = true;
+    } else if (goog.i18n.bidi.hasAnyLtr(token)) {
+      totalCount++;
+    } else if (goog.i18n.bidi.hasNumeralsRe_.test(token)) {
+      hasWeaklyLtr = true;
+    }
+  }
+
+  return totalCount == 0 ?
+      (hasWeaklyLtr ? goog.i18n.bidi.Dir.LTR : goog.i18n.bidi.Dir.NEUTRAL) :
+      (rtlCount / totalCount > goog.i18n.bidi.rtlDetectionThreshold_ ?
+           goog.i18n.bidi.Dir.RTL :
+           goog.i18n.bidi.Dir.LTR);
+};
+
+
+/**
+ * Check the directionality of a piece of text, return true if the piece of
+ * text should be laid out in RTL direction.
+ * @param {string} str The piece of text that need to be detected.
+ * @param {boolean=} opt_isHtml Whether str is HTML / HTML-escaped.
+ *     Default: false.
+ * @return {boolean} Whether this piece of text should be laid out in RTL.
+ */
+goog.i18n.bidi.detectRtlDirectionality = function(str, opt_isHtml) {
+  'use strict';
+  return goog.i18n.bidi.estimateDirection(str, opt_isHtml) ==
+      goog.i18n.bidi.Dir.RTL;
+};
+
+
+/**
+ * Sets text input element's directionality and text alignment based on a
+ * given directionality. Does nothing if the given directionality is unknown or
+ * neutral.
+ * @param {Element} element Input field element to set directionality to.
+ * @param {goog.i18n.bidi.Dir|number|boolean|null} dir Desired directionality,
+ *     given in one of the following formats:
+ *     1. A goog.i18n.bidi.Dir constant.
+ *     2. A number (positive = LRT, negative = RTL, 0 = neutral).
+ *     3. A boolean (true = RTL, false = LTR).
+ *     4. A null for unknown directionality.
+ * @return {void}
+ */
+goog.i18n.bidi.setElementDirAndAlign = function(element, dir) {
+  'use strict';
+  if (element) {
+    const htmlElement = /** @type {!HTMLElement} */ (element);
+    dir = goog.i18n.bidi.toDir(dir);
+    if (dir) {
+      htmlElement.style.textAlign = dir == goog.i18n.bidi.Dir.RTL ?
+          goog.i18n.bidi.RIGHT :
+          goog.i18n.bidi.LEFT;
+      htmlElement.dir = dir == goog.i18n.bidi.Dir.RTL ? 'rtl' : 'ltr';
+    }
+  }
+};
+
+
+/**
+ * Sets element dir based on estimated directionality of the given text.
+ * @param {!Element} element
+ * @param {string} text
+ * @return {void}
+ */
+goog.i18n.bidi.setElementDirByTextDirectionality = function(element, text) {
+  'use strict';
+  const htmlElement = /** @type {!HTMLElement} */ (element);
+  switch (goog.i18n.bidi.estimateDirection(text)) {
+    case (goog.i18n.bidi.Dir.LTR):
+      if (htmlElement.dir !== 'ltr') {
+        htmlElement.dir = 'ltr';
+      }
+      break;
+    case (goog.i18n.bidi.Dir.RTL):
+      if (htmlElement.dir !== 'rtl') {
+        htmlElement.dir = 'rtl';
+      }
+      break;
+    default:
+      // Default for no direction, inherit from document.
+      htmlElement.removeAttribute('dir');
+  }
+};
+
+
+
+/**
+ * Strings that have an (optional) known direction.
+ *
+ * Implementations of this interface are string-like objects that carry an
+ * attached direction, if known.
+ * @interface
+ */
+goog.i18n.bidi.DirectionalString = function() {};
+
+
+/**
+ * Interface marker of the DirectionalString interface.
+ *
+ * This property can be used to determine at runtime whether or not an object
+ * implements this interface.  All implementations of this interface set this
+ * property to `true`.
+ * @type {boolean}
+ */
+goog.i18n.bidi.DirectionalString.prototype
+    .implementsGoogI18nBidiDirectionalString;
+
+
+/**
+ * Retrieves this object's known direction (if any).
+ * @return {?goog.i18n.bidi.Dir} The known direction. Null if unknown.
+ */
+goog.i18n.bidi.DirectionalString.prototype.getDirection;
+
+</script>
+
+<!-- paper/rules/rules.js: every formula, the same file the measurements run. -->
+<script>
+/**
+ * Every direction formula the paper compares, in one file.
+ *
+ * The lab page (paper/demo) and the measurements (paper/corpus/tools) both run THIS file, so
+ * a figure in the paper and what a reader sees in the lab can never be two different rules.
+ *
+ * Four groups, in the order the paper tells them:
+ *   adopted   - what standards and platforms adopted, and the situation each was made for
+ *   proposed  - what was put forward and not adopted, and the situation each was made for
+ *   ai-today  - what developers are building for AI chats now
+ *   ours      - this work: the first formula, and the suggestion the data led to
+ * Every formula carries `situation`: what kind of text it was made for, quoted from its source
+ * where the source says so. `archived` formulas were steps on the way; the measurements keep
+ * them, the lab does not list them.
+ *
+ * A formula decides one text: decide(text, ctx) -> "rtl" | "ltr" | null.
+ * null means "leave it alone" - the text then shows in the page's own direction.
+ * settled(text, ctx) -> true once the decision can never change, however the text goes on.
+ * A formula without it (the counting ones) is settled only when its text is complete.
+ * `native` marks a formula the browser applies itself ("auto" = dir="auto",
+ * "plaintext" = unicode-bidi: plaintext); the lab then only records what it decides.
+ *
+ * ctx, supplied by whoever runs the formulas:
+ *   bidiClass(codePoint) -> Unicode Bidi_Class short name (Unicode version pinned by the caller)
+ *   prose               -> the same text without inline code and link addresses, when known
+ *   closure             -> goog.i18n.bidi from Google Closure Library, run from its own source
+ *   smartrtl            -> packages/core/src/direction.js, unmodified
+ */
+(function (root, factory) {
+  if (typeof module === "object" && module.exports) module.exports = factory();
+  else root.BidiFormulas = factory();
+})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+  "use strict";
+
+  function createFormulas(env) {
+    var bidiClass = env.bidiClass;
+
+    // UAX #9 P2: the first L, R or AL, skipping isolates.
+    function firstStrong(text) {
+      var depth = 0;
+      for (var ch of text) {
+        var c = bidiClass(ch.codePointAt(0));
+        if (c === "LRI" || c === "RLI" || c === "FSI") { depth++; continue; }
+        if (c === "PDI") { if (depth) depth--; continue; }
+        if (c === "B") depth = 0;
+        if (!depth && (c === "L" || c === "R" || c === "AL")) return c;
+      }
+      return null;
+    }
+    function isRtl(c) { return c === "R" || c === "AL"; }
+    function count(text) {
+      var ltr = 0, rtl = 0;
+      for (var ch of text) {
+        var c = bidiClass(ch.codePointAt(0));
+        if (c === "L") ltr++; else if (isRtl(c)) rtl++;
+      }
+      return { ltr: ltr, rtl: rtl };
+    }
+    // Words that hold a strong character, in order, each "L" or "R" by its first strong character.
+    function strongWords(text) {
+      var out = [];
+      text.split(/\s+/).forEach(function (w) {
+        for (var ch of w) {
+          var c = bidiClass(ch.codePointAt(0));
+          if (c === "L") { out.push("L"); return; }
+          if (isRtl(c)) { out.push("R"); return; }
+        }
+      });
+      return out;
+    }
+    var URL_RE = /\b(?:https?:\/\/|www\.)\S+/gi;
+    function prose(text, ctx) { return (ctx && typeof ctx.prose === "string" ? ctx.prose : text).replace(URL_RE, " "); }
+    function byFirstStrong(text) { var f = firstStrong(text); return f === null ? null : isRtl(f) ? "rtl" : "ltr"; }
+
+    // The opening-words family. Words are the rendered text's words holding a strong letter -
+    // inline code included, so code closing mid-stream cannot take words away and reverse an
+    // answer. Settled at the first right-to-left word, or once more than n words have come
+    // with none; it never changes after that.
+    function opening(n, name, what) {
+      return {
+        id: "opening-words-" + n, group: "ours", name: name, year: 2026, candidate: true, archived: true, window: n,
+        who: "This work", situation: "A step on the way, counted in words", what: what, src: null,
+        decide: function (t) {
+          var w = strongWords(t);
+          if (!w.length) return byFirstStrong(t) || "ltr";
+          return w.slice(0, n).indexOf("R") >= 0 ? "rtl" : "ltr";
+        },
+        settled: function (t) {
+          var w = strongWords(t);
+          return w.slice(0, n).indexOf("R") >= 0 || w.length > n;
+        }
+      };
+    }
+
+    // The proposed formula, counted in letters (Unicode \p{L}) - words are not defined the same
+    // way in every language. First letter right-to-left: right-to-left. First letter
+    // left-to-right: right-to-left if a right-to-left letter arrives within the first x
+    // letters, otherwise left-to-right. Settled at that letter, or after x letters.
+    function openingLetters(x, name, what, proposed) {
+      function scan(t) {
+        var letters = 0;
+        for (var ch of t) {
+          if (!/\p{L}/u.test(ch)) continue;
+          letters++;
+          if (isRtl(bidiClass(ch.codePointAt(0)))) return { rtlAt: letters, letters: letters };
+          if (letters >= x) break;
+        }
+        return { rtlAt: null, letters: letters };
+      }
+      return {
+        id: "opening-letters-" + x, group: "ours", name: name, year: 2026, candidate: !proposed, proposed: !!proposed, window: x,
+        who: "This work: fantasai's formula for Firefox (Mozilla bug 548206, 2010), with the number measured instead of chosen",
+        situation: "Machine-written answers arriving as a stream - Claude and ChatGPT, Urdu, Arabic, Persian, Hebrew", what: what, src: null,
+        decide: function (t) {
+          var s = scan(t);
+          if (!s.letters) return byFirstStrong(t) || "ltr";
+          return s.rtlAt !== null ? "rtl" : "ltr";
+        },
+        settled: function (t) { var s = scan(t); return s.rtlAt !== null || s.letters >= x; }
+      };
+    }
+
+    var formulas = [
+      // ------------------------------------------------------------------ adopted
+      {
+        id: "first-strong", situation: "A paragraph written in one language, whose first word shows it - plain text, and in HTML text whose direction is unknown; used for search boxes (L2/09-411)", group: "adopted", name: "First strong", year: 1999, native: "auto",
+        who: "Unicode (UAX #9 P2-P3); HTML dir=\"auto\"; Android FIRSTSTRONG_LTR",
+        what: "The first letter with a strong direction decides.",
+        src: "https://html.spec.whatwg.org/multipage/dom.html#the-dir-attribute",
+        decide: function (t) { return byFirstStrong(t) || "ltr"; },
+        settled: function (t) { return firstStrong(t) !== null; }
+      },
+      {
+        id: "plaintext", situation: "Text a person types, line by line - HTML applies it per paragraph in textarea and pre; proposed for AI chat panels too (claude-code #75196, openclaw #147732)", group: "adopted", name: "First strong, per paragraph", year: 2011, native: "plaintext", blockOnly: true,
+        who: "CSS Writing Modes 3, unicode-bidi: plaintext; HTML textarea and pre",
+        what: "First strong again for every paragraph inside the text.",
+        src: "https://www.w3.org/TR/css-writing-modes-3/#unicode-bidi",
+        decide: function (t) { return byFirstStrong(t) || "ltr"; },
+        settled: function (t) { return firstStrong(t) !== null; }
+      },
+      {
+        id: "word-count-40", situation: "Longer texts like e-mails (L2/09-411: \"word-count for longer texts like e-mails\")", group: "adopted", name: "Word count 40%", year: 2011,
+        who: "Google Closure Library, goog.i18n.bidi.estimateDirection (used in Google products; not a standard)",
+        what: "Right-to-left when more than 40% of strongly directional words are right-to-left.",
+        src: "https://github.com/google/closure-library/blob/0d779e6baca4cf9d650aa28c3146305db3c101ce/closure/goog/i18n/bidi.js",
+        decide: function (t, ctx) { var b = ctx.closure; return b.estimateDirection(t, false) === b.Dir.RTL ? "rtl" : "ltr"; }
+      },
+
+      // ------------------------------------------------------------------ proposed, not adopted
+      {
+        id: "first-strong-rtl", situation: "Text entry fields and UI elements on pages whose own language is right-to-left", group: "proposed", name: "First strong, else RTL", year: 2010,
+        who: "dir=\"auto-rtl\" proposal to the W3C i18n group; Android FIRSTSTRONG_RTL",
+        what: "First strong; text with no strong letter is right-to-left.",
+        src: "https://www.macchiato.com/unicode-intl-sw/utc/bidi-dir",
+        decide: function (t) { return byFirstStrong(t) || "rtl"; },
+        settled: function (t) { return firstStrong(t) !== null; }
+      },
+      {
+        id: "any-rtl", situation: "Advertisements (L2/09-411: \"any-RTL for advertisements\")", group: "proposed", name: "Any RTL", year: 2009,
+        who: "Lanin, Allawi, Allouche, Unicode L2/09-411; W3C autodirmethod=\"any-rtl\" (not adopted); Android ANYRTL_LTR",
+        what: "One right-to-left letter anywhere makes it right-to-left.",
+        src: "https://www.unicode.org/L2/L2009/09411-bidi.html",
+        decide: function (t) { return count(t).rtl > 0 ? "rtl" : "ltr"; },
+        settled: function (t) { return count(t).rtl > 0; }
+      },
+      {
+        id: "any-rtl-63", situation: "Web content from an unknown source (Mozilla bug 548206: \"like comments in a weblog\")", group: "proposed", name: "Firefox's formula, 63 letters", year: 2010, proposed: true,
+        who: "fantasai, for Firefox's dir=auto (Mozilla bug 548206) - proposed in 2010, not adopted; the paper's proposal",
+        what: "The paper's proposal. First letter right-to-left: right-to-left. First letter left-to-right: right-to-left only if a right-to-left letter arrives within the first 63 letters, otherwise left-to-right. Of the four formulas that never go back, it leaves the fewest lines in the wrong direction on the lines they disagree on, read one by one (results/README.md). Put forward for Firefox in 2010 and not adopted; measured here, its 63 holds.",
+        src: "https://bugzilla.mozilla.org/show_bug.cgi?id=548206",
+        decide: function (t) {
+          var seen = 0;
+          for (var ch of t) {
+            if (!/\p{L}/u.test(ch)) continue;
+            if (isRtl(bidiClass(ch.codePointAt(0)))) return "rtl";
+            if (++seen >= 63) break;
+          }
+          return "ltr";
+        },
+        settled: function (t) {
+          var seen = 0;
+          for (var ch of t) {
+            if (!/\p{L}/u.test(ch)) continue;
+            if (isRtl(bidiClass(ch.codePointAt(0)))) return true;
+            if (++seen >= 63) return true;
+          }
+          return false;
+        }
+      },
+      {
+        id: "char-majority", situation: "Any higher-level protocol that wants a heuristic (UAX #9 HL1's example)", group: "proposed", name: "Character majority", year: 1999,
+        who: "UAX #9 HL1's example of a higher-level protocol; hermes-agent #51318 (2026)",
+        what: "Right-to-left when it has more right-to-left letters than left-to-right.",
+        src: "https://www.unicode.org/reports/tr9/tr9-52.html#HL1",
+        decide: function (t) { var c = count(t); return c.rtl > c.ltr ? "rtl" : "ltr"; }
+      },
+      {
+        id: "telegram-2017", situation: "Chat messages that start with a link (Telegram Desktop #3845)", group: "proposed", name: "Majority without links", year: 2017,
+        who: "Telegram Desktop issue #3845",
+        what: "Remove links, count letters; the larger side wins; a tie falls back to first strong.",
+        src: "https://github.com/telegramdesktop/tdesktop/issues/3845",
+        decide: function (t) {
+          var p = t.replace(URL_RE, " "), c = count(p);
+          if (c.rtl > c.ltr) return "rtl";
+          if (c.ltr > c.rtl) return "ltr";
+          return byFirstStrong(p) || "ltr";
+        }
+      },
+      {
+        id: "prose-majority", situation: "AI chat answers with code and links (BidiLens; hermes-agent #51318)", group: "ai-today", name: "Majority of prose", year: 2026,
+        who: "The idea in BidiLens and hermes-agent #51318: leave code and links out of the count. This is the lab's own implementation of that idea, not their code.",
+        what: "Count letters outside inline code and links; the larger side wins.",
+        src: "https://github.com/CodeinScrubs/BidiLens",
+        decide: function (t, ctx) { var c = count(prose(t, ctx)); return c.rtl > c.ltr ? "rtl" : c.ltr > c.rtl ? "ltr" : (byFirstStrong(t) || "ltr"); }
+      },
+
+      // ------------------------------------------------------------------ ours
+      {
+        id: "smartrtl", situation: "Claude Code's panel: machine-written answers arriving as a stream, Urdu with technical English", group: "ours", name: "Our first formula", year: 2026,
+        who: "This work, before the study (packages/core/src/direction.js, frozen) - Any RTL, needing a right-to-left word",
+        what: "Reasoned out before any data: two right-to-left letters in a row make a block right-to-left, otherwise it is left alone. It decides on sight and only ever turns one way. An English sentence carrying an Urdu phrase was given up on purpose.",
+        src: null,
+        decide: function (t, ctx) { return ctx.smartrtl.directionFor(t) === "rtl" ? "rtl" : null; },
+        settled: function (t, ctx) { return ctx.smartrtl.directionFor(t) === "rtl"; }
+      },
+      openingLetters(45, "Firefox's formula, 45 letters", "An earlier suggestion of this work: Firefox's formula with 45 letters, chosen on a proxy while a hold was still expected, when every letter of waiting was a cost. With no hold, and read line by line, 45 leaves more right-to-left lines left-to-right than 63 does (results/README.md).", false),
+      opening(6, "Opening words (6)", "An earlier candidate in words: right-to-left if a right-to-left word arrives within the first six words. Replaced by the letter count, because words differ in length and are not defined the same way in every language."),
+      opening(3, "Opening words (3)", "An earlier candidate: the same with three words.")
+    ];
+
+    return {
+      formulas: formulas,
+      helpers: { firstStrong: firstStrong, count: count, strongWords: strongWords }
+    };
+  }
+
+  return { createFormulas: createFormulas };
+});
+
+</script>
+
+<!-- SmartRTL, packages/core/src/direction.js, unmodified. -->
+<script>
+/**
+ * smartrtl / core
+ *
+ * One question, answered in one place: which direction does this text belong to?
+ *
+ * There is deliberately no DOM here, and nothing about any particular product. The
+ * VS Code extension, the browser extension and the desktop patch all ask the same
+ * question, and they must all get the same answer - otherwise they drift apart and
+ * the same bug has to be fixed three times.
+ *
+ * The rule, and the four formulas that were tried and rejected before it, are
+ * written up in docs/decisions.md.
+ */
+(function (root, factory) {
+  var api = factory();
+  if (typeof module === "object" && module.exports) module.exports = api;
+  else root.SmartRTL = api;
+})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+  "use strict";
+
+  // Every living right-to-left script, by Unicode script property rather than by
+  // hand written ranges - so no language can be left out by accident.
+  var SCRIPTS = [
+    "Arabic",    // Urdu, Persian, Pashto, Sindhi, Kurdish, Uyghur, Arabic
+    "Hebrew",
+    "Syriac",
+    "Thaana",    // Divehi
+    "Nko",
+    "Samaritan",
+    "Mandaic",
+    "Adlam"
+  ];
+
+  var ANY, WORD, LETTER, usingScriptProperties;
+  try {
+    var S = SCRIPTS.map(function (s) { return "\\p{Script=" + s + "}"; }).join("");
+    ANY    = new RegExp("[" + S + "]", "u");
+    WORD   = new RegExp("[" + S + "]{2,}", "u");
+    // a letter, so that a lone comma or vowel mark never decides a direction
+    LETTER = new RegExp("(?=\\p{L})[" + S + "]", "u");
+    usingScriptProperties = true;
+  } catch (e) {
+    // Very old engine with no Unicode property escapes. Broader than the script
+    // properties - it also catches shared punctuation - but better than nothing.
+    var F = "֐-ࣿיִ-﷿ﹰ-﻿";
+    ANY = new RegExp("[" + F + "]");
+    WORD = new RegExp("[" + F + "]{2,}");
+    LETTER = ANY;
+    usingScriptProperties = false;
+  }
+
+  /**
+   * The first LETTER in a string, whichever script it belongs to.
+   *
+   * Letters only, on purpose. The browser's own rule calls a digit weak and punctuation
+   * neutral, so "2024 کا سال" is decided by the kaf, not by the 2 - and a rule that
+   * disagreed with the browser about which character is the deciding one would answer the
+   * wrong question below.
+   */
+  // Built the same way as the three above, and for the same reason: on an engine without
+  // Unicode property escapes this falls back to ranges. That fallback was reached once by
+  // accident, through a single missing backslash, and it is broader than the real thing -
+  // it holds these scripts' DIGITS as well as their letters, so it answered that "2024 کا
+  // سال" begins right-to-left. The fallback is letters only now, and usingScriptProperties
+  // says from outside which road was taken.
+  var FIRST_LETTER;
+  try { FIRST_LETTER = new RegExp("\\p{L}", "u"); }
+  catch (e) { FIRST_LETTER = /[A-Za-z\u00C0-\u024F\u05D0-\u05EA\u0620-\u064A\u066E-\u06D3\u0712-\u072F\u0780-\u07A5\u07CA-\u07EA\u0840-\u0858\u08A0-\u08BD\uFB1D-\uFDFB\uFE70-\uFEFC]/; }
+
+  /** Any right-to-left character at all, punctuation included. */
+  function containsRtl(text) { return ANY.test(String(text || "")); }
+
+  /** Two or more right-to-left characters in a row - a word, not a stray mark. */
+  function containsRtlWord(text) { return WORD.test(String(text || "")); }
+
+  /** A single right-to-left letter. Commas and vowel marks do not count. */
+  function containsRtlLetter(text) { return LETTER.test(String(text || "")); }
+
+  /**
+   * Which direction the browser would take this text to be, by its own rule.
+   *
+   * `dir="auto"` and `unicode-bidi: plaintext` both take a run's direction from its
+   * FIRST STRONG character, and that is the behaviour this whole project exists to
+   * replace. Naming it here, in the same file as the rule that replaces it, is what
+   * lets anything ask whether the two still disagree.
+   *
+   * @returns {"rtl"|"ltr"|null} null when there is no letter to decide from
+   */
+  function firstStrong(text) {
+    var m = FIRST_LETTER.exec(String(text || ""));
+    if (!m) return null;
+    return ANY.test(m[0]) ? "rtl" : "ltr";
+  }
+
+  /**
+   * Is this the text that tells the two rules apart?
+   *
+   * True only for text where the browser's guess says left-to-right and this rule says
+   * right-to-left: a line that opens with a Latin word and turns Urdu. That text is the
+   * fault, stated as a string - which makes it the only text worth measuring a page with.
+   * A page that lays THIS out right-to-left by itself has the fault fixed and does not
+   * need us; one that lays it out left-to-right still has it.
+   *
+   * Pure Urdu is useless for that question, and quietly so: the browser reads it
+   * right-to-left whether the fault is there or not, so measuring with it would say
+   * "fixed" on every build ever shipped.
+   */
+  function tellsThemApart(text) {
+    var t = String(text || "");
+    return firstStrong(t) === "ltr" && containsRtlLetter(t);
+  }
+
+  /**
+   * The rule.
+   *
+   *   starts with RTL                 -> RTL   (already correct, nothing to do)
+   *   starts with LTR, no RTL after   -> LTR   (left alone)
+   *   starts with LTR, RTL follows    -> RTL
+   *
+   * Expressed over the whole string, those three collapse into one question:
+   * is there right-to-left text in here at all?
+   *
+   * @param {string} text
+   * @param {"careful"|"eager"} [mode="careful"]
+   *   careful - needs a whole RTL word. For rendered output, where the decision
+   *             sticks until a reload, so a wrong guess is expensive.
+   *   eager   - one RTL letter is enough. For an input box, where a wrong guess
+   *             costs a single keystroke to undo.
+   * @returns {"rtl"|null} null means: leave this text exactly as it was.
+   */
+  function directionFor(text, mode) {
+    var t = String(text || "");
+    if (!containsRtl(t)) return null;                     // never touch pure LTR text
+    var enough = mode === "eager" ? containsRtlLetter(t) : containsRtlWord(t);
+    return enough ? "rtl" : null;
+  }
+
+  /**
+   * How far into a text the rule for an answer looks: 45 letters.
+   *
+   * Firefox's proposal for dir="auto" in 2010 looked at the first 63 letters and gave no
+   * reason for 63. Measured on 64,476 mixed texts from Claude's and ChatGPT's answers, 45 is
+   * the shortest window whose mistakes are within half a percentage point of the best
+   * window's on both, and every letter beyond it only makes a streamed block wait longer
+   * (paper/results/README.md, "choosing X"; docs/decisions.md section 50).
+   */
+  var OPENING_LETTERS = 45;
+
+  /**
+   * The rule for an answer, from 0.6.0.
+   *
+   *   first letter right-to-left                          -> rtl
+   *   first letter left-to-right, an RTL letter within 45  -> rtl
+   *   first letter left-to-right, none within 45           -> ltr
+   *
+   * Letters are Unicode letters; digits, punctuation and spaces are not counted. The answer
+   * still only ever moves one way: "ltr" before 45 letters can become "rtl" when an RTL
+   * letter arrives, and once 45 letters have passed nothing can change it. An English
+   * sentence whose Urdu phrase comes within its first 45 letters is still read as
+   * right-to-left - the case section 5 gave up, now given up for a measured reason.
+   *
+   * @returns {"rtl"|"ltr"|null} null when there is no letter yet
+   */
+  function openingLetters(text) {
+    var letters = 0;
+    for (var ch of String(text || "")) {
+      if (!FIRST_LETTER.test(ch)) continue;
+      letters++;
+      if (LETTER.test(ch)) return "rtl";
+      if (letters >= OPENING_LETTERS) return "ltr";
+    }
+    return letters ? "ltr" : null;
+  }
+
+  /** Has openingLetters given its last word on this text, whatever is appended to it? */
+  function openingSettled(text) {
+    var letters = 0;
+    for (var ch of String(text || "")) {
+      if (!FIRST_LETTER.test(ch)) continue;
+      letters++;
+      if (LETTER.test(ch) || letters >= OPENING_LETTERS) return true;
+    }
+    return false;
+  }
+
+  return {
+    openingLetters: openingLetters,
+    openingSettled: openingSettled,
+    OPENING_LETTERS: OPENING_LETTERS,
+    containsRtl: containsRtl,
+    containsRtlWord: containsRtlWord,
+    containsRtlLetter: containsRtlLetter,
+    firstStrong: firstStrong,
+    tellsThemApart: tellsThemApart,
+    directionFor: directionFor,
+    SCRIPTS: SCRIPTS.slice(),
+    usingScriptProperties: usingScriptProperties
+  };
+});
+
+</script>
+
+<script>
+(function () {
+  "use strict";
+
+  var PROVENANCE = {"unicode":"18.0.0","closure":{"commit":"0d779e6baca4cf9d650aa28c3146305db3c101ce","sha256":"e0b51560339009ac085258f86b56dc22c8afd9c10d47fd5eb7f4e84ecfafa97b"},"smartrtl":{"file":"packages/core/src/direction.js","sha256":"8977154f0d7c1cbcd7ae948d0c691b4219f58217bf5b2e47fd7405ac02081c2f"},"rules":{"file":"paper/rules/rules.js","sha256":"89314ce0e72a8d0fde4b954caf5bd169395888e4e3a0f5a17b6abfc590127261"},"built":"2026-09-17T17:34:50.915Z"};
+  var RANGES = [[10,10,"B"],[13,13,"B"],[28,30,"B"],[65,90,"L"],[97,122,"L"],[133,133,"B"],[170,170,"L"],[181,181,"L"],[186,186,"L"],[192,214,"L"],[216,246,"L"],[248,696,"L"],[699,705,"L"],[720,721,"L"],[736,740,"L"],[750,750,"L"],[880,883,"L"],[886,893,"L"],[895,899,"L"],[902,902,"L"],[904,1013,"L"],[1015,1154,"L"],[1162,1417,"L"],[1419,1420,"L"],[1424,1424,"R"],[1470,1470,"R"],[1472,1472,"R"],[1475,1475,"R"],[1478,1478,"R"],[1482,1535,"R"],[1544,1544,"AL"],[1547,1547,"AL"],[1549,1549,"AL"],[1563,1610,"AL"],[1645,1647,"AL"],[1649,1749,"AL"],[1765,1766,"AL"],[1774,1775,"AL"],[1786,1808,"AL"],[1810,1839,"AL"],[1867,1957,"AL"],[1969,1983,"AL"],[1984,2026,"R"],[2036,2037,"R"],[2042,2044,"R"],[2046,2069,"R"],[2074,2074,"R"],[2084,2084,"R"],[2088,2088,"R"],[2094,2136,"R"],[2140,2143,"R"],[2144,2191,"AL"],[2194,2198,"AL"],[2208,2249,"AL"],[2307,2361,"L"],[2363,2363,"L"],[2365,2368,"L"],[2377,2380,"L"],[2382,2384,"L"],[2392,2401,"L"],[2404,2432,"L"],[2434,2491,"L"],[2493,2496,"L"],[2501,2508,"L"],[2510,2529,"L"],[2532,2545,"L"],[2548,2554,"L"],[2556,2557,"L"],[2559,2560,"L"],[2563,2619,"L"],[2621,2624,"L"],[2627,2630,"L"],[2633,2634,"L"],[2638,2640,"L"],[2642,2671,"L"],[2674,2676,"L"],[2678,2688,"L"],[2691,2747,"L"],[2749,2752,"L"],[2758,2758,"L"],[2761,2764,"L"],[2766,2785,"L"],[2788,2800,"L"],[2802,2809,"L"],[2816,2816,"L"],[2818,2875,"L"],[2877,2878,"L"],[2880,2880,"L"],[2885,2892,"L"],[2894,2898,"L"],[2903,2913,"L"],[2916,2945,"L"],[2947,3007,"L"],[3009,3020,"L"],[3022,3058,"L"],[3067,3071,"L"],[3073,3075,"L"],[3077,3131,"L"],[3133,3133,"L"],[3137,3141,"L"],[3145,3145,"L"],[3150,3156,"L"],[3159,3169,"L"],[3172,3191,"L"],[3199,3200,"L"],[3202,3259,"L"],[3261,3275,"L"],[3278,3297,"L"],[3300,3327,"L"],[3330,3386,"L"],[3389,3392,"L"],[3397,3404,"L"],[3406,3425,"L"],[3428,3456,"L"],[3458,3529,"L"],[3531,3537,"L"],[3541,3541,"L"],[3543,3632,"L"],[3634,3635,"L"],[3643,3646,"L"],[3648,3654,"L"],[3663,3760,"L"],[3762,3763,"L"],[3773,3783,"L"],[3791,3863,"L"],[3866,3892,"L"],[3894,3894,"L"],[3896,3896,"L"],[3902,3952,"L"],[3967,3967,"L"],[3973,3973,"L"],[3976,3980,"L"],[3992,3992,"L"],[4029,4037,"L"],[4039,4140,"L"],[4145,4145,"L"],[4152,4152,"L"],[4155,4156,"L"],[4159,4183,"L"],[4186,4189,"L"],[4193,4208,"L"],[4213,4225,"L"],[4227,4228,"L"],[4231,4236,"L"],[4238,4252,"L"],[4254,4956,"L"],[4960,5007,"L"],[5018,5119,"L"],[5121,5759,"L"],[5761,5786,"L"],[5789,5905,"L"],[5909,5937,"L"],[5940,5969,"L"],[5972,6001,"L"],[6004,6067,"L"],[6070,6070,"L"],[6078,6085,"L"],[6087,6088,"L"],[6100,6106,"L"],[6108,6108,"L"],[6110,6127,"L"],[6138,6143,"L"],[6160,6276,"L"],[6279,6312,"L"],[6314,6431,"L"],[6435,6438,"L"],[6441,6449,"L"],[6451,6456,"L"],[6460,6463,"L"],[6465,6467,"L"],[6470,6621,"L"],[6656,6678,"L"],[6681,6682,"L"],[6684,6741,"L"],[6743,6743,"L"],[6751,6751,"L"],[6753,6753,"L"],[6755,6756,"L"],[6765,6770,"L"],[6781,6782,"L"],[6784,6831,"L"],[6897,6911,"L"],[6916,6963,"L"],[6965,6965,"L"],[6970,7018,"L"],[7028,7039,"L"],[7042,7073,"L"],[7078,7079,"L"],[7082,7082,"L"],[7086,7141,"L"],[7143,7143,"L"],[7146,7148,"L"],[7150,7150,"L"],[7154,7211,"L"],[7220,7221,"L"],[7224,7375,"L"],[7379,7379,"L"],[7393,7393,"L"],[7401,7404,"L"],[7406,7411,"L"],[7413,7415,"L"],[7418,7615,"L"],[7680,8124,"L"],[8126,8126,"L"],[8130,8140,"L"],[8144,8156,"L"],[8160,8172,"L"],[8176,8188,"L"],[8191,8191,"L"],[8206,8206,"L"],[8207,8207,"R"],[8233,8233,"B"],[8294,8294,"LRI"],[8295,8295,"RLI"],[8296,8296,"FSI"],[8297,8297,"PDI"],[8305,8307,"L"],[8319,8319,"L"],[8336,8351,"L"],[8433,8447,"L"],[8450,8450,"L"],[8455,8455,"L"],[8458,8467,"L"],[8469,8469,"L"],[8473,8477,"L"],[8484,8484,"L"],[8486,8486,"L"],[8488,8488,"L"],[8490,8493,"L"],[8495,8505,"L"],[8508,8511,"L"],[8517,8521,"L"],[8526,8527,"L"],[8544,8584,"L"],[8588,8591,"L"],[9014,9082,"L"],[9109,9109,"L"],[9258,9279,"L"],[9291,9311,"L"],[9372,9449,"L"],[9900,9900,"L"],[10240,10495,"L"],[11124,11125,"L"],[11264,11492,"L"],[11499,11502,"L"],[11506,11512,"L"],[11520,11646,"L"],[11648,11743,"L"],[11870,11871,"L"],[11876,11903,"L"],[11930,11930,"L"],[12020,12031,"L"],[12246,12271,"L"],[12293,12295,"L"],[12321,12329,"L"],[12334,12335,"L"],[12337,12341,"L"],[12344,12348,"L"],[12352,12440,"L"],[12445,12447,"L"],[12449,12538,"L"],[12540,12735,"L"],[12774,12782,"L"],[12784,12828,"L"],[12831,12879,"L"],[12896,12923,"L"],[12927,12976,"L"],[12992,13003,"L"],[13008,13174,"L"],[13179,13277,"L"],[13280,13310,"L"],[13312,19903,"L"],[19968,42127,"L"],[42183,42508,"L"],[42512,42606,"L"],[42624,42653,"L"],[42656,42735,"L"],[42738,42751,"L"],[42786,42887,"L"],[42889,43009,"L"],[43011,43013,"L"],[43015,43018,"L"],[43020,43044,"L"],[43047,43047,"L"],[43053,43063,"L"],[43066,43123,"L"],[43128,43203,"L"],[43206,43231,"L"],[43250,43262,"L"],[43264,43301,"L"],[43310,43334,"L"],[43346,43391,"L"],[43395,43442,"L"],[43444,43445,"L"],[43450,43451,"L"],[43454,43492,"L"],[43494,43560,"L"],[43567,43568,"L"],[43571,43572,"L"],[43575,43586,"L"],[43588,43595,"L"],[43597,43643,"L"],[43645,43695,"L"],[43697,43697,"L"],[43701,43702,"L"],[43705,43709,"L"],[43712,43712,"L"],[43714,43755,"L"],[43758,43765,"L"],[43767,43881,"L"],[43884,44004,"L"],[44006,44007,"L"],[44009,44012,"L"],[44014,64284,"L"],[64285,64285,"R"],[64287,64296,"R"],[64298,64335,"R"],[64336,64450,"AL"],[64467,64829,"AL"],[64848,64911,"AL"],[64914,64967,"AL"],[65008,65020,"AL"],[65050,65055,"L"],[65107,65107,"L"],[65127,65127,"L"],[65132,65135,"L"],[65136,65278,"AL"],[65280,65280,"L"],[65313,65338,"L"],[65345,65370,"L"],[65382,65503,"L"],[65511,65511,"L"],[65519,65519,"L"],[65536,65792,"L"],[65794,65855,"L"],[65933,65935,"L"],[65949,65951,"L"],[65953,66044,"L"],[66046,66271,"L"],[66300,66421,"L"],[66427,67583,"L"],[67584,67870,"R"],[67872,68096,"R"],[68100,68100,"R"],[68103,68107,"R"],[68112,68151,"R"],[68155,68158,"R"],[68160,68324,"R"],[68327,68408,"R"],[68416,68863,"R"],[68864,68899,"AL"],[68904,68911,"AL"],[68922,68927,"AL"],[68938,68968,"R"],[68975,69215,"R"],[69247,69290,"R"],[69293,69311,"R"],[69312,69322,"AL"],[69337,69359,"AL"],[69376,69423,"R"],[69424,69445,"AL"],[69457,69487,"AL"],[69488,69505,"R"],[69510,69631,"R"],[69632,69632,"L"],[69634,69687,"L"],[69703,69713,"L"],[69734,69743,"L"],[69745,69746,"L"],[69749,69758,"L"],[69762,69810,"L"],[69815,69816,"L"],[69819,69825,"L"],[69827,69887,"L"],[69891,69926,"L"],[69932,69932,"L"],[69941,70002,"L"],[70004,70015,"L"],[70018,70069,"L"],[70079,70088,"L"],[70093,70094,"L"],[70096,70190,"L"],[70194,70195,"L"],[70197,70197,"L"],[70200,70205,"L"],[70207,70208,"L"],[70210,70366,"L"],[70368,70370,"L"],[70379,70399,"L"],[70402,70458,"L"],[70461,70463,"L"],[70465,70501,"L"],[70509,70511,"L"],[70517,70586,"L"],[70593,70605,"L"],[70607,70607,"L"],[70609,70609,"L"],[70611,70624,"L"],[70627,70711,"L"],[70720,70721,"L"],[70725,70725,"L"],[70727,70749,"L"],[70751,70834,"L"],[70841,70841,"L"],[70843,70846,"L"],[70849,70849,"L"],[70852,71089,"L"],[71094,71099,"L"],[71102,71102,"L"],[71105,71131,"L"],[71134,71218,"L"],[71227,71228,"L"],[71230,71230,"L"],[71233,71263,"L"],[71277,71338,"L"],[71340,71340,"L"],[71342,71343,"L"],[71350,71350,"L"],[71352,71452,"L"],[71454,71454,"L"],[71456,71457,"L"],[71462,71462,"L"],[71468,71726,"L"],[71736,71736,"L"],[71739,71994,"L"],[71997,71997,"L"],[71999,72002,"L"],[72004,72147,"L"],[72152,72153,"L"],[72156,72159,"L"],[72161,72192,"L"],[72199,72200,"L"],[72203,72242,"L"],[72249,72250,"L"],[72255,72262,"L"],[72264,72272,"L"],[72279,72280,"L"],[72284,72329,"L"],[72343,72343,"L"],[72346,72543,"L"],[72545,72545,"L"],[72549,72549,"L"],[72551,72751,"L"],[72759,72759,"L"],[72766,72849,"L"],[72872,72873,"L"],[72881,72881,"L"],[72884,72884,"L"],[72887,73008,"L"],[73015,73017,"L"],[73019,73019,"L"],[73022,73022,"L"],[73030,73030,"L"],[73032,73103,"L"],[73106,73108,"L"],[73110,73110,"L"],[73112,73199,"L"],[73201,73458,"L"],[73461,73471,"L"],[73474,73525,"L"],[73531,73535,"L"],[73537,73537,"L"],[73539,73561,"L"],[73563,73684,"L"],[73714,78911,"L"],[78913,78918,"L"],[78934,90397,"L"],[90410,90412,"L"],[90416,92911,"L"],[92917,92975,"L"],[92983,94030,"L"],[94032,94094,"L"],[94099,94177,"L"],[94179,94179,"L"],[94181,113820,"L"],[113823,113823,"L"],[113828,117759,"L"],[117974,117999,"L"],[118013,118015,"L"],[118452,118457,"L"],[118481,118481,"L"],[118485,118492,"L"],[118526,118527,"L"],[118574,118575,"L"],[118599,119078,"L"],[119081,119142,"L"],[119146,119154,"L"],[119171,119172,"L"],[119180,119209,"L"],[119214,119272,"L"],[119275,119295,"L"],[119366,119386,"L"],[119389,119551,"L"],[119639,120512,"L"],[120514,120538,"L"],[120540,120570,"L"],[120572,120596,"L"],[120598,120628,"L"],[120630,120654,"L"],[120656,120686,"L"],[120688,120712,"L"],[120714,120744,"L"],[120746,120770,"L"],[120772,120781,"L"],[120832,121343,"L"],[121399,121402,"L"],[121453,121460,"L"],[121462,121475,"L"],[121477,121498,"L"],[121504,121504,"L"],[121520,121599,"L"],[121629,122879,"L"],[122887,122887,"L"],[122905,122906,"L"],[122914,122914,"L"],[122917,122917,"L"],[122923,123022,"L"],[123024,123183,"L"],[123191,123565,"L"],[123567,123627,"L"],[123632,123646,"L"],[123648,124139,"L"],[124144,124397,"L"],[124400,124642,"L"],[124644,124645,"L"],[124647,124653,"L"],[124656,124660,"L"],[124662,124927,"L"],[124928,125135,"R"],[125143,125251,"R"],[125259,126063,"R"],[126064,126143,"AL"],[126144,126207,"R"],[126208,126287,"AL"],[126288,126463,"R"],[126464,126703,"AL"],[126706,126719,"AL"],[126720,126975,"R"],[127020,127023,"L"],[127124,127135,"L"],[127151,127152,"L"],[127168,127168,"L"],[127184,127184,"L"],[127222,127231,"L"],[127248,127278,"L"],[127280,127337,"L"],[127344,127404,"L"],[127406,127583,"L"],[127590,127743,"L"],[128730,128731,"L"],[128749,128751,"L"],[128765,128767,"L"],[128986,128986,"L"],[128988,128991,"L"],[129004,129007,"L"],[129036,129039,"L"],[129096,129103,"L"],[129114,129119,"L"],[129160,129167,"L"],[129198,129199,"L"],[129212,129215,"L"],[129218,129231,"L"],[129241,129279,"L"],[129624,129631,"L"],[129646,129647,"L"],[129661,129663,"L"],[129735,129735,"L"],[129737,129739,"L"],[129758,129758,"L"],[129772,129774,"L"],[129787,129791,"L"],[129939,129939,"L"],[130043,131069,"L"],[131072,196605,"L"],[196608,262141,"L"],[262144,327677,"L"],[327680,393213,"L"],[393216,458749,"L"],[458752,524285,"L"],[524288,589821,"L"],[589824,655357,"L"],[655360,720893,"L"],[720896,786429,"L"],[786432,851965,"L"],[851968,917501,"L"],[921600,983037,"L"],[983040,1048573,"L"],[1048576,1114109,"L"]];
+
+  // ---------------------------------------------------------------- Unicode bidi classes
+  function bidiClass(cp) {
+    var lo = 0, hi = RANGES.length - 1;
+    while (lo <= hi) {
+      var mid = (lo + hi) >> 1, r = RANGES[mid];
+      if (cp < r[0]) hi = mid - 1;
+      else if (cp > r[1]) lo = mid + 1;
+      else return r[2];
+    }
+    return null;
+  }
+  // UAX #9 P2: first L, R or AL, skipping isolates.
+  function firstStrong(text) {
+    var depth = 0;
+    for (var ch of text) {
+      var c = bidiClass(ch.codePointAt(0));
+      if (c === "LRI" || c === "RLI" || c === "FSI") { depth++; continue; }
+      if (c === "PDI") { if (depth) depth--; continue; }
+      if (c === "B") depth = 0;
+      if (!depth && (c === "L" || c === "R" || c === "AL")) return c;
+    }
+    return null;
+  }
+  function count(text) {
+    var ltr = 0, rtl = 0;
+    for (var ch of text) {
+      var c = bidiClass(ch.codePointAt(0));
+      if (c === "L") ltr++; else if (c === "R" || c === "AL") rtl++;
+    }
+    return { ltr: ltr, rtl: rtl };
+  }
+  // ---------------------------------------------------------------- the formulas
+  // paper/rules/rules.js - the same file the measurements run. decide(text, ctx) ->
+  // "rtl" | "ltr" | null (null: leave the block alone). native: the browser applies it itself
+  // ("auto" = dir="auto", "plaintext" = unicode-bidi: plaintext); the lab records what it decides.
+  var GROUPS = [
+    ["baseline", "What most chats do"],
+    ["adopted", "Adopted - and what for"],
+    ["proposed", "Proposed, never adopted - and what for"],
+    ["ai-today", "Built for AI chats today"],
+    ["ours", "This work"],
+    ["custom", "Added in this lab"]
+  ];
+  var BUILT_IN = [{ id: "none", group: "baseline", name: "No rule", chip: "Baseline",
+    who: "A chat that sets no direction", what: "Every block takes the page's left-to-right.", situation: "Pages that never considered right-to-left text",
+    decide: function () { return null; } }]
+    .concat(window.BidiFormulas.createFormulas({ bidiClass: bidiClass }).formulas.filter(function (f) { return !f.archived; }).map(function (f) {
+      var chip = f.proposed ? "Suggested" : { adopted: "Adopted", proposed: "Proposed", "ai-today": "AI chats", ours: "Ours" }[f.group];
+      return Object.assign({}, f, { chip: chip + " · " + f.year });
+    }));
+  var custom = [];
+  var formulas = function () { return BUILT_IN.concat(custom); };
+  var byId = function (id) { return formulas().find(function (f) { return f.id === id; }) || formulas().find(function (f) { return f.id === "any-rtl-63"; }) || BUILT_IN[1]; };
+
+  // Everything a formula may read. prose: the text without inline code, when the caller knows it.
+  function ctx(text, prose) {
+    var c = count(text);
+    return { bidiClass: bidiClass, closure: goog.i18n.bidi, smartrtl: window.SmartRTL, prose: prose,
+      firstStrong: firstStrong(text), ltr: c.ltr, rtl: c.rtl, words: text.split(/\s+/).filter(Boolean), count: count };
+  }
+  function decideSafely(f, text, prose) {
+    try { var d = f.decide(text, ctx(text, prose)); return d === "rtl" || d === "ltr" ? d : null; } catch (e) { return null; }
+  }
+  // What the reader actually sees for a decision: nothing set means the page's own ltr.
+  function seen(f, text, prose) { return decideSafely(f, text, prose) || "ltr"; }
+  var strong = function (text) { var c = count(text); return c.ltr + c.rtl > 0; };
+
+  // ---------------------------------------------------------------- state
+  var state = {
+    formula: "any-rtl-63", scope: "block", chat: "chatgpt", delay: 15, highlight: true,
+    messages: [], current: -1, stream: null
+  };
+  try {
+    var saved = JSON.parse(localStorage.getItem("bidi-lab-prefs") || "{}");
+    ["formula", "chat", "delay", "highlight"].forEach(function (k) { if (saved[k] !== undefined) state[k] = saved[k]; });
+  } catch (e) {}
+  function savePrefs() {
+    try { localStorage.setItem("bidi-lab-prefs", JSON.stringify({ formula: state.formula, chat: state.chat, delay: state.delay, highlight: state.highlight })); } catch (e) {}
+  }
+
+  var $ = function (id) { return document.getElementById(id); };
+  function el(tag, attrs, kids) {
+    var n = document.createElement(tag);
+    for (var k in attrs || {}) {
+      if (k === "text") n.textContent = attrs[k];
+      else if (k === "class") n.className = attrs[k];
+      else if (attrs[k] !== null && attrs[k] !== undefined) n.setAttribute(k, attrs[k]);
+    }
+    (kids || []).forEach(function (c) { if (c) n.appendChild(c); });
+    return n;
+  }
+
+  // ---------------------------------------------------------------- markdown and blocks
+  function render(markdown) {
+    var html = window.marked ? window.marked.parse(markdown, { gfm: true, breaks: false }) : escapeHtml(markdown);
+    return window.DOMPurify ? window.DOMPurify.sanitize(html) : html;
+  }
+  function escapeHtml(s) { return "<p>" + s.replace(/[&<>]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]; }) + "</p>"; }
+
+  // A block is what a browser gives a direction to on its own.
+  function blocksOf(root) {
+    var out = [];
+    root.querySelectorAll("h1,h2,h3,h4,h5,h6,p,li,th,td").forEach(function (b) {
+      if (b.closest("pre")) return;
+      if (b.tagName === "P" && b.parentElement && /^(LI|TD|TH)$/.test(b.parentElement.tagName)) return;
+      out.push(b);
+    });
+    return out;
+  }
+  function ownText(node) {
+    var s = "";
+    node.childNodes.forEach(function (n) {
+      if (n.nodeType === 3) s += n.nodeValue;
+      else if (n.nodeType === 1 && !/^(UL|OL|PRE)$/.test(n.tagName)) s += ownText(n);
+    });
+    return s;
+  }
+  function proseText(node) {
+    var s = "";
+    node.childNodes.forEach(function (n) {
+      if (n.nodeType === 3) s += n.nodeValue;
+      else if (n.nodeType === 1 && n.tagName === "CODE") s += " ";
+      else if (n.nodeType === 1 && !/^(UL|OL|PRE)$/.test(n.tagName)) s += proseText(n);
+    });
+    return s;
+  }
+  function wrapTables(root) {
+    root.querySelectorAll("table").forEach(function (t) {
+      if (t.parentElement.classList.contains("tablewrap")) return;
+      var w = el("div", { class: "tablewrap" });
+      t.parentNode.insertBefore(w, t); w.appendChild(t);
+    });
+  }
+
+  // The same parse for everyone: [{key, tag, text}] for a markdown prefix.
+  var scratch = document.createElement("div");
+  function unitsOf(markdown) {
+    scratch.innerHTML = render(markdown);
+    return blocksOf(scratch).map(function (b, i) { return { key: i + ":" + b.tagName, tag: b.tagName, text: ownText(b), prose: proseText(b) }; });
+  }
+
+  // ---------------------------------------------------------------- applying a formula
+  function clearDir(n) { n.removeAttribute("dir"); n.style.unicodeBidi = ""; }
+  function applyTo(root, f, scope, text) {
+    var blocks = blocksOf(root);
+    clearDir(root);
+    blocks.forEach(clearDir);
+    var result = {};
+    if (scope === "message" && !f.blockOnly) {
+      var whole = blocks.map(ownText).join("\n"), wholeProse = blocks.map(proseText).join("\n");
+      if (f.native === "auto") root.setAttribute("dir", "auto");
+      else { var d = decideSafely(f, whole, wholeProse); if (d) root.setAttribute("dir", d); }
+      var s = seen(f, whole, wholeProse);
+      blocks.forEach(function (b, i) { result[i + ":" + b.tagName] = { dir: strong(whole) ? s : null, text: ownText(b), node: b }; });
+      return result;
+    }
+    blocks.forEach(function (b, i) {
+      var t = ownText(b), p = proseText(b);
+      if (f.native === "auto") b.setAttribute("dir", "auto");
+      else if (f.native === "plaintext") { b.style.unicodeBidi = "plaintext"; }
+      else { var d = decideSafely(f, t, p); if (d) b.setAttribute("dir", d); }
+      result[i + ":" + b.tagName] = { dir: strong(t) ? seen(f, t, p) : null, text: t, node: b };
+    });
+    return result;
+  }
+  function applyToComposer(ta, f) {
+    clearDir(ta);
+    var t = ta.value;
+    if (f.native === "auto") ta.setAttribute("dir", "auto");
+    else if (f.native === "plaintext") { ta.setAttribute("dir", "auto"); ta.style.unicodeBidi = "plaintext"; }
+    else { var d = decideSafely(f, t); if (d) ta.setAttribute("dir", d); }
+    return strong(t) ? seen(f, t) : null;
+  }
+
+  // ---------------------------------------------------------------- the chats, and how each puts an answer on the screen
+  // RHYTHMS comes from paper/survey/results: a chat recorded with survey/rhythm.js replays its
+  // answer's real pieces and the real time between them; a chat not recorded yet streams token by
+  // token at the delay on the slider.
+  var RHYTHMS = {"vscode":{"recorded":"2026-09-17","recording":"paper/survey/results/claude-code-rhythm.json","pieces":[633,134,1140],"gapsMs":[849,950]}};
+  var CHATS = [
+    { id: "chatgpt", name: "ChatGPT" },
+    { id: "claude", name: "Claude" },
+    { id: "gemini", name: "Gemini" },
+    { id: "vscode", name: "VS Code · Claude Code" }
+  ].map(function (c) { c.rhythm = RHYTHMS[c.id] || null; return c; });
+  function chatById(id) { return CHATS.find(function (c) { return c.id === id; }) || CHATS[0]; }
+  // A recorded chat: the text cut where its recorded pieces end, repeating their sizes.
+  function pieceEnds(text, rhythm) {
+    var cps = Array.from(text), ends = [], pos = 0, i = 0, k = 0;
+    while (i < cps.length) {
+      var n = rhythm.pieces[k++ % rhythm.pieces.length];
+      for (var j = 0; j < n && i < cps.length; j++, i++) pos += cps[i].length;
+      ends.push(pos);
+    }
+    return ends;
+  }
+
+  // ---------------------------------------------------------------- tokens
+  function seeded(text) {
+    var h = 2166136261;
+    for (var i = 0; i < text.length; i++) { h ^= text.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return function () {
+      h += 0x6d2b79f5; var t = h;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  // Where each token ends: 1-4 characters, from a seed taken from the text itself.
+  function boundaries(text) {
+    var cps = Array.from(text), ends = [], pos = 0, i = 0;
+    var rand = seeded(text);
+    while (i < cps.length) {
+      var n = 1 + Math.floor(rand() * 4);
+      for (var k = 0; k < n && i < cps.length; k++, i++) pos += cps[i].length;
+      ends.push(pos);
+    }
+    return ends;
+  }
+
+  // ---------------------------------------------------------------- history of one run
+  function newTrack() { return { seq: {}, tags: {}, texts: {} }; }
+  function record(track, result) {
+    for (var key in result) {
+      var r = result[key];
+      if (!track.seq[key]) track.seq[key] = [];
+      track.seq[key].push(r.dir);
+      track.tags[key] = key.split(":")[1];
+      track.texts[key] = r.text;
+    }
+  }
+  function summarise(track, finalKeys) {
+    var rows = [];
+    (finalKeys || Object.keys(track.seq)).forEach(function (key) {
+      var seq = (track.seq[key] || []).filter(function (d) { return d; });
+      if (!seq.length) return;
+      var changes = 0, back = false, given = {}; given[seq[0]] = 1;
+      for (var i = 1; i < seq.length; i++) {
+        if (seq[i] === seq[i - 1]) continue;
+        changes++; if (given[seq[i]]) back = true; given[seq[i]] = 1;
+      }
+      var fin = seq[seq.length - 1];
+      var other = seq.filter(function (d) { return d !== fin; }).length / seq.length;
+      rows.push({ key: key, tag: track.tags[key], text: track.texts[key], seq: track.seq[key], final: fin, changes: changes, back: back, other: other });
+    });
+    return rows;
+  }
+
+  // Where a formula leaves each line of a finished message - what the reader is left with.
+  function finalLines(text, f) {
+    return unitsOf(text).filter(function (u) { return strong(u.text); })
+      .map(function (u) { return { key: u.key, tag: u.tag, text: u.text, dir: seen(f, u.text, u.prose) }; });
+  }
+  // How each line arrived under a formula: every direction it was shown in, in order, and the
+  // letter it had reached when it was shown that way. Token by token for every formula alike.
+  function lettersIn(t) { var m = t.match(/\p{L}/gu); return m ? m.length : 0; }
+  function prefixesOf(msg) {
+    if (!msg.prefixes) msg.prefixes = boundaries(msg.text).map(function (end) { return unitsOf(msg.text.slice(0, end)); });
+    return msg.prefixes;
+  }
+  function arrivalOf(msg, f) {
+    msg.arrival = msg.arrival || {};
+    if (msg.arrival[f.id]) return msg.arrival[f.id];
+    var lines = {};
+    prefixesOf(msg).forEach(function (units) {
+      units.forEach(function (u) {
+        if (!strong(u.text)) return;
+        var d = seen(f, u.text, u.prose), h = lines[u.key] || (lines[u.key] = { steps: [] });
+        var last = h.steps[h.steps.length - 1];
+        if (!last || last.dir !== d) h.steps.push({ dir: d, letter: lettersIn(u.text) });
+      });
+    });
+    Object.keys(lines).forEach(function (k) {
+      var h = lines[k], given = {};
+      h.turns = h.steps.length - 1;
+      h.back = h.steps.some(function (x, i) { var seenBefore = !!given[x.dir]; given[x.dir] = 1; return i > 0 && seenBefore; });
+    });
+    return (msg.arrival[f.id] = lines);
+  }
+  function howItArrived(h) {
+    if (!h || !h.steps.length) return "";
+    var names = { rtl: "RTL", ltr: "LTR" };
+    if (!h.turns) return names[h.steps[0].dir] + " from the first letter - never turned";
+    return h.steps.map(function (x, i) { return i ? names[x.dir] + " by letter " + x.letter : names[x.dir] + " first"; }).join(", then ") + (h.back ? " - went back" : "");
+  }
+
+  function score(msg, f) {
+    var right = 0, wrong = 0, unmarked = 0, turned = 0, back = 0, arrival = arrivalOf(msg, f);
+    finalLines(msg.text, f).forEach(function (l) {
+      var m = msg.marks[l.key];
+      if (!m) unmarked++; else if (m === "either" || m === l.dir) right++; else wrong++;
+      var h = arrival[l.key];
+      if (h && h.turns) turned++;
+      if (h && h.back) back++;
+    });
+    return { right: right, wrong: wrong, unmarked: unmarked, turned: turned, back: back };
+  }
+
+  // ---------------------------------------------------------------- the thread
+  function addTurn(text, opts) {
+    var msg = { id: "m" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), text: text, formula: state.formula,
+      scope: state.scope, delay: state.delay, track: newTrack(), rows: [], marks: {}, markFrom: {}, composerChanges: opts.composerChanges || 0,
+      logRef: null, example: !!opts.example, machine: opts.machine || null };
+    var you = el("div", { class: "turn" }, [
+      el("div", { class: "who", text: opts.machine ? "Machine " + (opts.machine.line ? "2 · line " : opts.machine.mine ? "3 · your response " : "1 · answer ") + opts.machine.n.toLocaleString("en") : "You" }),
+      el("div", { class: "sent", text: opts.machine ? opts.machine.label : text })
+    ]);
+    var replay = el("button", { type: "button", text: "Replay" });
+    var answer = el("div", { class: "answer" });
+    var who = el("div", { class: "who" }, [el("span", { text: "Answer" }), el("span", { class: "actions" }, [replay])]);
+    var verdictBar = el("div", { class: "verdict-bar", "aria-live": "polite" });
+    var turn = el("div", { class: "turn" }, [who, answer, verdictBar]);
+    $("thread").appendChild(you);
+    $("thread").appendChild(turn);
+    follow = true;
+    scrollThread();
+    msg.sentNode = you.querySelector(".sent");
+    msg.answerNode = answer;
+    msg.verdictNode = verdictBar;
+    replay.addEventListener("click", function () { focusMessage(msg); stream(msg, true); });
+    state.messages.push(msg);
+    return msg;
+  }
+
+  function focusMessage(msg) { state.current = state.messages.indexOf(msg); }
+
+  function stopStream(finish) {
+    var s = state.stream;
+    if (!s) return;
+    clearTimeout(s.timer);
+    state.stream = null;
+    if (finish) s.finish();
+  }
+
+  function stream(msg, replaying) {
+    stopStream(true);
+    var f = byId(state.formula);
+    var chat = chatById(state.chat);
+    msg.formula = f.id; msg.scope = "block"; msg.chat = chat.id; msg.delay = state.delay; msg.track = newTrack();
+    var ends = chat.rhythm ? pieceEnds(msg.text, chat.rhythm) : boundaries(msg.text), i = 0, last = {};
+    applySent(msg, f);
+    msg.answerNode.classList.add("streaming");
+    if (msg.verdictNode) { msg.verdictNode.textContent = ""; msg.verdictNode.className = "verdict-bar"; msg.verdictNode.appendChild(el("span", { class: "streaming-with" }, [el("span", { text: "Streaming with " }), el("b", { text: f.name })])); }
+
+    function draw(prefix) {
+      msg.answerNode.innerHTML = render(prefix);
+      wrapTables(msg.answerNode);
+      var result = applyTo(msg.answerNode, f, "block", prefix);
+      record(msg.track, result);
+      if (state.highlight) {
+        for (var key in result) {
+          var d = result[key].dir, prev = last[key];
+          if (d && prev && d !== prev.dir) {
+            var wentBack = prev.given[d];
+            result[key].node.classList.add("flip");
+            if (wentBack) result[key].node.classList.add("back");
+          }
+          if (d) { last[key] = { dir: d, given: Object.assign({}, prev ? prev.given : {}) }; last[key].given[d] = 1; }
+        }
+      }
+    }
+    function finish() {
+      draw(msg.text);
+      msg.answerNode.classList.remove("streaming");
+      msg.rows = summarise(msg.track, unitsOf(msg.text).map(function (u) { return u.key; }));
+      state.stream = null;
+      paintInspect();
+      paintVerdict(msg);
+      logRun(msg);
+      if (msg.onDone) msg.onDone();
+    }
+    function tick() {
+      if (i >= ends.length) { finish(); return; }
+      draw(msg.text.slice(0, ends[i++]));
+      if (state.current === state.messages.indexOf(msg)) queueInspect(msg);
+      var s = state.stream;
+      var wait = chat.rhythm ? chat.rhythm.gapsMs[(i - 1) % chat.rhythm.gapsMs.length] : state.delay;
+      if (s) s.timer = setTimeout(tick, wait);
+      scrollThread();
+    }
+    state.stream = { msg: msg, timer: 0, finish: finish };
+    focusMessage(msg);
+    paintInspect();
+    tick();
+  }
+
+  function applySent(msg, f) {
+    var n = msg.sentNode;
+    clearDir(n);
+    if (msg.machine) return;
+    if (f.native === "auto") n.setAttribute("dir", "auto");
+    else if (f.native === "plaintext") { n.setAttribute("dir", "auto"); n.style.unicodeBidi = "plaintext"; }
+    else { var d = decideSafely(f, msg.text); if (d) n.setAttribute("dir", d); }
+  }
+
+  // A finished message under a newly chosen formula: final state at once, no stream.
+  function redraw(msg) {
+    var f = byId(state.formula);
+    msg.answerNode.innerHTML = render(msg.text);
+    wrapTables(msg.answerNode);
+    applyTo(msg.answerNode, f, "block", msg.text);
+    applySent(msg, f);
+  }
+
+  // The chat follows the answer to its end while it arrives. Scrolling up to read stops following;
+  // scrolling back to the bottom, or sending a new message, follows again.
+  var follow = true;
+  function scrollThread() {
+    if (follow) { var t = $("thread"); t.scrollTop = t.scrollHeight; }
+  }
+  $("thread").addEventListener("wheel", function (e) { if (e.deltaY < 0) follow = false; }, { passive: true });
+  $("thread").addEventListener("touchmove", function () { follow = false; }, { passive: true });
+  $("thread").addEventListener("scroll", function () {
+    var t = $("thread");
+    if (t.scrollHeight - t.scrollTop - t.clientHeight < 24) follow = true;
+  }, { passive: true });
+
+  // ---------------------------------------------------------------- inspect
+  var inspectQueued = false;
+  function queueInspect() {
+    if (inspectQueued) return;
+    inspectQueued = true;
+    requestAnimationFrame(function () { inspectQueued = false; if (state.stream) $("i-title").textContent = "Message " + (state.current + 1) + " · streaming"; });
+  }
+
+  function paintInspect() {
+    var msg = state.messages[state.current];
+    var f = byId(state.formula);
+    var body = $("compare").tBodies[0], list = $("blocks");
+    body.textContent = ""; list.textContent = "";
+    if (!msg) { $("i-title").textContent = "Right / wrong"; $("i-sub").textContent = ""; $("compare-note").textContent = ""; return; }
+    var streaming = state.stream && state.stream.msg === msg;
+    $("i-title").textContent = "Message " + (state.current + 1) + (streaming ? " · streaming" : "");
+    $("i-sub").textContent = byId(msg.formula).name + " · " + chatById(msg.chat || state.chat).name + (msg.formula !== state.formula ? " — replay to see " + f.name : "");
+    if (streaming) { $("compare-note").textContent = "Counted when the answer has arrived."; return; }
+
+    // every formula, on the lines of this message
+    var marked = 0;
+    formulas().forEach(function (g) {
+      var sc = score(msg, g);
+      marked = sc.right + sc.wrong;
+      var tr = el("tr", { class: g.id === state.formula ? "current" : "", tabindex: "0" }, [
+        el("td", { text: g.name }),
+        el("td", { class: "n" + (marked && sc.right === marked ? " good" : ""), text: marked ? sc.right : "–" }),
+        el("td", { class: "n" + (sc.wrong ? " bad" : ""), text: marked ? sc.wrong : "–" }),
+        el("td", { class: "n" + (sc.back ? " bad" : " good"), text: sc.back }),
+        el("td", { class: "n muted", text: sc.turned })
+      ]);
+      var pick = function () { chooseFormula(g.id); };
+      tr.addEventListener("click", pick);
+      tr.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } });
+      body.appendChild(tr);
+    });
+
+    // each line: where the chosen formula put it, and the way it should read
+    var lines = finalLines(msg.text, f), open = 0, arrival = arrivalOf(msg, f);
+    if (!lines.length) list.appendChild(el("p", { class: "empty", text: "No line here holds a letter with a direction." }));
+    lines.forEach(function (l) {
+      var m = msg.marks[l.key];
+      if (!m) open++;
+      var from = m ? (msg.markFrom[l.key] || "you") : null;
+      var mark = el("span", { class: "mark" + (from === "guess" ? " guess" : "") });
+      mark.appendChild(el("span", { class: "from", text: FROM[from] ? FROM[from][0] : "", title: FROM[from] ? FROM[from][1] : "" }));
+      [["rtl", "RTL"], ["ltr", "LTR"]].forEach(function (v) {
+        var b = el("button", { type: "button", "aria-pressed": String(m === v[0]), text: v[1],
+          title: from === "guess" && m === v[0] ? "A guess - click to confirm it" : "This line should read " + (v[0] === "rtl" ? "right to left" : "left to right") });
+        b.addEventListener("click", function () {
+          // a guess clicked as it stands is confirmed; a confirmed mark clicked again is cleared
+          if (m === v[0] && from !== "guess") setMark(msg, l.key, null);
+          else setMark(msg, l.key, v[0], "you");
+        });
+        mark.appendChild(b);
+      });
+      var ok = m ? m === l.dir : null;
+      list.appendChild(el("div", { class: "block" + (ok === true ? " ok" : ok === false ? " no" : "") }, [
+        el("span", { class: "tag", text: l.tag.toLowerCase() }),
+        el("span", { class: "preview", text: l.text.trim().slice(0, 120) }),
+        el("span", { class: "pill " + l.dir, text: l.dir, title: f.name + " gives it this direction" }),
+        el("span", { class: "verdict " + (ok === true ? "ok" : ok === false ? "no" : ""), text: ok === true ? "✓" : ok === false ? "✗" : "" }),
+        mark,
+        el("span", { class: "how" + (arrival[l.key] && arrival[l.key].back ? " back" : ""), text: howItArrived(arrival[l.key]) })
+      ]));
+    });
+    var guesses = lines.filter(function (l) { return msg.marks[l.key] && msg.markFrom[l.key] === "guess"; }).length;
+    $("compare-note").textContent = (open
+      ? open + " of " + lines.length + " lines not marked yet - mark the way each should read, below, and the counts fill in. "
+      : "All " + lines.length + " lines marked. ")
+      + (guesses ? guesses + " of the marks " + (guesses === 1 ? "is a guess" : "are guesses") + " (an English opening with Urdu after it) - click to confirm, or switch it. " : "")
+      + "Click a row to switch formula.";
+  }
+
+  // Under every finished answer: the formula it streamed with, and what that formula did with it -
+  // right or wrong at the end, and whether a line turned or went back on the way.
+  function paintVerdict(msg) {
+    var bar = msg.verdictNode;
+    if (!bar) return;
+    bar.textContent = ""; bar.className = "verdict-bar";
+    var f = byId(msg.formula), sc = score(msg, f), parts = [];
+    var add = function (cls, text) { parts.push(el("span", { class: cls || "", text: text })); };
+    parts.push(el("b", { text: f.name }));
+    if (msg.lineLabel !== undefined) {
+      // machine 2: one line, read one way
+      var names = { rtl: "RTL", ltr: "LTR" }, shown = seen(f, msg.lineText);
+      if (msg.lineLabel === "rtl" || msg.lineLabel === "ltr") {
+        var ok = shown === msg.lineLabel;
+        add("", "should read " + names[msg.lineLabel] + ", shown " + names[shown]);
+        add(ok ? "good" : "bad", ok ? "✓ right" : "✗ wrong");
+        bar.classList.add(ok ? "ok" : "no");
+      } else if (msg.lineLabel === "either") { add("", "shown " + names[shown]); add("good", "✓ either way reads correctly"); bar.classList.add("ok"); }
+      else { add("", "shown " + names[shown] + " - the reader could not say which way (not counted)"); }
+    } else {
+      var marked = sc.right + sc.wrong;
+      if (marked) {
+        add(sc.wrong ? "bad" : "good", sc.right + " of " + marked + " lines right" + (sc.wrong ? ", " + sc.wrong + " wrong" : " ✓"));
+        bar.classList.add(sc.wrong ? "no" : "ok");
+      }
+      if (sc.unmarked) add("", sc.unmarked + " not marked");
+    }
+    add(sc.back ? "bad" : "good", sc.back ? "went back on " + sc.back + (sc.back === 1 ? " line" : " lines") : "never went back");
+    add("", sc.turned ? "turned one way on " + sc.turned + (sc.turned === 1 ? " line" : " lines") : "never turned");
+    parts.forEach(function (p) { bar.appendChild(p); });
+  }
+
+  function setMark(msg, key, value, from) {
+    if (value) { msg.marks[key] = value; msg.markFrom[key] = from || "you"; }
+    else { delete msg.marks[key]; delete msg.markFrom[key]; }
+    paintInspect();
+    paintVerdict(msg);
+    saveMarks(msg);
+  }
+
+  // ---------------------------------------------------------------- formula list and controls
+  function paintFormulas() {
+    var box = $("formulas");
+    box.textContent = "";
+    var n = 0;
+    GROUPS.forEach(function (g) {
+      var members = formulas().filter(function (f) { return f.group === g[0]; });
+      if (!members.length) return;
+      box.appendChild(el("div", { class: "group", text: g[1] }));
+      members.forEach(function (f) {
+        n++;
+        var b = el("button", { type: "button", class: "formula", "aria-pressed": String(f.id === state.formula) }, [
+          el("span", { class: "row" }, [el("span", { class: "name", text: f.name }), el("span", { class: "chip " + f.group, text: f.chip }), n <= 9 ? el("span", { class: "key", text: String(n) }) : null]),
+          f.situation ? el("span", { class: "situation", text: "Made for: " + f.situation }) : null,
+          el("span", { class: "what", text: f.what }),
+          f.who ? el("span", { class: "who", text: f.who }) : null
+        ]);
+        b.addEventListener("click", function () { chooseFormula(f.id); });
+        var wrap = el("div", { class: "fwrap" }, [b]);
+        if (f.src || f.custom) {
+          var line = el("div", { class: "fline" }, [f.src ? el("a", { class: "src", href: f.src, target: "_blank", rel: "noopener", text: "Source ↗" }) : null]);
+          if (f.custom) {
+            var del = el("button", { type: "button", class: "btn", style: "padding:0 6px;font-size:11px;margin-inline-start:auto", text: "Remove" });
+            del.addEventListener("click", function () { removeFormula(f); });
+            line.appendChild(del);
+          }
+          wrap.appendChild(line);
+        }
+        box.appendChild(wrap);
+      });
+    });
+  }
+
+  function chooseFormula(id) {
+    state.formula = id;
+    savePrefs();
+    paintFormulas();
+    stopStream(true);
+    state.messages.forEach(redraw);
+    composerInput(true);
+    paintInspect();
+    if (machine && machine.sums) paintTotals();
+  }
+
+  function paintChats() {
+    var box = $("chats");
+    box.textContent = "";
+    CHATS.forEach(function (c) {
+      var b = el("button", { type: "button", "aria-pressed": String(c.id === state.chat), text: c.name });
+      b.addEventListener("click", function () { state.chat = c.id; savePrefs(); paintChats(); paintSpeed(); });
+      box.appendChild(b);
+    });
+    var c = chatById(state.chat), r = c.rhythm;
+    $("chat-note").textContent = r
+      ? "Measured in " + c.name + " (" + r.recorded + "): the answer came in pieces of " + r.pieces.map(function (n) { return n.toLocaleString("en"); }).join(", ") + " characters, " + r.gapsMs.map(function (n) { return (n / 1000).toFixed(1); }).join(" and ") + " s apart. A line reaches the screen whole, so it cannot be seen turning."
+      : c.name + " streams its answer token by token; its real speed is not measured yet (survey/rhythm.js), so tokens come at the delay below.";
+    $("speed-field").hidden = !!r;
+  }
+  // What a delay means, by the owner's eye test (60 Hz, paper/results/README.md): no turn of 1-2
+  // frames (up to 33 ms) was noticed; 4 of 5 at 4 frames (66 ms). A line that opens with an English
+  // word turns when its first Urdu token arrives, so it stands the other way for one or two tokens.
+  function paintSpeed() {
+    var d = state.delay;
+    $("speed").value = d;
+    $("speed-out").textContent = d + " ms";
+    var note = $("speed-note");
+    note.textContent = "";
+    var lo = d, hi = 2 * d;
+    var verdict = hi <= 33 ? ["unseen", "too short to be noticed in the eye test - it looks like text arriving"]
+      : lo >= 66 ? ["seen", "long enough that the eye test noticed it"]
+      : ["", "between what the eye test missed (up to 33 ms) and noticed (66 ms)"];
+    [
+      el("span", { text: d ? Math.round(1000 / d) + " tokens a second. " : "As fast as the screen draws. " }),
+      el("span", { text: "A line that opens in English turns when its first Urdu token arrives - here after about " + (d ? lo + "-" + hi + " ms" : "one frame") + ": " }),
+      el("span", { class: verdict[0], text: verdict[1] + "." })
+    ].forEach(function (n) { note.appendChild(n); });
+  }
+  $("speed").addEventListener("input", function () { state.delay = +this.value; savePrefs(); paintSpeed(); });
+  $("highlight").checked = state.highlight;
+  $("highlight").addEventListener("change", function () { state.highlight = this.checked; savePrefs(); });
+
+  // ---------------------------------------------------------------- composer
+  var composerLast = null, composerChanges = 0;
+  function composerInput(silent) {
+    var ta = $("input");
+    ta.style.height = "auto";
+    ta.style.height = Math.min(ta.scrollHeight, window.innerHeight * 0.4) + "px";
+    var d = applyToComposer(ta, byId(state.formula));
+    if (!silent && d && composerLast && d !== composerLast) composerChanges++;
+    if (d) composerLast = d;
+    if (!ta.value) { composerLast = null; composerChanges = 0; }
+    $("send").disabled = !ta.value.trim();
+    $("dirchip").textContent = d ? d + (composerChanges ? " · changed " + composerChanges + "×" : "") : "";
+  }
+  $("input").addEventListener("input", function () { composerInput(false); });
+  $("input").addEventListener("keydown", function (e) {
+    if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(); }
+  });
+  $("send").addEventListener("click", send);
+  function send() {
+    var ta = $("input"), text = ta.value;
+    if (!text.trim()) return;
+    var msg = addTurn(text, { composerChanges: composerChanges });
+    if (!markExample(msg)) markByLetters(msg);
+    ta.value = ""; composerInput(true);
+    stream(msg);
+  }
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && state.stream) { stopStream(true); return; }
+    var inField = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement && document.activeElement.tagName);
+    if (inField || e.ctrlKey || e.metaKey || e.altKey) return;
+    var n = parseInt(e.key, 10), order = [];
+    GROUPS.forEach(function (g) { formulas().forEach(function (f) { if (f.group === g[0]) order.push(f); }); });
+    if (n >= 1 && n <= 9 && order[n - 1]) chooseFormula(order[n - 1].id);
+  });
+
+  // ---------------------------------------------------------------- examples (public text only)
+  var EXAMPLES = [
+    { name: "Urdu answer with code terms", text: "## useMemo اور useCallback\n\nReact میں `useMemo` کسی حساب کا نتیجہ یاد رکھتا ہے، اور `useCallback` پورا function یاد رکھتا ہے۔ دونوں کا مقصد غیر ضروری re-render سے بچنا ہے۔\n\n### کب کون سا استعمال کریں\n\n- `useMemo` جب حساب مہنگا ہو، مثلاً 10,000 اشیاء کی فہرست کو sort کرنا\n- `useCallback` جب function کسی child component کو props میں جا رہا ہو\n- Debounce بمقابلہ Throttle کا فرق بھی یہیں سمجھ آتا ہے\n\n| Hook | کیا یاد رکھتا ہے | کب |\n|---|---|---|\n| useMemo | نتیجہ | مہنگا حساب |\n| useCallback | function | child کو props |\n\n```js\nconst total = useMemo(() => sum(items), [items]);\n```\n\nجواب عموماً 250–400ms میں آ جاتا ہے۔" },
+    { name: "Five Urdu headings", text: "# useMemo اور useCallback\n\n## args - اصل arguments\n\n## children بطور props\n\n## Debounce بمقابلہ Throttle\n\n## JavaScript میں Debounce فنکشن" },
+    { name: "English with one Urdu phrase", text: "In Urdu this idea is called ایونٹ لوپ, but the mechanics are identical to JavaScript's event loop.\n\n1. The call stack runs synchronous code first.\n2. Microtasks run before the next task.\n3. Rendering happens between tasks." },
+    { name: "Arabic (W3C's example)", text: "## HTML و CSS: تصميم و إنشاء مواقع الويب\n\nPython هي لغة برمجة سهلة التعلم، وتُستخدم في تحليل البيانات والذكاء الاصطناعي.\n\n- مكتبة pandas لتحليل الجداول\n- مكتبة NumPy للعمليات الحسابية" },
+    { name: "Persian", text: "React یک کتابخانه جاوااسکریپت برای ساخت رابط کاربری است.\n\n- هر component یک تابع است\n- state داده‌ای است که با گذشت زمان تغییر می‌کند" },
+    { name: "Hebrew", text: "Node.js מאפשר להריץ JavaScript מחוץ לדפדפן.\n\n- התקינו את החבילה עם npm install\n- הריצו את הקובץ עם node index.js" }
+  ];
+  // The way each line of an example should read, in order - its lines that hold a letter with a
+  // direction. A line of plain English reads left to right; a line whose sentence is Urdu, Arabic,
+  // Persian or Hebrew reads right to left, whatever it opens with.
+  var R = "rtl", L = "ltr";
+  EXAMPLES[0].should = [R, R, R, R, R, R, L, R, R, L, R, R, L, L, R, R];
+  EXAMPLES[1].should = [R, R, R, R, R];
+  EXAMPLES[2].should = [L, L, L, L];
+  EXAMPLES[3].should = [R, R, R, R];
+  EXAMPLES[4].should = [R, R, R];
+  EXAMPLES[5].should = [R, R, R];
+  // Where the four candidates part: a long English opening before the Urdu, an Urdu word late in
+  // an English sentence, a quoted word early in an English sentence, book lists, a sentence with its
+  // translation, commands, and a table. Written for the lab; each line says which way it reads.
+  var E = "either";
+  EXAMPLES.push(
+    { name: "Urdu list, long English openings", text: "## React hooks کی فہرست\n\n- useEffect, useMemo, useCallback, useRef and useContext hooks کو سمجھنا ضروری ہے۔\n- React Native, TypeScript and Redux Toolkit کے ساتھ موبائل ایپ بنانا آسان ہے۔\n- `npm install` کے بعد `npm run dev` چلائیں۔\n- Microsoft Visual Studio Code, GitHub Copilot, Claude Code and Cursor editors میں سے کوئی ایک چنیں۔", should: [R, R, R, R, R] },
+    { name: "English, Urdu word late", text: "When you ship this app to production, remember that the translation file for Urdu is called ترجمہ and it lives in the locales folder.\n\nPress the key marked ب to switch the keyboard to Urdu.\n\nThe settings screen of the mobile application has a field labelled زبان where you choose the language.", should: [L, L, L] },
+    { name: "English, quoted Arabic early", text: "Explanation: In Tunisian dialect, \"برشا\" means \"a lot\" and \"توة\" means \"now\".\n\nThe word \"شكرا\" is used exactly as in Standard Arabic.", should: [L, L] },
+    { name: "Arabic book list", text: "### كتب مقترحة\n\n1. \"The Pragmatic Programmer: Your Journey to Mastery\" - David Thomas و Andrew Hunt: يشرح هذا الكتاب مبادئ البرمجة العملية.\n2. \"Clean Code\" - Robert C. Martin: دليل لكتابة شيفرة واضحة.\n3. \"Designing Data-Intensive Applications: The Big Ideas Behind Reliable, Scalable, and Maintainable Systems\" - Martin Kleppmann: يتناول تصميم الأنظمة الكبيرة.", should: [R, R, R, R] },
+    { name: "Persian, English terms first", text: "\"Designing Data-Intensive Applications\" نوشته Martin Kleppmann: این کتاب طراحی سیستم‌های بزرگ را توضیح می‌دهد.\n\nBERT (Bidirectional Encoder Representations from Transformers): مدلی برای پردازش زبان طبیعی است.", should: [R, R] },
+    { name: "Sentence and its translation", text: "Good morning! Waking up next to you is the best start to my day. صباح الخير! الاستيقاظ بجانبك هو أجمل بداية ليومي.\n\nWir müssen zusammenarbeiten. (علينا أن نعمل معًا.)", should: [E, E] },
+    { name: "Hebrew setup steps", text: "## התקנה\n\n- `git clone https://github.com/user/repo.git` — מוריד את הקוד למחשב.\n- ב-Google Cloud Console > APIs & Services > Credentials", should: [R, R, R] },
+    { name: "Urdu table of commands", text: "| کمانڈ | کام |\n|---|---|\n| npm install | پیکیجز انسٹال کرتا ہے |\n| npm run build | پروڈکشن کے لیے فائلیں بناتا ہے |", should: [R, R, L, R, L, R] }
+  );
+  function markExample(msg) {
+    var x = EXAMPLES.find(function (e) { return e.text === msg.text; });
+    if (!x) return false;
+    var lines = unitsOf(msg.text).filter(function (u) { return strong(u.text); });
+    if (lines.length !== x.should.length) return false; // never mark a line with another line's answer
+    lines.forEach(function (u, i) { msg.marks[u.key] = x.should[i]; msg.markFrom[u.key] = "example"; });
+    return true;
+  }
+  // Your own text is marked the way a reader would, by its letters:
+  //   only one direction's letters                  -> that direction, confirmed
+  //   opens right-to-left, whatever follows        -> right-to-left, confirmed
+  //   opens left-to-right, right-to-left after it  -> right-to-left, a GUESS: most such lines are
+  //                                                   Urdu, but an English sentence carrying an
+  //                                                   Urdu phrase is not - click to confirm or switch
+  // The guess is the Any RTL rule, so an unconfirmed guess favours the formulas close to it; the
+  // panel says how many marks are guesses, and the log keeps which were.
+  function markByLetters(msg) {
+    unitsOf(msg.text).forEach(function (u) {
+      if (!strong(u.text) || msg.marks[u.key]) return;
+      var c = count(u.text), first = firstStrong(u.text), opensRtl = first === "R" || first === "AL";
+      if (!c.rtl) { msg.marks[u.key] = "ltr"; msg.markFrom[u.key] = "sure"; }
+      else if (opensRtl || !c.ltr) { msg.marks[u.key] = "rtl"; msg.markFrom[u.key] = "sure"; }
+      else { msg.marks[u.key] = "rtl"; msg.markFrom[u.key] = "guess"; }
+    });
+  }
+  // what each kind of mark is called beside the switches
+  var FROM = {
+    example: ["confirmed", "Checked by hand for this example"],
+    sure: ["confirmed", "The line is one language, or opens right-to-left"],
+    you: ["yours", "Marked by you"],
+    guess: ["guess", "Opens in English with Urdu after it - most such lines are Urdu. Click to confirm, or switch it."],
+    read: ["read", "Read line by line - by Claude (the assistant) for this first reading, to be checked by a person"],
+    proxy: ["by words", "The machine's proxy, not a person: 50% or more right-to-left words reads right-to-left, 20% or less left-to-right"]
+  };
+  EXAMPLES.forEach(function (x, i) { $("examples").appendChild(el("option", { value: String(i), text: x.name })); });
+  $("examples").addEventListener("change", function () {
+    var x = EXAMPLES[+this.value]; this.value = "";
+    if (!x) return;
+    $("input").value = x.text; composerInput(true); $("input").focus();
+  });
+
+  // ---------------------------------------------------------------- the machine
+  // Streams the public chat data answer after answer and adds up, for every formula, what the
+  // right panel counts for one message. Only answers holding a mixed line are in it: on every
+  // other answer the formulas cannot disagree. Which way a line should read is the paper's proxy
+  // (results/README.md) - by the share of right-to-left words - not a person's label; lines in
+  // between (21-49%) are not counted.
+  var MACHINE = {"dataset":"allenai/WildChat-4.8M","revision":"c827c6df8fcf008219ffaffa4d1dd77491099367","total":11712,"parts":[{"file":"data/wildchat-1.json","count":4234,"from":0},{"file":"data/wildchat-2.json","count":3781,"from":4234},{"file":"data/wildchat-3.json","count":3697,"from":8015}]};
+  // Machine 2: every line on which the four candidates left by machine 1 disagree, with the way
+  // each should read, read line by line (paper/results/README.md, "the four").
+  var DISPUTED = {"file":"data/disputed.json","total":473,"labeller":"by Claude (the assistant) for this first reading, to be checked by a person","privateNote":"On the 20 such lines from Claude's answers (private, not on this page), wrong: Any RTL 3, our first formula 3, Firefox 63 3, Firefox 45 15."};
+  var CANDIDATES = ["any-rtl", "smartrtl", "any-rtl-63", "opening-letters-45"];
+  var HELP = window.BidiFormulas.createFormulas({ bidiClass: bidiClass }).helpers;
+  var machine = { running: false, set: "all", order: "order", view: "watch", pos: { all: 0, disputed: 0 }, parts: {}, sums: {}, timer: 0, lastPaint: 0 };
+  try {
+    var mp = JSON.parse(localStorage.getItem("bidi-lab-machine") || "{}");
+    if (mp.set === "all" || mp.set === "disputed" || mp.set === "file") machine.set = mp.set;
+    if (mp.order) machine.order = mp.order; if (mp.view) machine.view = mp.view;
+    if (mp.pos && typeof mp.pos === "object") { if (mp.pos.all < MACHINE.total) machine.pos.all = mp.pos.all || 0; if (mp.pos.disputed < DISPUTED.total) machine.pos.disputed = mp.pos.disputed || 0; }
+  } catch (e) {}
+  function saveMachine() { try { localStorage.setItem("bidi-lab-machine", JSON.stringify({ set: machine.set, pos: machine.pos, order: machine.order, view: machine.view })); } catch (e) {} }
+  function totalOf(set) { return set === "disputed" ? DISPUTED.total : set === "file" ? machine.file.items.length : MACHINE.total; }
+  function emptySums() { return { totals: {}, answers: 0, judged: 0, unjudged: 0, guesses: 0 }; }
+  machine.sums = { all: emptySums(), disputed: emptySums(), file: emptySums() };
+  machine.pos.file = 0;
+  machine.file = { name: "", items: [] };
+
+  /* Machine 3 reads a chat export in this browser - nothing is uploaded, saved or logged - and
+     streams every AI response in it. It knows the exports of ChatGPT (conversations.json: mapping
+     -> message.author.role "assistant"), Claude (conversations.json: chat_messages -> sender
+     "assistant") and plain lists of {role, content} (role "assistant" or "model"), or of strings. */
+  function chatResponses(json) {
+    var out = [];
+    var textOf = function (c) {
+      if (typeof c === "string") return c;
+      if (Array.isArray(c)) return c.map(textOf).filter(Boolean).join("\n\n");
+      if (c && typeof c === "object") {
+        if (Array.isArray(c.parts)) return c.parts.map(textOf).filter(Boolean).join("\n\n");
+        if (typeof c.text === "string") return c.text;
+        if (c.content !== undefined) return textOf(c.content);
+      }
+      return "";
+    };
+    var push = function (text, where, model) { text = String(text || "").trim(); if (text) out.push([String(out.length + 1), where, model || "", text]); };
+    (function walk(node, title) {
+      if (Array.isArray(node)) { node.forEach(function (x) { walk(x, title); }); return; }
+      if (!node || typeof node !== "object") { if (typeof node === "string" && title === "\u0000list") push(node, "response", ""); return; }
+      var name = node.title || node.name || title || "";
+      if (node.mapping && typeof node.mapping === "object") { // ChatGPT
+        Object.keys(node.mapping).map(function (k) { return node.mapping[k].message; })
+          .filter(function (m) { return m && m.author && m.author.role === "assistant" && m.content && (m.content.content_type === "text" || m.content.content_type === "multimodal_text"); })
+          .sort(function (a, b) { return (a.create_time || 0) - (b.create_time || 0); })
+          .forEach(function (m) { push(textOf(m.content), name, (m.metadata && m.metadata.model_slug) || "ChatGPT"); });
+        return;
+      }
+      if (Array.isArray(node.chat_messages)) { // Claude
+        node.chat_messages.filter(function (m) { return m.sender === "assistant"; })
+          .forEach(function (m) { push(m.text || textOf(m.content), name, "Claude"); });
+        return;
+      }
+      var role = node.role || (node.author && node.author.role) || node.sender;
+      if ((role === "assistant" || role === "model" || role === "bot") && (node.content !== undefined || node.parts || node.text !== undefined)) {
+        push(textOf(node.content !== undefined ? node.content : node.parts || node.text), name, node.model || "");
+        return;
+      }
+      Object.keys(node).forEach(function (k) { if (node[k] && typeof node[k] === "object") walk(node[k], name); });
+    })(json, Array.isArray(json) && json.every(function (x) { return typeof x === "string"; }) ? "\u0000list" : "");
+    return out;
+  }
+
+  function sums() { return machine.sums[machine.set]; }
+  function shownFormulas() { return machine.set === "disputed" ? formulas().filter(function (f) { return CANDIDATES.indexOf(f.id) > -1; }) : formulas(); }
+
+  function markByLabel(msg, label) {
+    if (label !== "rtl" && label !== "ltr" && label !== "either") return;
+    unitsOf(msg.text).forEach(function (u) { if (strong(u.text)) { msg.marks[u.key] = label; msg.markFrom[u.key] = "read"; } });
+  }
+  function markByWords(msg) {
+    unitsOf(msg.text).forEach(function (u) {
+      if (!strong(u.text)) return;
+      var w = HELP.strongWords(u.text), share = w.filter(function (x) { return x === "R"; }).length / (w.length || 1);
+      var d = share >= 0.5 ? "rtl" : share <= 0.2 ? "ltr" : null;
+      if (d) { msg.marks[u.key] = d; msg.markFrom[u.key] = "proxy"; }
+    });
+  }
+  function answerAt(i) {
+    if (machine.set === "file") return Promise.resolve(machine.file.items[i]);
+    if (machine.set === "disputed") {
+      if (machine.parts[DISPUTED.file]) return Promise.resolve(machine.parts[DISPUTED.file][i]);
+      $("m-status").textContent = "Loading " + DISPUTED.file + "…";
+      return fetch(DISPUTED.file).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+        .then(function (rows) { machine.parts[DISPUTED.file] = rows; return rows[i]; });
+    }
+    var p = MACHINE.parts.find(function (x) { return i >= x.from && i < x.from + x.count; });
+    if (machine.parts[p.file]) return Promise.resolve(machine.parts[p.file][i - p.from]);
+    $("m-status").textContent = "Loading " + p.file + "…";
+    return fetch(p.file).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function (rows) { machine.parts[p.file] = rows; return rows[i - p.from]; });
+  }
+  function nextIndex() {
+    var n = totalOf(machine.set);
+    if (machine.order === "random") return Math.floor(Math.random() * n);
+    var i = machine.pos[machine.set];
+    machine.pos[machine.set] = (i + 1) % n;
+    saveMachine();
+    return i;
+  }
+  // Machine 2 judges the whole line the way the reader did - one direction for the line - and
+  // takes went back and turned from the line arriving token by token, as machine 1 does.
+  function addUp(msg, label) {
+    var sm = sums();
+    if (machine.set === "disputed") {
+      sm.answers++;
+      if (label === "rtl" || label === "ltr" || label === "either") sm.judged++; else sm.unjudged++;
+    } else {
+      var lines = unitsOf(msg.text).filter(function (u) { return strong(u.text); });
+      var judged = lines.filter(function (u) { return msg.marks[u.key]; }).length;
+      sm.answers++; sm.judged += judged; sm.unjudged += lines.length - judged;
+      sm.guesses += lines.filter(function (u) { return msg.markFrom[u.key] === "guess"; }).length;
+    }
+    shownFormulas().forEach(function (f) {
+      var t = sm.totals[f.id] || (sm.totals[f.id] = { right: 0, wrong: 0, back: 0, turned: 0 });
+      var sc = score(msg, f);
+      if (machine.set === "disputed") {
+        if (label === "rtl" || label === "ltr" || label === "either") {
+          if (label === "either" || seen(f, msg.lineText) === label) t.right++; else t.wrong++;
+        }
+      } else { t.right += sc.right; t.wrong += sc.wrong; }
+      t.back += sc.back; t.turned += sc.turned;
+    });
+  }
+  function paintTotals() {
+    var sm = sums(), disputed = machine.set === "disputed";
+    $("m-totals").hidden = !sm.answers;
+    var mine = machine.set === "file";
+    $("totals-title").textContent = disputed ? "Machine 2 · the four, on the lines they disagree on" : mine ? "Machine 3 · every formula, your chats" : "Machine 1 · every formula, all answers so far";
+    var who = $("totals-who"); who.textContent = "";
+    [el("span", { text: "Every row below is tested on every " + (disputed ? "line" : "answer") + " - " + (disputed ? "all four" : "all " + shownFormulas().length + " formulas") + " at once, on the same text. The chat streams with " }),
+     el("b", { text: byId(state.formula).name }), el("span", { text: " (the highlighted row); click a row to watch another." })].forEach(function (n) { who.appendChild(n); });
+    var body = $("totals").tBodies[0];
+    body.textContent = "";
+    if (!sm.answers) return;
+    var rows = shownFormulas().map(function (f) { return { f: f, t: sm.totals[f.id] || { right: 0, wrong: 0, back: 0, turned: 0 } }; });
+    var best = Math.min.apply(null, rows.map(function (r) { return r.t.wrong; }));
+    rows.forEach(function (r) {
+      var f = r.f, t = r.t, n = t.right + t.wrong;
+      var pct = function (x) { return n ? " (" + (100 * x / n).toFixed(1) + "%)" : ""; };
+      var tr = el("tr", { class: f.id === state.formula ? "current" : "", tabindex: "0" }, [
+        el("td", { class: disputed && t.wrong === best ? "lead" : "", text: f.name + (disputed && t.wrong === best ? "  ★" : "") }),
+        el("td", { class: "n", text: t.right.toLocaleString("en") }),
+        el("td", { class: "n" + (t.wrong ? " bad" : ""), text: t.wrong.toLocaleString("en") + pct(t.wrong) }),
+        el("td", { class: "n" + (t.back ? " bad" : " good"), text: t.back.toLocaleString("en") }),
+        el("td", { class: "n muted", text: t.turned.toLocaleString("en") })
+      ]);
+      tr.addEventListener("click", function () { chooseFormula(f.id); });
+      body.appendChild(tr);
+    });
+    $("totals-note").textContent = disputed
+      ? sm.answers.toLocaleString("en") + " of " + DISPUTED.total.toLocaleString("en") + " lines, " + sm.judged.toLocaleString("en") + " judged, " + sm.unjudged.toLocaleString("en") + " unclear (garbled text, bare formulas) and not counted. "
+        + "Which way each line should read was read line by line - " + DISPUTED.labeller + ". \"Either\" counts as right for all four. "
+        + DISPUTED.privateNote
+      : mine
+      ? sm.answers.toLocaleString("en") + " responses from " + machine.file.name + ", " + sm.judged.toLocaleString("en") + " lines with a direction. Which way each should read is marked by its letters, as for a message you type: one language, or opening right-to-left - confirmed; opening in English with Urdu after it - a guess, " + sm.guesses.toLocaleString("en") + " of them. Watch a response and switch a guess on the right to correct it; the counts here are taken when a response finishes."
+      : sm.answers.toLocaleString("en") + " answers, " + sm.judged.toLocaleString("en") + " lines counted, " + sm.unjudged.toLocaleString("en")
+        + " not counted (between 21% and 49% right-to-left words, where the proxy cannot say). Which way a line should read is judged by its share of right-to-left words, not by a person. Went back and turned are per line, token by token. A formula that goes back, or is wrong far more often, drops out; four are left - machine 2.";
+  }
+  function paintMachine() {
+    $("m-run").textContent = machine.running ? "Stop" : "Start";
+    $("m-run").classList.toggle("on", machine.running);
+    [["m-set", machine.set], ["m-order", machine.order], ["m-view", machine.view]].forEach(function (g) {
+      $(g[0]).querySelectorAll("button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.v === g[1])); });
+    });
+    var what = machine.set === "disputed" ? "line" : machine.set === "file" ? "response" : "answer";
+    $("m-file-label").hidden = machine.set !== "file";
+    $("m-run").disabled = machine.set === "file" && !machine.file.items.length;
+    if (!machine.running) $("m-status").textContent = machine.order === "order"
+      ? "Next: " + what + " " + (machine.pos[machine.set] + 1).toLocaleString("en") + " of " + totalOf(machine.set).toLocaleString("en")
+      : "Random " + what + "s from " + totalOf(machine.set).toLocaleString("en");
+    $("m-src").textContent = machine.set === "disputed" ? DISPUTED.source : machine.set === "file" ? FILE_SOURCE : MACHINE.source;
+    if (machine.set === "file" && !machine.file.items.length && !machine.running) $("m-status").textContent = "Load a chat export (JSON) to stream your own AI responses - it stays in this browser.";
+  }
+  function trimThread() {
+    while (state.messages.length > 24) {
+      var old = state.messages.shift();
+      old.sentNode.parentNode.remove(); old.answerNode.parentNode.remove();
+      state.current = Math.max(0, state.current - 1);
+    }
+  }
+  function machineStep() {
+    if (!machine.running) return;
+    // in order, the machine stops when it has been through every item once - counting an item
+    // twice would weigh it twice; Reset totals and Start go through them again
+    if (machine.order === "order" && sums().answers >= totalOf(machine.set)) {
+      machine.running = false; paintMachine(); paintTotals();
+      $("m-status").textContent = "Done: all " + totalOf(machine.set).toLocaleString("en") + (machine.set === "disputed" ? " lines" : machine.set === "file" ? " responses" : " answers") + " counted once. Reset to go through them again.";
+      return;
+    }
+    var i = nextIndex(), run = machine.run;
+    answerAt(i).then(function (row) {
+      // a step still loading when the machine was stopped, switched or restarted belongs to that run
+      if (!machine.running || run !== machine.run) return;
+      var disputed = machine.set === "disputed", mineFile = machine.set === "file";
+      // machine 1 rows: [answerId, language, model, markdown]; machine 2 rows: [textId, kind, markdown, label, text]
+      var md = disputed ? row[2] : row[3], label = disputed ? row[3] : null;
+      var title = disputed ? "Line " + (i + 1) + " of " + DISPUTED.total + " · " + row[1] + " · read: " + (label === "unclear" ? "unclear" : label) : MACHINE.dataset.split("/").pop() + " · " + row[1] + " · " + row[2] + " · " + row[0];
+      if (mineFile) title = "Your chats · " + (row[1] || "response") + (row[2] ? " · " + row[2] : "");
+      $("m-status").textContent = (disputed ? title : mineFile ? "Response " + (i + 1).toLocaleString("en") + " of " + totalOf("file").toLocaleString("en") + " · " + (row[1] || "") : "Answer " + (i + 1).toLocaleString("en") + " of " + MACHINE.total.toLocaleString("en") + " · " + row[1] + " · " + row[2])
+        + (machine.view === "watch" ? " · streaming with " + byId(state.formula).name : " · scoring " + shownFormulas().length + " formulas, nothing drawn");
+      var fill = function (msg) { if (disputed) { msg.lineText = row[4]; msg.lineLabel = label; markByLabel(msg, label); } else if (mineFile) markByLetters(msg); else markByWords(msg); };
+      if (machine.view === "fast") {
+        var msg = { text: md, marks: {}, markFrom: {} };
+        fill(msg); addUp(msg, label);
+        var now = performance.now();
+        if (now - machine.lastPaint > 400) { machine.lastPaint = now; paintTotals(); }
+        machine.timer = setTimeout(machineStep, 0);
+        return;
+      }
+      var m = addTurn(md, { machine: { n: i + 1, label: title, line: disputed, mine: mineFile } });
+      m.chat = state.chat;
+      fill(m);
+      m.onDone = function () { addUp(m, label); paintTotals(); paintInspect(); if (machine.running) machine.timer = setTimeout(machineStep, disputed ? 900 : 600); };
+      stream(m);
+      trimThread();
+    }).catch(function (e) {
+      machine.running = false; paintMachine();
+      $("m-status").textContent = "Could not load the answers (" + (e && e.message) + "). The machine needs the page's data files.";
+    });
+  }
+  $("m-run").addEventListener("click", function () {
+    machine.running = !machine.running;
+    machine.run = (machine.run || 0) + 1;
+    clearTimeout(machine.timer);
+    if (!machine.running) { stopStream(true); paintTotals(); }
+    paintMachine();
+    if (machine.running) machineStep();
+  });
+  $("m-order").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; machine.order = b.dataset.v; saveMachine(); paintMachine(); });
+  $("m-view").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; machine.view = b.dataset.v; saveMachine(); paintMachine(); });
+  // Reset starts the screen again: the machine stops, its totals empty, and every message in the
+  // chat - typed or streamed by a machine - is cleared. The session log saved for the paper is kept.
+  $("m-reset").addEventListener("click", function () {
+    if (machine.running) { machine.running = false; machine.run = (machine.run || 0) + 1; clearTimeout(machine.timer); }
+    if (state.stream) { clearTimeout(state.stream.timer); state.stream = null; }
+    machine.sums[machine.set] = emptySums();
+    $("thread").textContent = "";
+    state.messages = []; state.current = -1;
+    paintMachine(); paintTotals(); paintInspect();
+  });
+  $("m-set").addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b || b.dataset.v === machine.set) return;
+    if (machine.running) { machine.running = false; machine.run = (machine.run || 0) + 1; clearTimeout(machine.timer); stopStream(true); }
+    machine.set = b.dataset.v; saveMachine(); paintMachine(); paintTotals();
+  });
+  var FILE_SOURCE = "Your own AI chats, from an export you load: ChatGPT (Settings > Data controls > Export: conversations.json), Claude (Settings > Privacy > Export data: conversations.json), or any JSON list of {role, content}. The file is read in this browser only - it is not uploaded, not saved, and your responses are not written to the session log.";
+  $("m-file").addEventListener("change", function () {
+    var f = this.files && this.files[0];
+    if (!f) return;
+    if (machine.running) { machine.running = false; machine.run = (machine.run || 0) + 1; clearTimeout(machine.timer); stopStream(true); }
+    $("m-status").textContent = "Reading " + f.name + "…";
+    f.text().then(function (t) {
+      var items = chatResponses(JSON.parse(t)).filter(function (r) { return strong(r[3]); });
+      machine.file = { name: f.name, items: items };
+      machine.pos.file = 0; machine.sums.file = emptySums();
+      paintMachine(); paintTotals();
+      $("m-status").textContent = items.length
+        ? items.length.toLocaleString("en") + " AI responses found in " + f.name + ". Start streams them with " + byId(state.formula).name + "."
+        : "No AI responses found in " + f.name + ". It needs a ChatGPT or Claude export, or a list of {role, content}.";
+    }).catch(function (e) {
+      $("m-status").textContent = "Could not read " + f.name + ": " + (e && e.message) + ". It needs to be a JSON file.";
+    });
+    this.value = "";
+  });
+  MACHINE.source = MACHINE.total.toLocaleString("en") + " real ChatGPT answers in Arabic, Persian, Hebrew and Urdu that hold a line mixing both directions - " + MACHINE.dataset + " (AI2, ODC-BY), revision " + MACHINE.revision.slice(0, 8) + "; conversations it flags as toxic left out. In order, the answers come as the paper's sample holds them.";
+  DISPUTED.source = DISPUTED.total + " lines from the same ChatGPT answers on which Any RTL, our first formula and Firefox's formula at 63 and at 45 letters do not all agree - every such line, read one by one for the way it should read. The 20 such lines from Claude's answers are private and not on this page.";
+
+  // ---------------------------------------------------------------- panels resized by dragging
+  // The two gutters beside the chat move like an editor's: drag, or focus one and use the arrow
+  // keys; double-click puts a panel back to its size. What you set is kept as you set it; a
+  // smaller window only shows it smaller (the chat keeps at least 360px, each side at most 45%).
+  (function () {
+    var panes = document.querySelector(".panes");
+    var DEFAULT = { left: 280, right: 380 }, MIN = { left: 240, right: 260 };
+    var wanted = { left: DEFAULT.left, right: DEFAULT.right }, shown = { left: DEFAULT.left, right: DEFAULT.right };
+    try { var w = JSON.parse(localStorage.getItem("bidi-lab-panes") || "{}"); if (w.left > 0) wanted.left = w.left; if (w.right > 0) wanted.right = w.right; } catch (e) {}
+    function apply() {
+      var total = panes.clientWidth, max = Math.floor(window.innerWidth * 0.45);
+      var clamp = function (side, other) { return Math.round(Math.max(MIN[side], Math.min(wanted[side], max, total - other - 24 - 360))); };
+      shown.left = clamp("left", Math.min(wanted.right, max));
+      shown.right = clamp("right", shown.left);
+      panes.style.setProperty("--left", shown.left + "px");
+      panes.style.setProperty("--right", shown.right + "px");
+    }
+    function save() { try { localStorage.setItem("bidi-lab-panes", JSON.stringify(wanted)); } catch (e) {} }
+    [["gutter-left", "left"], ["gutter-right", "right"]].forEach(function (g) {
+      var gutter = $(g[0]), side = g[1];
+      gutter.addEventListener("pointerdown", function (e) {
+        e.preventDefault();
+        gutter.setPointerCapture(e.pointerId);
+        gutter.classList.add("dragging"); document.body.classList.add("resizing");
+        var startX = e.clientX, start = shown[side];
+        function move(ev) { wanted[side] = start + (side === "left" ? ev.clientX - startX : startX - ev.clientX); apply(); wanted[side] = shown[side]; }
+        function up() {
+          gutter.removeEventListener("pointermove", move); gutter.removeEventListener("pointerup", up); gutter.removeEventListener("pointercancel", up);
+          gutter.classList.remove("dragging"); document.body.classList.remove("resizing"); save();
+        }
+        gutter.addEventListener("pointermove", move); gutter.addEventListener("pointerup", up); gutter.addEventListener("pointercancel", up);
+      });
+      gutter.addEventListener("keydown", function (e) {
+        var step = e.shiftKey ? 60 : 20, grow = side === "left" ? 1 : -1;
+        if (e.key === "ArrowLeft") wanted[side] = shown[side] - step * grow; else if (e.key === "ArrowRight") wanted[side] = shown[side] + step * grow; else return;
+        e.preventDefault(); apply(); wanted[side] = shown[side]; save();
+      });
+      gutter.addEventListener("dblclick", function () { wanted[side] = DEFAULT[side]; apply(); save(); });
+    });
+    window.addEventListener("resize", apply);
+    apply();
+  })();
+
+  // ---------------------------------------------------------------- tabs (narrow screens)
+  document.querySelectorAll(".tabs button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      document.querySelectorAll(".tabs button").forEach(function (x) { x.setAttribute("aria-selected", String(x === b)); });
+      ["rail", "chat", "inspect"].forEach(function (id) { $(id).classList.toggle("shown", id === b.dataset.pane); });
+      if (b.dataset.pane === "inspect") paintInspect();
+    });
+  });
+  $("rail").classList.add("shown"); $("inspect").classList.add("shown");
+  var narrow = window.matchMedia("(max-width: 920px)");
+  function syncPanes() {
+    if (narrow.matches) {
+      var active = document.querySelector('.tabs button[aria-selected="true"]').dataset.pane;
+      ["rail", "chat", "inspect"].forEach(function (id) { $(id).classList.toggle("shown", id === active); });
+    } else ["rail", "chat", "inspect"].forEach(function (id) { $(id).classList.add("shown"); });
+  }
+  narrow.addEventListener("change", syncPanes);
+  syncPanes();
+
+  // ---------------------------------------------------------------- session log and saved formulas
+  var db = null, downloads = null, localLog = [];
+  var logDocs = [];
+  function runRecord(msg) {
+    return {
+      at: new Date().toISOString(), formula: msg.formula, formulaName: byId(msg.formula).name, chat: msg.chat,
+      stream: chatById(msg.chat).rhythm ? "recorded pieces" : "token", delayMs: chatById(msg.chat).rhythm ? null : msg.delay, input: msg.text, composerChanges: msg.composerChanges,
+      blocks: msg.rows.map(function (r) { return { key: r.key, tag: r.tag, preview: r.text.trim().slice(0, 80), final: r.final, changes: r.changes, wentBack: r.back }; }),
+      marks: msg.marks, markFrom: msg.markFrom, lab: PROVENANCE
+    };
+  }
+  function logRun(msg) {
+    if (msg.example || msg.machine) return;
+    var rec = runRecord(msg);
+    if (db) {
+      db.collection("runs").add(rec).then(function (ref) { msg.logRef = ref; }).catch(function (e) {
+        localLog.unshift(rec); paintLog();
+        $("log-state").textContent = e && e.code === "quota_exceeded" ? "The log is full. Export it, then remove old runs." : "Could not save this run to the lab's log; it is kept in this tab.";
+      });
+    } else { localLog.unshift(rec); paintLog(); }
+  }
+  var markTimers = {};
+  function saveMarks(msg) {
+    if (msg.example || msg.machine) return;
+    if (!db || !msg.logRef) { var r = localLog.find(function (x) { return x.input === msg.text; }); if (r) { r.marks = Object.assign({}, msg.marks); r.markFrom = Object.assign({}, msg.markFrom); } return; }
+    clearTimeout(markTimers[msg.id]);
+    markTimers[msg.id] = setTimeout(function () { msg.logRef.update({ marks: Object.assign({}, msg.marks), markFrom: Object.assign({}, msg.markFrom) }).catch(function () {}); }, 700);
+  }
+  // The log is managed here and only here: × deletes one run (click twice - the first click asks),
+  // "Delete all…" deletes every saved run after a confirmation. Deleting is permanent. Reset does
+  // not touch the log.
+  try { localStorage.removeItem("bidi-lab-log-since"); } catch (e) {} // left by an earlier version
+  function deleteRun(r) {
+    if (db && r._id) return db.doc("runs/" + r._id).delete();
+    localLog = localLog.filter(function (x) { return x !== r; });
+    paintLog();
+    return Promise.resolve();
+  }
+  function paintLog() {
+    var box = $("log");
+    box.textContent = "";
+    var items = db ? logDocs : localLog;
+    $("log-clear").disabled = !items.some(function (r) { return !r.starred; });
+    if (!items.length) { box.appendChild(el("p", { class: "empty", text: "Nothing in the log." })); return; }
+    items.slice(0, 60).forEach(function (r) {
+      var back = (r.blocks || []).filter(function (b) { return b.wentBack; }).length;
+      var when = new Date(r.at);
+      var b = el("button", { type: "button", class: "run", title: "Load into the composer" }, [
+        el("span", { class: "l1" }, [
+          el("span", { text: when.toLocaleDateString() + " " + when.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) }),
+          el("span", { text: r.formulaName || r.formula }),
+          el("span", { text: (r.blocks || []).length + " blocks" }),
+          back ? el("span", { style: "color:var(--back)", text: back + " went back" }) : null
+        ]),
+        el("span", { class: "l2", text: (r.input || "").replace(/\s+/g, " ").slice(0, 140) })
+      ]);
+      b.addEventListener("click", function () { $("input").value = r.input || ""; composerInput(true); $("input").focus(); });
+      // a star keeps a run: Delete all… passes over it; × still deletes it, on purpose
+      var star = el("button", { type: "button", class: "star", "aria-pressed": String(!!r.starred), title: r.starred ? "Starred - Delete all keeps it. Click to unstar." : "Star this run - Delete all will keep it", "aria-label": r.starred ? "Unstar this run" : "Star this run", text: r.starred ? "★" : "☆" });
+      star.addEventListener("click", function () {
+        var next = !r.starred;
+        star.disabled = true;
+        var done = function () { star.disabled = false; };
+        if (db && r._id) {
+          db.doc("runs/" + r._id).update({ starred: next }).then(done).catch(function (e) {
+            done();
+            $("log-state").textContent = "Could not star that run" + (e && e.code ? " (" + e.code + ")" : "") + " - only people who can edit this lab can.";
+          });
+        } else { r.starred = next; done(); paintLog(); }
+      });
+      var del = el("button", { type: "button", class: "del", title: "Delete this run from the log", "aria-label": "Delete this run", text: "×" });
+      var armed = 0;
+      del.addEventListener("click", function () {
+        if (!armed) {
+          del.classList.add("armed"); del.textContent = "Delete?";
+          armed = setTimeout(function () { armed = 0; del.classList.remove("armed"); del.textContent = "×"; }, 3000);
+          return;
+        }
+        clearTimeout(armed); del.disabled = true;
+        deleteRun(r).catch(function (e) {
+          del.disabled = false; armed = 0; del.classList.remove("armed"); del.textContent = "×";
+          $("log-state").textContent = "Could not delete that run" + (e && e.code ? " (" + e.code + ")" : "") + " - only people who can edit this lab can delete.";
+        });
+      });
+      box.appendChild(el("div", { class: "item" + (r.starred ? " starred" : "") }, [star, b, del]));
+    });
+    if (items.length > 60) box.appendChild(el("p", { class: "empty", text: "Showing the newest 60 of " + items.length + "." }));
+  }
+  $("log-clear").addEventListener("click", function () {
+    var all = db ? logDocs : localLog, kept = all.filter(function (r) { return r.starred; }).length;
+    $("log-confirm-text").textContent = "Delete every run that is not starred" + (db ? "" : " (" + (all.length - kept) + ")") + "? " + (kept ? kept + " starred " + (kept === 1 ? "run is" : "runs are") + " kept. " : "") + "This cannot be undone - export first if you may need them.";
+    $("log-confirm").hidden = false;
+    $("log-confirm-no").focus();
+  });
+  $("log-confirm-no").addEventListener("click", function () { $("log-confirm").hidden = true; });
+  $("log-confirm-yes").addEventListener("click", function () {
+    $("log-confirm").hidden = true;
+    if (!db) { localLog = localLog.filter(function (r) { return r.starred; }); paintLog(); return; }
+    // every run, not only the ones on screen: read in pages and delete one at a time
+    var deleted = 0, kept = 0;
+    $("log-state").textContent = "Deleting…";
+    (function round() {
+      return db.collection("runs").limit(1000).get().then(function (snap) {
+        var gone = snap.docs.filter(function (d) { var v = d.data(); return !(v && v.starred); });
+        kept = snap.size - gone.length;
+        if (!gone.length) return;
+        return gone.reduce(function (p, d) { return p.then(function () { return db.doc("runs/" + d.id).delete().then(function () { deleted++; }); }); }, Promise.resolve())
+          .then(round);
+      });
+    })().then(function () {
+      $("log-state").textContent = "Deleted " + deleted + " runs." + (kept ? " Kept " + kept + " starred." : " The log is empty.");
+    }).catch(function (e) {
+      $("log-state").textContent = "Stopped after deleting " + deleted + " runs" + (e && e.code ? " (" + e.code + ")" : "") + " - only people who can edit this lab can delete.";
+    });
+  });
+  $("export").addEventListener("click", function () {
+    if (!downloads) return;
+    var items = db ? logDocs : localLog;
+    var data = JSON.stringify({ exported: new Date().toISOString(), lab: PROVENANCE, runs: items }, null, 2);
+    downloads.save({ filename: "bidi-stream-lab-log.json", data: data }).catch(function () {});
+  });
+
+  function addFormulaFromCode(name, code, id) {
+    var fn = new Function("text", "ctx", code);
+    return { id: id, group: "custom", name: name, chip: "Yours", custom: true, what: "A formula added in this lab.", code: code,
+      src: null, decide: function (t, c) { return fn(t, c); } };
+  }
+  var canEval = true;
+  try { new Function("return 1")(); } catch (e) { canEval = false; }
+  if (!canEval) { $("f-save").disabled = true; $("f-msg").textContent = "This viewer does not allow running typed code."; }
+  $("f-save").addEventListener("click", function () {
+    var name = $("f-name").value.trim(), code = $("f-code").value;
+    if (!name) { $("f-msg").textContent = "Give it a name."; return; }
+    var id = "c-" + name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) + "-" + Date.now().toString(36);
+    var f;
+    try { f = addFormulaFromCode(name, code, id); f.decide("test اردو", ctx("test اردو")); }
+    catch (e) { $("f-msg").textContent = "It does not run: " + e.message; return; }
+    if (db) {
+      db.doc("formulas/" + id).set({ name: name, code: code, createdAt: new Date().toISOString() })
+        .then(function () { $("f-msg").textContent = "Added."; })
+        .catch(function () { $("f-msg").textContent = "Could not save it; it is kept in this tab."; custom.push(f); paintFormulas(); });
+    } else { custom.push(f); paintFormulas(); $("f-msg").textContent = "Added for this tab."; }
+    $("f-name").value = "";
+  });
+  function removeFormula(f) {
+    if (db) db.doc("formulas/" + f.id).delete().catch(function () {});
+    custom = custom.filter(function (x) { return x.id !== f.id; });
+    if (state.formula === f.id) chooseFormula("any-rtl-63"); else paintFormulas();
+  }
+
+  function startCapabilities() {
+    if (!window.claude || typeof window.claude.use !== "function") {
+      $("log-state").textContent = "Runs are kept in this tab only - this page is open outside the lab's home.";
+      paintLog();
+      return;
+    }
+    window.claude.use("db").then(function (d) {
+      db = d;
+      if (!db) { $("log-state").textContent = "Runs are kept in this tab only - this view cannot save the log."; paintLog(); return; }
+      $("log-state").textContent = "Every message you send is saved to this lab's log, with the formula and what each block did.";
+      db.collection("runs").orderBy("at", "desc").limit(200).onSnapshot(function (snap) {
+        logDocs = snap.docs.map(function (x) { return Object.assign({ _id: x.id }, x.data()); });
+        paintLog();
+      }, function () { $("log-state").textContent = "The log stopped updating. Reload to reconnect."; });
+      if (canEval) db.collection("formulas").onSnapshot(function (snap) {
+        custom = [];
+        snap.docs.forEach(function (x) {
+          var v = x.data();
+          try { custom.push(addFormulaFromCode(v.name, v.code, x.id)); } catch (e) {}
+        });
+        paintFormulas();
+      }, function () {});
+    });
+    window.claude.use("downloads").then(function (d) { downloads = d; $("export").hidden = !d; });
+  }
+
+  // ---------------------------------------------------------------- start
+  $("prov").textContent = "Unicode " + PROVENANCE.unicode + " · Closure @" + PROVENANCE.closure.commit.slice(0, 7) + " · SmartRTL " + PROVENANCE.smartrtl.sha256.slice(0, 7) + " · rules " + PROVENANCE.rules.sha256.slice(0, 7);
+  paintFormulas(); paintChats(); paintSpeed(); composerInput(true);
+
+  // Open in a working state: one example already answered, clearly marked as an example.
+  var first = addTurn(EXAMPLES[0].text, { example: true });
+  first.sentNode.parentNode.querySelector(".who").textContent = "You · example";
+  first.chat = state.chat;
+  markExample(first);
+  (function instant() {
+    var f = byId(state.formula);
+    first.formula = f.id; first.scope = "block"; first.track = newTrack();
+    boundaries(first.text).forEach(function (end) {
+      first.answerNode.innerHTML = render(first.text.slice(0, end));
+      record(first.track, applyTo(first.answerNode, f, "block", first.text));
+    });
+    redraw(first);
+    first.rows = summarise(first.track, unitsOf(first.text).map(function (u) { return u.key; }));
+    paintVerdict(first);
+    focusMessage(first);
+    paintInspect();
+  })();
+
+  paintMachine();
+  startCapabilities();
+})();
+</script>
