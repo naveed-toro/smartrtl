@@ -50,7 +50,7 @@ Then yes, this is the same bug.
 | Claude Code in VS Code | companion extension | 0.9.0 - clean: only the formula acts on text, and nothing measures it any more: in all four places a text is right-to-left when its first letter is, or an RTL letter comes within its first 63, the window the labelled texts put it at (decisions.md 53); nothing else of ours touches text (decisions.md 51). Before that, all four places gave the text its direction tag and nothing else, and are checked element by element, character order included, against what the browser draws when it is told - on Claude Code's own bundle with its incomplete rule deleted; nothing is moved by hand, the timeline dot included; bullets, numbers and tables included; the box you type in, the message you send, and Claude Code's own long-message bug each on a circuit of its own, put to seventeen Claude Code builds, 2.0.50 to 2.1.269; not published yet |
 | AI chat sites in the browser | Chrome extension | next |
 | a markdown editor | VS Code, desktop, web | shape not decided |
-| Claude desktop app | not investigated yet | unknown |
+| Claude desktop app | a patched copy beside the installed app | 0.0.1 - for the owner's own use: the app has no extension door, and covers laid over it from outside jolted the eye, so a copy of it loads the same rule and engine; the installed app is never touched; chat, Cowork and Claude in Chrome work in it, the Code tab is not covered yet (decisions.md 54) |
 
 They share two things: the rule that decides which direction a piece of text belongs to,
 and the engine that decides when to ask it. Everything else - how the fix reaches the
@@ -82,7 +82,7 @@ rule, and every wrong turn is written down rather than quietly dropped.
 | | |
 |---|---|
 | [docs/reviewing.md](docs/reviewing.md) | the two questions this project has, and the one command that answers them - read before reviewing anything here |
-| [docs/decisions.md](docs/decisions.md) | fifty-three sections: every rule and fix that was tried, measured and rejected, including the two that crashed, the one that was too slow, the limits that were finally accepted, and how what was left was made to outlast the next update |
+| [docs/decisions.md](docs/decisions.md) | fifty-four sections: every rule and fix that was tried, measured and rejected, including the two that crashed, the one that was too slow, the limits that were finally accepted, and how what was left was made to outlast the next update |
 | [docs/versions.md](docs/versions.md) | what was actually inside each build, read out of the `.vsix` rather than remembered |
 | [docs/roadmap.md](docs/roadmap.md) | what a new surface has to provide, the four rules an adapter obeys, and what order the rest gets built in |
 | [docs/claude-code-bug.md](docs/claude-code-bug.md) | the Claude Code bug on its own terms, with no RTL attached |

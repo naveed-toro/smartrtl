@@ -10,7 +10,7 @@ search for, in several languages.
 
 ## What is in here
 
-Fifty-three sections, in the order they were written, which is the order the faults were
+Fifty-four sections, in the order they were written, which is the order the faults were
 found. The ones worth reading first are marked.
 
  1. [The root cause](#1-the-root-cause)
@@ -65,6 +65,8 @@ found. The ones worth reading first are marked.
 50. [The rule for an answer, measured: an RTL letter within the first 45](#50-the-rule-for-an-answer-measured-an-rtl-letter-within-the-first-45)
 51. [Only the formula acts on text](#51-only-the-formula-acts-on-text)
 52. [A recorder for the turn a reader might see](#52-a-recorder-for-the-turn-a-reader-might-see) ←
+53. [The window is 63 letters, where the reading put it](#53-the-window-is-63-letters-where-the-reading-put-it) ←
+54. [The Claude desktop app: every door tried, and then the copy](#54-the-claude-desktop-app-every-door-tried-and-then-the-copy)
 
 ← 6 and 7 are the rule and the design it forced. 13 is what the first live run found.
 25 and 27 are the composer crash and the decision to stop; 28 is what that would have
@@ -4562,3 +4564,119 @@ window reaches); `frozen.test.js` carries the new hashes. Nothing else of the ru
 The labels are the assistant's reading, not a person's. The owner checks them, and if his own
 labels move the count, this section is written again.
 
+## 54. The Claude desktop app: every door tried, and then the copy
+
+> apps/desktop-claude, 0.0.1. The owner's decision, 2026-09-25, taken as a last resort and
+> written down as one.
+
+### Why the desktop app at all
+
+The owner cannot do without it. Cowork, Claude in Chrome, computer use and the desktop
+connectors live only in the Claude desktop app; the VS Code panel does not have them and
+claude.ai in a browser does not either. So every day's work that needs them was being read
+backwards, while the same text in VS Code had been right for months.
+
+### Every way that did not touch Claude, tried first
+
+In the order they were tried. Each one was given its chance on purpose, because each one
+would have left Claude exactly as Anthropic ships it.
+
+1. **An extension.** There is no door. The app is a signed MSIX package in `WindowsApps`; its
+   Electron switches have the asar integrity check and "load only from the archive" on; and it
+   refuses to start with any debugging or network-override switch unless the command line
+   carries a token signed with Anthropic's own key. Checked on 2.110, 2.7032 and 2.9939, the
+   same each time. What the app calls "extensions" are Desktop Extensions (`.mcpb`, `.dxt`) -
+   packaged MCP servers that give Claude tools, run as separate processes and never reach the
+   page. The one `session.loadExtension` in the app loads React DevTools for Anthropic's own
+   profiling.
+2. **claude.ai in the browser, with the browser extension.** Right text, but not the app: none
+   of the tools above are there.
+3. **Asking Claude to write so that the page gets it right** - a standing preference to open
+   every Urdu paragraph with an Urdu word, or with U+200F. Rejected by the owner: it changes
+   what Claude says. This project sets the direction of text; it does not rewrite the text to
+   suit a wrong rule.
+4. **A reading window beside Claude** - the answer copied out, or mirrored, and shown right.
+   Rejected by the owner: reading somewhere else is exactly the attention the fix exists to
+   give back. It has to be right where it is read.
+5. **Covers laid over the app from outside, through UI Automation** - built and measured.
+   Chromium shows the chat to Windows once a real screen reader has run (Narrator, once; the
+   screen-reader flag, MSAA and IAccessible2 queries alone did not wake it), and then gives
+   every block's text, font and a pixel-exact rectangle. The formula chose the blocks; only
+   those where it disagreed with the page were covered. It worked, and was rejected in use,
+   twice:
+   - **automatically:** a cover laid from outside can only learn that the page scrolled after
+     it has, so it trails every scroll by a frame or two; fading the covers out while moving
+     only moved the jolt to the moment the scroll stopped and the lines swapped. The eye reads
+     both as the text breaking.
+   - **on request** (a shortcut, then a mark beside the paragraph under the mouse): no jolt,
+     but a keystroke or a click for every paragraph - the effort the project exists to spare -
+     and the mark's click did not reliably reach it.
+6. **Patching the installed app itself** - not attempted. `WindowsApps` is protected, a changed
+   signed package is a damaged package to Windows, every update undoes it (two arrived in one
+   afternoon), and the people who have done it had to add a self-signed certificate to the
+   machine's trusted roots.
+
+### What was built
+
+A copy. `src/patch.js` copies the installed app into `%LOCALAPPDATA%\SmartRTL\claude\<version>`
+and, in the copy only:
+
+- puts `hook.js` and the payload beside the app's entry and loads the hook first. The hook hands
+  every page from claude.ai or claude.com the payload - `@smartrtl/core`, `@smartrtl/dom` and a
+  claude.ai adapter - and nothing else. It is the same rule and the same engine as the VS Code
+  extension: only the tag, decided on sight, before the page paints.
+- turns off one of the eight Electron switches, the asar integrity check. The other seven stay
+  as Anthropic set them, the debugging lock included.
+
+The archive is repacked with the same six native files outside it as before. The Start menu
+gets "Claude (SmartRTL)", which runs `src/launch.ps1`: when Claude has updated, it makes a fresh
+copy of the new version first (about a minute, once per update), then opens it. The installed
+Claude is never touched, keeps updating, and can be opened whenever the owner wants it - one of
+the two at a time.
+
+### What it costs, said plainly
+
+- **The copy does not check its own files.** Anything that can write to the owner's profile
+  could change the copy and run inside Claude with his login. The installed app would refuse
+  that; the copy will not.
+- **The copy's `claude.exe` is no longer Anthropic's signed file.** Windows may warn about it,
+  and a part of the app that checks who is calling may one day refuse it.
+- **A second login**, kept in `%APPDATA%\Claude`. The installed app keeps its own inside its
+  package and never reads this one.
+- **It follows updates only when opened through its shortcut.**
+- **Anthropic's terms** do not invite changing their app. This is one person's copy, for his
+  own reading, on his own machine.
+
+What it does not cost: no certificate, no admin rights, nothing in the installed app, nothing
+left behind - `src/uninstall.js` removes the copies, the shortcut, the copy's profile and, if it
+points at the copy, the `claude://` registration.
+
+### What was found on the way
+
+- **The copy took Claude's links.** On its first start it registered `claude://` to itself in
+  `HKCU`, and from then on even the installed app's launch handed over to the running copy. The
+  hook now refuses that registration; the key it had written was removed.
+- **The copy is a new device to claude.ai** and was shown a different variant of the page (Home
+  and Code buttons in the sidebar, tool steps grouped differently). Nothing of ours; a
+  screenshot of the copy must not be cited as the original.
+- **The assistant's own safety mode refused this work** as weakening security - running the
+  copy, and every step after. The owner switched the mode and approved each step himself.
+
+### What the owner tested
+
+In the copy, 2026-09-25: the chat right, with no jolt on scroll; Cowork, Claude in Chrome,
+computer use, files and connectors all working.
+
+### What is still owed
+
+- **The Code tab.** Its page is not the chat's; the adapter found none of its blocks (the report
+  said 0), so it is left exactly as Claude draws it.
+- **A note for the paper, not yet a finding.** In the original app, claude.ai decided a whole
+  list by its first item's first letter: a bullet list opening with "Cowork" went left-to-right
+  entire, its Urdu item included, while in the same answer a numbered list opening in Urdu was
+  right - its English-led items only by chance. The copy showed every line right, as the formula
+  was always going to. It is read off screenshots; the payload's report records the page's own
+  `dir` per list and paragraph, and has not been run yet.
+- **The proof stays where it was.** This copy is for the owner's reading. What is handed to
+  Anthropic is still the page itself set right - the browser extension on claude.ai - because a
+  fix they can make on their own page reaches the desktop app too.

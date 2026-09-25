@@ -1,0 +1,16 @@
+{
+  "name": "smartrtl-desktop-claude",
+  "version": "0.0.1",
+  "private": true,
+  "description": "A copy of the Claude desktop app that sets the direction of its mixed Urdu/English text by the formula. The installed app is never touched.",
+  "scripts": {
+    "build": "node build/bundle-payload.js",
+    "patch": "node src/patch.js",
+    "uninstall-copy": "node src/uninstall.js"
+  },
+  "dependencies": {
+    "@electron/asar": "^3.4.1",
+    "@electron/fuses": "^1.8.0"
+  },
+  "license": "MIT"
+}
