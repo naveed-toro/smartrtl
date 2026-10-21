@@ -14,7 +14,7 @@
       // an answer: every block of Claude's markdown - never the heading claude.ai hides
       // above a message for screen readers
       answers: {
-        within: ".font-claude-response",
+        within: '[data-testid="assistant-message"]',
         skip: ".sr-only"
       },
       // the box, by what it is
@@ -25,7 +25,7 @@
       // a sent message: each of its lines, never inside an answer
       sent: {
         runs: '[data-testid="user-message"] p,[data-testid="user-message"] [dir="auto"]',
-        not: ".font-claude-response"
+        not: '[data-testid="assistant-message"]'
       }
     });
   } catch (e) { direction = null; }
@@ -37,7 +37,7 @@
     try {
       var count = function (sel) { try { return document.querySelectorAll(sel).length; } catch (e) { return -1; } };
       out.found = {
-        answers: count(".font-claude-response"),
+        answers: count('[data-testid="assistant-message"]'),
         userMessages: count('[data-testid="user-message"]'),
         composer: count('.ProseMirror[contenteditable="true"]') + count('[contenteditable="true"][role="textbox"]'),
         tagged: count("[data-bidi]"), taggedSent: count("[data-bidi-sent]"), taggedBox: count("[data-bidi-box]"),
@@ -55,7 +55,7 @@
         return "none";
       };
       out.units = [];
-      var units = document.querySelectorAll(".font-claude-response ul,.font-claude-response ol,.font-claude-response p");
+      var units = document.querySelectorAll('[data-testid="assistant-message"] ul,[data-testid="assistant-message"] ol,[data-testid="assistant-message"] p');
       for (var u = 0; u < units.length && out.units.length < 12; u++) {
         var n = units[u], tag = n.tagName.toLowerCase();
         if (tag === "p" && n.closest("li")) continue;
