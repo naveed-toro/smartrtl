@@ -82,8 +82,18 @@ const HTML = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
       window.__streamed = k;
     }, every);
   };
+  // From 2.1.299 a sent message is held, unseen, until the host says whether any Claude Code
+  // mod may redraw it. The real host says so once the CLI reports its capabilities at the start
+  // of the turn - with no mods installed, that none are served.
+  const surfaced = new Set();
+  const surface = (ch) => {
+    if (surfaced.has(ch)) return;
+    surfaced.add(ch);
+    post({ type: "request", channelId: ch, requestId: "surface-" + ch, request: { type: "engine_surface_state", available: false } });
+  };
   window.acquireVsCodeApi = () => ({
     postMessage(m) {
+      if (m && m.type === "io_message" && m.message && m.message.type === "user") surface(m.channelId);
       if (m && m.type === "io_message" && m.message && m.message.type === "user" && window.__answers.length) {
         const queued = window.__answers.shift(), ch = m.channelId, k = ++turns;
         const io = (message) => post({ type: "io_message", channelId: ch, message });
