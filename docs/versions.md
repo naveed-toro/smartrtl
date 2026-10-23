@@ -1,4 +1,4 @@
-# The sixty-four builds, and what each one actually contained
+# The sixty-five builds, and what each one actually contained
 
 Compiled by opening every `.vsix` and reading what is inside it, not from memory. The
 second table was rebuilt the same way after the fact, which is why some of its rows say
@@ -1010,6 +1010,21 @@ of once it is taller than **half** the panel, not only once it is taller than al
 Payload: 135,021 bytes - 21,591 more than 0.5.2, for the long-message fix
 becoming a part of its own, a second way into the same trap, and the reasons written beside
 both.
+
+### 0.9.2 — a Claude Code update costs one restart, not two
+
+- [x] **an update is fixed while it waits** - VS Code unpacks a Claude Code update into a folder
+      of its own and starts it only at "Restart Extensions"; the folder is watched, and the fix
+      goes in before that restart, without a word **(lab: update-waiting.test.js)**
+- [x] **no second reload after an update** - the restart starts a build that already has the
+      fix, and nothing asks for another; all five tests fail on 0.9.1 **(lab)**
+- [x] **turning it off reaches a waiting update too**, so the fix does not come back on with it
+      **(lab)**
+- [x] **the direction of text is untouched** - the payload is 0.9.1's, byte for byte; review
+      green on 2.1.301 and on 2.1.308 **(lab)**
+- [x] **a real Claude Code update, in the owner's VS Code** - 2.1.308 to 2.1.309: the fix went
+      into 2.1.309 while it waited, "Restart Extensions" found it already current, and no reload
+      was asked for **(live)**
 
 ### 0.9.1 — only the formula: Claude Code fixed the long message itself
 

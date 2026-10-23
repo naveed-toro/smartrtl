@@ -3,10 +3,10 @@
  *
  * TWO JOBS, AND THE SECOND ONE IS THE AWKWARD ONE
  *
- * The first is keeping the fix in place. An update to Claude Code replaces its
- * webview bundle and the fix goes with it, so this watches for that in two
- * independent ways - on activation, and on `extensions.onDidChange`. Both would
- * have to miss for the fix to stay gone. Nothing polls.
+ * The first is keeping the fix in place. An update to Claude Code brings a new
+ * webview bundle without the fix, so this watches for that in two independent
+ * ways - the folder the update is unpacked into, and every activation. Both would
+ * have to miss for the fix to stay gone. Nothing polls for it.
  *
  * The second is telling the truth about state. VS Code's own Disable and Uninstall
  * buttons do NOT undo this extension, because it edits a file that belongs to
@@ -344,6 +344,8 @@ function turnOn(ctx) {
   ctx.globalState.update(ON_KEY, true);
   ctx.globalState.update(OFF_AT_KEY, undefined);
   const result = patcher.apply(ctx.extensionPath);
+  prepareWaiting(ctx, "turned-on");
+  if (result.install) watchForUpdates(ctx, path.dirname(result.install.dir));
   forgetState();
   refresh();
   if (result.state === "no-target") { vscode.window.showWarningMessage(noTarget()); return; }
@@ -362,6 +364,9 @@ function turnOff(ctx) {
   ctx.globalState.update(ON_KEY, false);
   ctx.globalState.update(OFF_AT_KEY, version(ctx));
   const result = patcher.remove();
+  // and out of an update still waiting to start, or the fix would come back on with it
+  try { const waiting = patcher.findWaitingClaudeCode(); if (waiting) patcher.remove(waiting); }
+  catch (err) { log.appendLine(`[turned-off] waiting update: ${err && err.message ? err.message : err}`); }
   forgetState();
   refresh();
   if (result.state === "no-target") { vscode.window.showWarningMessage(noTarget()); return; }
@@ -386,9 +391,74 @@ function keepAlive(ctx, why) {
   syncQuietly(ctx, why);
 }
 
-/** Startup, and after a Claude Code update. Silent unless something needs a reload. */
+/**
+ * An update of Claude Code that VS Code has unpacked and not started yet, fixed before it
+ * starts.
+ *
+ * Until 0.9.2 the fix went into an update only once it was running: VS Code asked for
+ * "Restart Extensions", the new panel came up reading a bundle with nothing in it, and this
+ * extension asked for a second reload on top of the one VS Code had just asked for - with
+ * every update, and Claude Code updates most days. Fixed while it waits, the restart VS Code
+ * asks for is the only one there is. Nothing is said: nothing on screen has changed.
+ */
+function prepareWaiting(ctx, why) {
+  if (!wantedOn(ctx)) return null;
+  try {
+    const waiting = patcher.findWaitingClaudeCode();
+    if (!waiting) return null;
+    const result = patcher.apply(ctx.extensionPath, waiting);
+    log.appendLine(`[${why}] ${result.state} (Claude Code ${waiting.version}, waiting for VS Code to start it)`);
+    return result.state;
+  } catch (err) {
+    log.appendLine(`[${why}] waiting update: ${err && err.message ? err.message : err}`);
+    return null;
+  }
+}
+
+/* How long the extensions folder has to be quiet before an update in it is looked at. VS
+   Code unpacks into a hidden folder and renames it into place, so the name appearing is the
+   end of the work - this is so that a burst of events is answered once, and so that a virus
+   scanner reading every file just unpacked has had a moment with them first. */
+const SETTLE_MS = 2000;
+const SETTLE_TRIES = 5;                // a bundle still held after that is left to the next sync
+let watching = null;                   // the folder being watched for updates
+
+/**
+ * Watches the folder Claude Code lives in, so an update is fixed the moment it is unpacked.
+ *
+ * extensions.onDidChange cannot do this: VS Code does not tell a window about an update it
+ * has not applied, and it does not apply an update to an extension that is running. The
+ * folder is the only place the update can be seen while it waits.
+ */
+function watchForUpdates(ctx, dir) {
+  if (watching === dir) return;
+  let timer = null, watcher;
+  const settle = (tries) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      if (prepareWaiting(ctx, "update-unpacked") === "busy" && tries < SETTLE_TRIES) settle(tries + 1);
+    }, SETTLE_MS);
+    if (timer.unref) timer.unref();
+  };
+  try {
+    watcher = fs.watch(dir, (event, name) => {
+      if (name && !String(name).toLowerCase().startsWith(patcher.TARGET_ID + "-")) return;
+      settle(1);
+    });
+  } catch (err) {
+    log.appendLine(`[watch] ${dir}: ${err && err.message ? err.message : err}`);
+    return;
+  }
+  watcher.on("error", () => {});
+  if (watcher.unref) watcher.unref();
+  watching = dir;
+  ctx.subscriptions.push({ dispose() { clearTimeout(timer); watcher.close(); if (watching === dir) watching = null; } });
+}
+
+/** Startup, keeping the stamp alive, and Claude Code arriving. Silent unless a panel needs a reload. */
 function syncQuietly(ctx, why) {
   if (!wantedOn(ctx)) { log.appendLine(`[${why}] turned off by the user`); refresh(); return; }
+  prepareWaiting(ctx, why);
 
   // Whether right-to-left text was ACTUALLY being fixed a moment ago is the only thing
   // that decides whether a reload is worth asking for. apply() answers a narrower
@@ -404,6 +474,7 @@ function syncQuietly(ctx, why) {
     refresh();
     return;
   }
+  if (result.install) watchForUpdates(ctx, path.dirname(result.install.dir));
 
   /* Busy means nothing was written, so none of the bookkeeping below may happen. Stamping
      would hold off the next attempt for six hours; remembering the build would make
@@ -448,10 +519,15 @@ function syncQuietly(ctx, why) {
   // The second is every upgrade of this extension. Asking only "was it live" answered yes
   // - the OLD one was - and the person was told it was fixed, with no reload offered,
   // while the panel in front of them went on running the build it replaced.
+  //
+  // And neither holds when Claude Code has only just arrived in this window. VS Code puts
+  // an extension into an open window only if it was not running there - a first install,
+  // or one switched back on - so no panel of it has read anything yet, and the first one
+  // will read the fix. Until 0.9.2 this asked for a reload here too, in the belief that
+  // this was how an update arrived; an update arrives as prepareWaiting() describes.
+  if (why === "extensions-changed") return;
   if (!before.live || result.state === "applied") {
-    offerReload(why === "extensions-changed"
-      ? `Claude Code updated to ${v}. Right-to-left text is fixed again. Reload to see it.`
-      : `Right-to-left text in Claude Code ${v} is fixed. Reload to see it.`);
+    offerReload(`Right-to-left text in Claude Code ${v} is fixed. Reload to see it.`);
   } else if (why === "installed") {
     // It was already working, so there is nothing to reload for - but somebody who has
     // just installed something is owed an answer either way. Silence after a deliberate
@@ -515,7 +591,8 @@ function activate(context) {
     })
   );
 
-  // chance one: Claude Code was updated while the editor was closed
+  // chance one: an update that watchForUpdates() did not see - no window was open when it
+  // was unpacked, or the fix was switched off at the time.
   // Asked once, because asking writes the marker that answers it. An upgrade lands in a
   // new folder, so this is true for a re-install and for every update, and false for an
   // ordinary window opening.
@@ -535,9 +612,10 @@ function activate(context) {
   // and never sit there silently doing nothing because of a switch flipped long ago
   askIfStillOff(context, installed);
 
-  // chance two: it happens while the editor is open. onDidChange also fires for any
-  // other extension being installed, so only act when the copy of Claude Code we are
-  // looking at is genuinely a different one.
+  // chance two, an update while the editor is open, is watchForUpdates(), started by the
+  // sync above. This is Claude Code arriving in the window - installed, or switched back
+  // on. onDidChange also fires for any other extension, so only act when the copy of
+  // Claude Code we are looking at is genuinely a different one.
   context.subscriptions.push(
     vscode.extensions.onDidChange(() => {
       const install = patcher.findClaudeCode();

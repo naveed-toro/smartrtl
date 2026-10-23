@@ -121,7 +121,8 @@ npm test
   past its expiry does nothing at all
 - the install, update and uninstall path - `patcher.test.js`, `patch-format.test.js`,
   `find-target.test.js`, `reinstall.test.js`, `uninstall.test.js`, `status-bar.test.js`,
-  `status-truth.test.js`, `startup-cost.test.js`, `reachable-messages.test.js`
+  `status-truth.test.js`, `startup-cost.test.js`, `reachable-messages.test.js`,
+  `update-waiting.test.js`
 - `docs.test.js` - every link, file name, count and promise in the documents, put back to
   the thing it is about
 
@@ -134,10 +135,11 @@ __bidiFixOff()   // take all of it out, live
 
 ## Limits
 
-This edits a file that belongs to another extension. An update to Claude Code replaces
-that file and the fix is gone until it is applied again - which is the whole reason
-this is an extension and not a script: it notices the update and puts the fix back, on
-startup and on `extensions.onDidChange`, so both would have to miss for it to stay gone.
+This edits a file that belongs to another extension. An update to Claude Code brings a
+new copy of that file without the fix - which is the whole reason this is an extension and
+not a script: it puts the fix into the update while the update is still waiting for VS
+Code's "Restart Extensions", so that restart is the only one there is, and it checks again
+on every startup, so both would have to miss for it to stay gone.
 
 **Its whole footprint is one marked block at the end of one file.** There is no backup
 copy beside it and nothing kept anywhere else, because there is nothing to keep: the

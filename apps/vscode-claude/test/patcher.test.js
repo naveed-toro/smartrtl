@@ -122,3 +122,52 @@ test("and turning it off over a held bundle is busy too, never 'removed'", () =>
   assert.equal(patcher.remove().state, "removed");
   assert.equal(read(target), ORIGINAL);
 });
+
+/* An update of Claude Code waits, unpacked into a folder of its own, until VS Code restarts
+   its extensions - and all that while, the editor names only the build that is running. */
+function extensionsFolder() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "exts-"));
+  const install = (name, withBundle = true) => {
+    const dir = path.join(root, name);
+    fs.mkdirSync(path.join(dir, "webview"), { recursive: true });
+    if (withBundle) fs.writeFileSync(path.join(dir, "webview", "index.js"), ORIGINAL, "utf8");
+    return dir;
+  };
+  vscode.__setClaudeCode(install("anthropic.claude-code-2.1.247-win32-x64"));   // the stub runs 2.1.247
+  return { root, install };
+}
+
+test("an update waiting to be started is found beside the build that is running", () => {
+  const { root, install } = extensionsFolder();
+  install("anthropic.claude-code-2.1.240-win32-x64");          // older: left behind by an earlier update
+  install("anthropic.claude-code-2.1.249-win32-x64");
+  install("anthropic.claude-code-2.1.250-win32-x64");          // the newest
+  install("anthropic.claude-code-2.1.251-win32-x64", false);   // no panel file in it
+  install(".2c6e9f1a-unpacking");                               // VS Code's own, before the rename
+  install("anthropic.claude-code-moved");
+  const waiting = patcher.findWaitingClaudeCode();
+  assert.ok(waiting, "the update was not found");
+  assert.equal(waiting.version, "2.1.250");
+  assert.equal(waiting.dir, path.join(root, "anthropic.claude-code-2.1.250-win32-x64"));
+});
+
+test("and it is fixed without touching the build that is running", () => {
+  const { root, install } = extensionsFolder();
+  const running = path.join(root, "anthropic.claude-code-2.1.247-win32-x64", "webview", "index.js");
+  const next = path.join(install("anthropic.claude-code-2.1.250-win32-x64"), "webview", "index.js");
+  const waiting = patcher.findWaitingClaudeCode();
+  assert.equal(patcher.apply(EXT, waiting).state, "applied");
+  assert.ok(read(next).includes(BEGIN), "the waiting build has no block");
+  assert.equal(read(running), ORIGINAL, "the running build was touched");
+  assert.equal(patcher.apply(EXT, waiting).state, "already-current");
+  assert.equal(patcher.remove(waiting).state, "removed");
+  assert.equal(read(next), ORIGINAL, "and it comes back out byte for byte");
+});
+
+test("with nothing newer beside it, there is no update waiting", () => {
+  const { install } = extensionsFolder();
+  install("anthropic.claude-code-2.1.240-win32-x64");
+  assert.equal(patcher.findWaitingClaudeCode(), null);
+  vscode.__setClaudeCode(null);
+  assert.equal(patcher.findWaitingClaudeCode(), null);
+});

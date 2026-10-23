@@ -10,7 +10,7 @@ search for, in several languages.
 
 ## What is in here
 
-Fifty-five sections, in the order they were written, which is the order the faults were
+Fifty-six sections, in the order they were written, which is the order the faults were
 found. The ones worth reading first are marked.
 
  1. [The root cause](#1-the-root-cause)
@@ -68,6 +68,7 @@ found. The ones worth reading first are marked.
 53. [The window is 63 letters, where the reading put it](#53-the-window-is-63-letters-where-the-reading-put-it) ←
 54. [The Claude desktop app: every door tried, and then the copy](#54-the-claude-desktop-app-every-door-tried-and-then-the-copy)
 55. [Claude Code fixed the long message itself, and ours came out](#55-claude-code-fixed-the-long-message-itself-and-ours-came-out)
+56. [An update of Claude Code costs one restart, not two](#56-an-update-of-claude-code-costs-one-restart-not-two)
 
 ← 6 and 7 are the rule and the design it forced. 13 is what the first live run found.
 25 and 27 are the composer crash and the decision to stop; 28 is what that would have
@@ -4734,3 +4735,71 @@ them the fix. 2.1.299 holds a sent message hidden until the host says whether a 
 mod may redraw it; the bench never said, so every sent message stayed hidden and nothing could
 be opened (the bench answers now, as the real host does with no mods). Then, from 2.1.307, the
 first long-message test did what it was written to do: fail the day Claude Code fixed the bug.
+
+## 56. An update of Claude Code costs one restart, not two
+
+> apps/vscode-claude, 0.9.2. The owner's ask, 2026-10-23: a reload only when one is needed.
+
+### What the owner saw
+
+With every Claude Code update, two reloads. VS Code asks for "Restart Extensions"; once that
+is done, this extension says *Right-to-left text in Claude Code 2.1.x is fixed. Reload to see
+it.* Claude Code updates most days.
+
+### Why the second one was asked for
+
+This extension believed an update arrives through `extensions.onDidChange`. For a running
+extension it does not. VS Code's own `abstractExtensionService.ts`: an extension whose
+activation has started cannot be removed - "Extension is running, cannot remove it safely" -
+and the new build cannot be added while the old one is registered. Claude Code activates
+`onStartupFinished`, so it is always running. Every update is unpacked into a folder of its own
+beside the old one and waits for the restart, the window is told nothing, and `getExtension()`
+goes on naming the build that is running.
+
+So the fix reached an update only after the restart, at activation - by which time the panel
+had come back up and read the new bundle without it. That second reload was needed. It was
+needed because the fix arrived late.
+
+### What changed
+
+- **The folder Claude Code lives in is watched.** VS Code unpacks an update into a hidden
+  folder and renames it into place; when that name appears, the newest Claude Code newer than
+  the running one gets the fix, and nothing is said - nothing on screen has changed. The
+  restart VS Code asks for then starts a build that already has it, activation finds it
+  current, and nobody is asked for anything.
+- **Every sync does the same** - activation, and the stamp kept alive every six hours - so an
+  update the watcher did not see is still caught, and one left waiting for days does not let
+  its stamp run out.
+- **Turning the fix off takes it out of a waiting update too**, or it would come back on by
+  itself at the next restart. Turning it on puts it in.
+- **`extensions.onDidChange` asks for no reload.** What it does see is Claude Code arriving in a
+  window where it was not running - a first install, or switched back on - and no panel of it
+  has read anything yet. *Claude Code updated to ... Reload to see it.* went with it: it
+  described an event that does not happen.
+
+A reload is still asked for where a panel on screen may be running without the current fix:
+the first install, an upgrade of this extension (a new block in the file), a stamp that ran out
+while no window was open, and the on and off switches.
+
+### Tried, and not built: asking whether a panel is open
+
+The reload could have been asked for only while a Claude Code panel is open. An editor tab can
+be asked about; the side bar cannot - nothing in the API says whether another extension's view
+is open. `claudeCode.preferredLocation` looked like a stand-in, but Claude Code sets it to
+`sidebar` only from its own "open in side bar" command, not when its view is opened from the
+icon. A panel open while the setting said otherwise would be left reading the wrong way with
+nothing said. A reload offered once too often costs a click.
+
+### What it costs, and what is left behind
+
+One watcher on one folder, not recursive, and one directory listing at activation and every six
+hours. `startup-cost.test.js` holds as it was: an ordinary start writes nothing and reads only
+the end of the bundle. The uninstall script already cleans every Claude Code folder in the
+extensions directory, a waiting one included, and the block runs out on its own.
+
+### Measured
+
+`test/update-waiting.test.js` unpacks an update the way VS Code does and restarts the
+extensions the way the restart does: the update has the fix before it starts, and nothing asks
+for a second reload. All five of its tests fail on 0.9.1. Not yet seen in the owner's own VS
+Code - the next Claude Code release is that test.

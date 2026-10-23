@@ -57,6 +57,47 @@ function findClaudeCode() {
   };
 }
 
+/* A Claude Code folder's name: "anthropic.claude-code-2.1.308", and on most machines a
+   platform after it - "-win32-x64". */
+const FOLDER = /^anthropic\.claude-code-(\d+)\.(\d+)\.(\d+)(?:-[a-z0-9-]+)?$/i;
+const versionOf = (s) => { const m = /^(\d+)\.(\d+)\.(\d+)/.exec(String(s || "")); return m ? [+m[1], +m[2], +m[3]] : null; };
+const newer = (a, b) => (a[0] - b[0]) || (a[1] - b[1]) || (a[2] - b[2]);
+
+/**
+ * An update of Claude Code that VS Code has unpacked and not started yet.
+ *
+ * VS Code does not swap a running extension for its update. It unpacks the new build into
+ * a folder of its own beside the one in use and waits for "Restart Extensions" or a reload
+ * (abstractExtensionService.ts: an activated extension cannot be removed "safely"). Claude
+ * Code starts with the editor, so every one of its updates waits like this - and while it
+ * waits, getExtension() goes on naming the build that is running. So the new folder is read
+ * off the disk: the newest Claude Code beside the running one, if it is newer.
+ *
+ * @returns {{id:string, version:string, dir:string, target:string, road:string}|null}
+ */
+function findWaitingClaudeCode() {
+  const ext = vscode.extensions.getExtension(TARGET_ID);
+  if (!ext) return null;
+  const running = versionOf(ext.packageJSON && ext.packageJSON.version);
+  if (!running) return null;
+
+  const parent = path.dirname(ext.extensionPath);
+  let names;
+  try { names = fs.readdirSync(parent); } catch (e) { return null; }
+
+  let best = null;
+  for (const name of names) {
+    const m = FOLDER.exec(name);
+    if (!m) continue;
+    const v = [+m[1], +m[2], +m[3]];
+    if (newer(v, running) <= 0 || (best && newer(v, best.v) <= 0)) continue;
+    const dir = path.join(parent, name);
+    const hit = findTarget(dir);
+    if (hit) best = { v, install: { id: TARGET_ID, version: v.join("."), dir, target: hit.target, road: hit.road } };
+  }
+  return best && best.install;
+}
+
 /**
  * Versions before 0.0.7 kept a full copy of the bundle beside it and trimmed the
  * original's trailing whitespace when patching - so for a patch they wrote, that
@@ -120,8 +161,7 @@ function readPayload(extensionPath) {
  */
 const TAIL_BYTES = 512 * 1024;
 
-function apply(extensionPath) {
-  const install = findClaudeCode();
+function apply(extensionPath, install = findClaudeCode()) {
   if (!install) return { state: "no-target" };
 
   const kept = consumeLegacyBackup(install);
@@ -176,8 +216,7 @@ function apply(extensionPath) {
 /**
  * @returns {"removed"|"already-clean"|"busy"|"no-target"}
  */
-function remove() {
-  const install = findClaudeCode();
+function remove(install = findClaudeCode()) {
   if (!install) return { state: "no-target" };
 
   const current = fs.readFileSync(install.target, "utf8");
@@ -261,4 +300,4 @@ function claudeCodeInstalled() {
    those two questions shared one answer, Show status said "on" over a fix that had
    stopped. It is gone rather than corrected: a second name for a question this file
    already answers is how the two drifted apart in the first place. */
-module.exports = { findClaudeCode, claudeCodeInstalled, apply, remove, state, stripPatch, TARGET_ID, BEGIN, TAIL_BYTES };
+module.exports = { findClaudeCode, findWaitingClaudeCode, claudeCodeInstalled, apply, remove, state, stripPatch, TARGET_ID, BEGIN, TAIL_BYTES };
