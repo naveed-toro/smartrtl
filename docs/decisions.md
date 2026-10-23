@@ -4801,5 +4801,34 @@ extensions directory, a waiting one included, and the block runs out on its own.
 
 `test/update-waiting.test.js` unpacks an update the way VS Code does and restarts the
 extensions the way the restart does: the update has the fix before it starts, and nothing asks
-for a second reload. All five of its tests fail on 0.9.1. Not yet seen in the owner's own VS
-Code - the next Claude Code release is that test.
+for a second reload. All five of its tests fail on 0.9.1.
+
+And in the owner's own VS Code, the same morning, with 0.9.2 installed and Claude Code 2.1.309
+waiting on the Marketplace. "Update" was pressed; VS Code marked Claude Code "Restart
+Required", and SmartRTL's log said, with no `extensions-changed` line before it - the window
+was told nothing, as the source says:
+
+```
+[update-unpacked] applied (Claude Code 2.1.309, waiting for VS Code to start it)
+```
+
+"Restart Extensions" was pressed, and the log said `[startup] already-current (Claude Code
+2.1.309)`. No reload was asked for, and a Claude Code tab opened afterwards showed `RTL on`.
+
+### And the reloads that are still needed are still asked for
+
+Taking a prompt away risks taking a needed one with it, so `test/reload-when-needed.test.js`
+puts every situation on one side or the other and drives the real extension through each.
+
+| a reload is asked for | none is asked for |
+|---|---|
+| SmartRTL installed for the first time | an ordinary start, the fix in place |
+| SmartRTL upgraded, and the fix itself changed | a Claude Code update, fixed while it waited |
+| the editor closed for more than a day, the fix ran out | Claude Code installed or switched on while open |
+| the computer asleep for a day, the fix ran out | SmartRTL reinstalled, the same fix running - told so |
+| a Claude Code update that arrived while the fix was off | |
+| turning the fix on, and turning it off | |
+
+It was broken three ways to see it fail: never asking fails the six on the left, asking every
+time fails the four on the right, and 0.9.1 fails only the update and Claude Code arriving.
+0.9.1 passes all six on the left, so nothing needed was lost.

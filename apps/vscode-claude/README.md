@@ -122,7 +122,7 @@ npm test
 - the install, update and uninstall path - `patcher.test.js`, `patch-format.test.js`,
   `find-target.test.js`, `reinstall.test.js`, `uninstall.test.js`, `status-bar.test.js`,
   `status-truth.test.js`, `startup-cost.test.js`, `reachable-messages.test.js`,
-  `update-waiting.test.js`
+  `update-waiting.test.js`, `reload-when-needed.test.js`
 - `docs.test.js` - every link, file name, count and promise in the documents, put back to
   the thing it is about
 
