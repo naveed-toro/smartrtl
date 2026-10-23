@@ -201,19 +201,18 @@ test("every command the documents tell somebody to run is a command that exists"
   assert.deepEqual(missing, [], "commands named in the docs that do not exist");
 });
 
-test("what uninstalling and disabling do is still said first, word for word", () => {
-  // Pinned on purpose. It is the one thing somebody has to know about a fix that lives in
-  // another extension's file, and it is not to be tidied, shortened or moved without
-  // deciding to.
+test("what disabling does is still said first, word for word", () => {
+  // Pinned on purpose. Installing and uninstalling do what anybody expects; disabling does
+  // not, and that is the one thing somebody has to be told. It is not to be tidied,
+  // shortened or moved without deciding to.
   const readme = read("apps/vscode-claude/README.md");
   const pinned = [
-    "**Install it, and it works. Uninstall it, and it is gone** - when VS Code next starts,",
     "Disabling it does not turn it off. To turn it off, uninstall it.",
     "smart-rtl-direction patch BEGIN"
   ];
   for (const line of pinned) {
     assert.ok(readme.includes(line), "the uninstall guidance has lost: " + line);
   }
-  assert.ok(readme.indexOf("**Install it, and it works.") < 400,
+  assert.ok(readme.indexOf("Disabling it does not turn it off.") < 400,
     "it has been pushed down the page - it has to be the first thing read");
 });

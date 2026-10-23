@@ -1,8 +1,5 @@
 # @smartrtl/vscode-claude
 
-> **Install it, and it works. Uninstall it, and it is gone** - when VS Code next starts,
-> about a minute in.
->
 > Disabling it does not turn it off. To turn it off, uninstall it.
 
 Fixes right-to-left text in the Claude Code panel for VS Code.
