@@ -145,7 +145,7 @@ async function boot(webview, { fix = true, js = (s) => s, css = (s) => s } = {})
   const clean = js(stripPatch(fs.readFileSync(path.join(webview, "index.js"), "utf8")));
   const sheet = css(fs.readFileSync(path.join(webview, "index.css"), "utf8"));
   const bundle = !fix ? clean : clean + "\n" +
-    fs.readFileSync(PAYLOAD, "utf8").replace(/var EXPIRES_AT = \d+;/, `var EXPIRES_AT = ${Date.now() + 864e5};`);
+    fs.readFileSync(PAYLOAD, "utf8");
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 900, height: 800 } });
   const errors = [];

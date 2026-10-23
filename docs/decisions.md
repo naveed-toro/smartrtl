@@ -10,7 +10,7 @@ search for, in several languages.
 
 ## What is in here
 
-Fifty-seven sections, in the order they were written, which is the order the faults were
+Fifty-eight sections, in the order they were written, which is the order the faults were
 found. The ones worth reading first are marked.
 
  1. [The root cause](#1-the-root-cause)
@@ -70,6 +70,7 @@ found. The ones worth reading first are marked.
 55. [Claude Code fixed the long message itself, and ours came out](#55-claude-code-fixed-the-long-message-itself-and-ours-came-out)
 56. [An update of Claude Code costs one restart, not two](#56-an-update-of-claude-code-costs-one-restart-not-two)
 57. [Uninstalling turns it off: VS Code's hook runs, and ours missed](#57-uninstalling-turns-it-off-vs-codes-hook-runs-and-ours-missed)
+58. [Install it and it works, uninstall it and it is gone - and nothing else](#58-install-it-and-it-works-uninstall-it-and-it-is-gone---and-nothing-else)
 
 ← 6 and 7 are the rule and the design it forced. 13 is what the first live run found.
 25 and 27 are the composer crash and the decision to stop; 28 is what that would have
@@ -572,7 +573,7 @@ fixes it. It is simply not something to promise.
 
 ### What can be promised instead
 
-- `SmartRTL: Turn off the right-to-left fix` - instant, complete, on demand
+- the Turn off command - instant, complete, on demand (until 0.10.0, section 58)
 - the block is one truncation away from gone, by hand, with the one-liner in the app README
 - Claude Code installs each update into a fresh folder, so an orphan clears itself at its
   next update - which for a tool that ships as often as Claude Code is days, not months
@@ -3346,7 +3347,7 @@ the item would have sat in the corner of every window, all day, for somebody edi
 Claude Code nowhere in sight. One small "RTL on", only while Claude Code is in front of you, is
 the whole of what this extension shows anybody — and somebody in the side bar still has the
 switch in the Command Palette and in the Extensions view beside Uninstall.
-`test/status-bar.test.js` is that bound, written down.
+A status-bar test was that bound, written down, until 0.10.0 took the item out (section 58).
 
 ### The question that tells them apart
 
@@ -4883,3 +4884,54 @@ lifecycle has an uninstall script and no other - so a disabled SmartRTL's block 
 only by running out. And the hook's own limits are real: it waits for VS Code's next start,
 and a panel opened in that first minute still reads the block. The "Turn off" switch stays
 the way to stop it at once.
+
+## 58. Install it and it works, uninstall it and it is gone - and nothing else
+
+> apps/vscode-claude, 0.10.0. The owner's decision, 2026-10-23.
+
+### Why
+
+The owner, in his words: whoever builds a thing knows how it works, and an ordinary user
+does not. However often they were told to turn the fix off before uninstalling, an
+uninstalled extension that went on working was the fault - and from section 57 it no longer
+does. So the extension does what a user expects of any extension: installed, the formula
+runs; uninstalled, everything is gone; installed again, it all works again.
+
+Everything else here existed because an uninstall used to leave the block behind:
+
+- **the expiry** - a date stamped into the block, so an orphan stopped by itself within a
+  day - and with it the re-stamping on every start, the timer that wound it every six hours,
+  the "present but run out" state, and the reload asked for after a day away;
+- **the switch** - Turn on, Turn off, the remembered off, the question asked on a reinstall
+  that found it off, and the link that worked like a button;
+- **the status bar item and Show status** - which existed to say whether the switch was on,
+  and whether the block had run out.
+
+All of it came out. `package.json` contributes nothing at all; `extension.js` went from 652
+lines to 243.
+
+### What stays
+
+Putting the block in, keeping it in through Claude Code's updates (section 56), asking for a
+reload only when a panel on screen is running without it (sections 56 and 57's tests), the
+"busy" answer and its retry a minute later, the greeting after an install, and the uninstall
+script.
+
+### What it costs, said plainly
+
+Disabling still fires nothing. Before, a disabled SmartRTL's block ran out within a day; now
+it stays until Claude Code's next update replaces the file, or until the extension is
+uninstalled. The owner's judgement: people install and uninstall, and rarely disable. The
+app README says it in its first lines.
+
+And an uninstall the hook misses - VS Code killed in the minute before its cleanup, say - now
+leaves the block until Claude Code's next update, where it used to lapse within a day. Claude
+Code updates most days.
+
+### Measured
+
+`reload-when-needed.test.js` keeps its two sides: a reload is still asked for on a first
+install, on an upgrade whose block changed, and after a Claude Code update that arrived
+while no window was open; none on an ordinary start, an update fixed while it waited,
+Claude Code arriving, or a reinstall of the same fix. The tests that held the switch, the
+status bar and the expiry went with them.

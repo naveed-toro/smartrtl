@@ -1,6 +1,6 @@
 /* ==== smart-rtl-direction patch BEGIN ==== */
 /*
- * Claude Code's chat webview, from 0.9.1: one thing and nothing else.
+ * Claude Code's chat webview: one thing and nothing else.
  *
  * THE DIRECTION OF TEXT, BY THE FORMULA ALONE
  *    The box you type into, a message you send, an answer while it streams and once it is
@@ -26,12 +26,6 @@
 ;(function () {
   "use strict";
   try {
-    /* The extension re-stamps this on every activation. If it stops - because it was
-       uninstalled, and VS Code offers no working hook to clean up with - the block
-       stops doing anything by itself. See src/patch-format.js. */
-    var EXPIRES_AT = 0;
-    if (EXPIRES_AT && Date.now() > EXPIRES_AT) return;
-
     /* ------------------------------------------------------------------
        The direction of text, by the formula alone.
     ------------------------------------------------------------------ */

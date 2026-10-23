@@ -1,10 +1,5 @@
 /**
- * The block's shape, and the promise it carries.
- *
- * `vscode:uninstall` cleans up only when VS Code next starts - it was broken from 1.69
- * (microsoft/vscode#155561) and measured working again in 2026 - and nothing at all
- * fires when an extension is disabled. The block therefore has to be safe to leave
- * behind on its own terms - which is what these assert.
+ * The block's shape: appended, marked, and taken out again to the byte.
  */
 const test = require("node:test");
 const assert = require("node:assert/strict");
@@ -12,11 +7,11 @@ const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 const fmt = require("../src/patch-format.js");
-const { BEGIN, stripPatch, readExpiry, stampExpiry, WINDOW_MS, REFRESH_BELOW_MS,
-        TMP_SUFFIX, STALE_AFTER_MS, RENAME_TRIES, RENAME_WAIT_MS, tempFor, writeWhole } = fmt;
+const { BEGIN, stripPatch, TMP_SUFFIX, STALE_AFTER_MS, RENAME_TRIES, RENAME_WAIT_MS,
+        tempFor, writeWhole } = fmt;
 
-const BLOCK = BEGIN + "\n;(function(){var EXPIRES_AT = 0;})();\n/* ==== smart-rtl-direction patch END ==== */";
-const applyTo = (clean, now = 1_700_000_000_000) => clean + "\n" + stampExpiry(BLOCK, now) + "\n";
+const BLOCK = BEGIN + "\n;(function(){})();\n/* ==== smart-rtl-direction patch END ==== */";
+const applyTo = (clean) => clean + "\n" + BLOCK + "\n";
 
 test("apply then remove gives back the original, byte for byte", () => {
   for (const original of [
@@ -34,24 +29,10 @@ test("a patch can never stack on a patch", () => {
   assert.equal(stripPatch(applyTo(stripPatch(applyTo(original)))), original);
 });
 
-test("the block carries an expiry, and it can be read back out", () => {
-  const now = 1_700_000_000_000;
-  assert.equal(readExpiry(applyTo("//x\n", now)), now + WINDOW_MS);
-});
-
-test("an unstamped file has no expiry to find", () => {
-  assert.equal(readExpiry("//just a bundle\n"), 0);
-});
-
-test("the window outlasts the refresh threshold, or it would rewrite constantly", () => {
-  assert.ok(WINDOW_MS > REFRESH_BELOW_MS,
-    "a block must be re-stamped well before it is due to lapse");
-});
-
-test("a payload with nowhere to stamp is refused rather than shipped unguarded", () => {
-  // A block with no expiry would outlive the extension for good. Fail loudly at
-  // build time instead of quietly leaving one behind on somebody's machine.
-  assert.throws(() => stampExpiry("/* no slot here */", Date.now()), /EXPIRES_AT/);
+test("a block an older build stamped with an expiry comes out the same way", () => {
+  // Every build before 0.10.0 wrote one, and an upgrade or an uninstall meets it.
+  const older = BEGIN + "\n;(function(){var EXPIRES_AT = 1792800000000;})();\n/* ==== smart-rtl-direction patch END ==== */";
+  assert.equal(stripPatch("//bundle\n" + "\n" + older + "\n"), "//bundle\n");
 });
 
 

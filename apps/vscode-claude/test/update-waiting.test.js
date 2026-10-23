@@ -27,27 +27,13 @@ const APP = path.resolve(__dirname, "..");
 let running = null;                    // { dir, version } - the build VS Code is running
 let shown = [];
 let onExtensionsChanged = null;
-const CMD = {};
-const noop = () => ({ dispose() {} });
 const fake = {
-  StatusBarAlignment: { Right: 2 },
-  MarkdownString: class { constructor(v) { this.value = v; } },
   window: {
     createOutputChannel: () => ({ appendLine() {}, dispose() {} }),
-    createStatusBarItem: () => ({ text: "", show() {}, hide() {}, dispose() {} }),
     showInformationMessage: (m) => { shown.push(m); return Promise.resolve(undefined); },
-    showWarningMessage: (m) => { shown.push(m); return Promise.resolve(undefined); },
-    registerUriHandler: noop,
-    onDidChangeActiveTextEditor: noop,
-    tabGroups: {
-      get activeTabGroup() { return { activeTab: { input: { viewType: "mainThreadWebview-claudeVSCodePanel" } } }; },
-      onDidChangeTabs: noop, onDidChangeTabGroups: noop
-    }
+    showWarningMessage: (m) => { shown.push(m); return Promise.resolve(undefined); }
   },
-  commands: {
-    registerCommand: (id, fn) => { CMD[id] = fn; return { dispose() {} }; },
-    executeCommand: () => {}
-  },
+  commands: { executeCommand: () => {} },
   extensions: {
     getExtension: (id) => (id === "anthropic.claude-code" && running)
       ? { extensionPath: running.dir, packageJSON: { version: running.version } } : undefined,
@@ -92,28 +78,23 @@ function unpack(version) {
 /** What "Restart Extensions" does: the new build runs, and every extension starts again. */
 function restartExtensions(version) {
   running = { dir: path.dirname(path.dirname(bundleOf(version))), version };
-  ext.forgetState();
   shown = [];
   ext.activate(ctx);
 }
 
-const live = (version) => {
-  const text = fs.readFileSync(bundleOf(version), "utf8");
-  const m = /var EXPIRES_AT = (\d+);/.exec(text);
-  return text.includes(patcher.BEGIN) && !!m && Number(m[1]) > Date.now();
-};
+const fixed = (version) => fs.readFileSync(bundleOf(version), "utf8").includes(patcher.BEGIN);
 const settle = () => new Promise((r) => setTimeout(r, 3000));
 const reloads = () => shown.filter((m) => /Reload/.test(m));
 
 test("an update unpacked while the editor is open is fixed before VS Code starts it", async () => {
   unpack("2.1.308");
   restartExtensions("2.1.308");
-  assert.ok(live("2.1.308"), "the running build has no live fix");
+  assert.ok(fixed("2.1.308"), "the running build has no fix");
 
   shown = [];
   unpack("2.1.309");
   await settle();
-  assert.ok(live("2.1.309"), "the update was unpacked and nothing put the fix into it");
+  assert.ok(fixed("2.1.309"), "the update was unpacked and nothing put the fix into it");
   assert.deepEqual(shown, [], "fixing a build nobody is running yet said something");
   assert.equal(fs.readFileSync(bundleOf("2.1.309"), "utf8").split(patcher.BEGIN).length, 2, "one block");
 });
@@ -121,7 +102,7 @@ test("an update unpacked while the editor is open is fixed before VS Code starts
 test("and the restart VS Code asks for is the only one: nothing asks for another", () => {
   restartExtensions("2.1.309");
   assert.deepEqual(reloads(), [], "a second reload was asked for after an update");
-  assert.ok(live("2.1.309"));
+  assert.ok(fixed("2.1.309"));
 });
 
 test("an update found waiting at startup is fixed too, without a word", () => {
@@ -129,17 +110,8 @@ test("an update found waiting at startup is fixed too, without a word", () => {
   fs.mkdirSync(path.join(extensions, "anthropic.claude-code-2.1.310-win32-x64", "webview"), { recursive: true });
   fs.writeFileSync(bundleOf("2.1.310"), BUNDLE, "utf8");
   restartExtensions("2.1.309");
-  assert.ok(live("2.1.310"), "an update sitting beside the running build was left without the fix");
+  assert.ok(fixed("2.1.310"), "an update sitting beside the running build was left without the fix");
   assert.deepEqual(shown, []);
-});
-
-test("turning the fix off takes it out of a waiting update too", () => {
-  // otherwise it would come back on by itself at the next restart
-  CMD["smartrtl.turnOff"]();
-  assert.ok(!fs.readFileSync(bundleOf("2.1.310"), "utf8").includes(patcher.BEGIN), "the waiting update kept the fix");
-  assert.ok(!fs.readFileSync(bundleOf("2.1.309"), "utf8").includes(patcher.BEGIN));
-  CMD["smartrtl.turnOn"]();
-  assert.ok(live("2.1.309") && live("2.1.310"), "and turning it on puts it into both");
 });
 
 test("Claude Code arriving in the window does not ask for a reload", () => {
@@ -149,7 +121,7 @@ test("Claude Code arriving in the window does not ask for a reload", () => {
   running = { dir: path.dirname(path.dirname(bundleOf("2.1.311"))), version: "2.1.311" };
   shown = [];
   onExtensionsChanged();
-  assert.ok(live("2.1.311"));
+  assert.ok(fixed("2.1.311"));
   assert.deepEqual(reloads(), [], "Claude Code had only just arrived, and a reload was asked for");
 });
 

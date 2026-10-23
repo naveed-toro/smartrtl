@@ -22,29 +22,14 @@ const APP = path.resolve(__dirname, "..");
 
 let running = null;                    // { dir, version } - the build VS Code is running
 let shown = [];
-let onExtensionsChanged = null, onTabsChanged = null;
-const CMD = {};
-const noop = () => ({ dispose() {} });
+let onExtensionsChanged = null;
 const fake = {
-  StatusBarAlignment: { Right: 2 },
-  MarkdownString: class { constructor(v) { this.value = v; } },
   window: {
     createOutputChannel: () => ({ appendLine() {}, dispose() {} }),
-    createStatusBarItem: () => ({ text: "", show() {}, hide() {}, dispose() {} }),
     showInformationMessage: (m) => { shown.push(m); return Promise.resolve(undefined); },
-    showWarningMessage: (m) => { shown.push(m); return Promise.resolve(undefined); },
-    registerUriHandler: noop,
-    onDidChangeActiveTextEditor: noop,
-    tabGroups: {
-      get activeTabGroup() { return { activeTab: { input: { viewType: "mainThreadWebview-claudeVSCodePanel" } } }; },
-      onDidChangeTabs: (fn) => { onTabsChanged = fn; return { dispose() {} }; },
-      onDidChangeTabGroups: noop
-    }
+    showWarningMessage: (m) => { shown.push(m); return Promise.resolve(undefined); }
   },
-  commands: {
-    registerCommand: (id, fn) => { CMD[id] = fn; return { dispose() {} }; },
-    executeCommand: () => {}
-  },
+  commands: { executeCommand: () => {} },
   extensions: {
     getExtension: (id) => (id === "anthropic.claude-code" && running)
       ? { extensionPath: running.dir, packageJSON: { version: running.version } } : undefined,
@@ -85,19 +70,18 @@ function claudeCode(version, content = "//claude code bundle\n") {
 }
 const bundle = (dir) => path.join(dir, "webview", "index.js");
 const read = (dir) => fs.readFileSync(bundle(dir), "utf8");
-const setStamp = (dir, when) => fs.writeFileSync(bundle(dir),
-  read(dir).replace(/var EXPIRES_AT = \d+;/, "var EXPIRES_AT = " + when + ";"), "utf8");
 
 /** A window opening, as the person left it: SmartRTL has run here before and is switched on. */
 function fresh() {
   n++;
   store = { "smartrtl.hasRun": true };
   fs.writeFileSync(MARKER, "");
-  disposables.splice(0).forEach((d) => d && d.dispose && d.dispose());
+  closeEditor();
 }
+/** Every window closed: nothing of ours is running, so nothing is watching. */
+function closeEditor() { disposables.splice(0).forEach((d) => d && d.dispose && d.dispose()); }
 function open(dir, version) {
   running = { dir, version };
-  ext.forgetState();
   shown = [];
   ext.activate(ctx);
   return shown;
@@ -125,51 +109,13 @@ test("needed: SmartRTL upgraded, and the fix itself changed", () => {
   assert.ok(asksForReload(said), "the panel is running the older block: " + JSON.stringify(said));
 });
 
-test("needed: the editor was closed for more than a day, and the fix ran out", () => {
+test("needed: a Claude Code update unpacked while no window was open", () => {
   fresh();
-  const dir = claudeCode("2.1.309");
-  patcher.apply(home, { id: "anthropic.claude-code", version: "2.1.309", dir, target: bundle(dir), road: "webview/index.js" });
-  setStamp(dir, Date.now() - 1000);
-  const said = open(dir, "2.1.309");
-  assert.ok(asksForReload(said), "the panel came up with a dead block: " + JSON.stringify(said));
-});
-
-test("needed: the computer slept for a day with the editor open, and the fix ran out", () => {
-  fresh();
-  const dir = claudeCode("2.1.309");
-  open(dir, "2.1.309");
-  const realNow = Date.now;
-  try {
-    Date.now = () => realNow() + 30 * 3600 * 1000;    // woken thirty hours later
-    setStamp(dir, Date.now() - 1000);
-    ext.forgetState();
-    shown = [];
-    onTabsChanged();                                   // the first thing done after waking
-    assert.ok(asksForReload(shown), "a panel opened after the block ran out, and nobody was asked: " + JSON.stringify(shown));
-  } finally { Date.now = realNow; }
-});
-
-test("needed: a Claude Code update that arrived while the fix was switched off", () => {
-  fresh();
-  const old = claudeCode("2.1.308");
-  open(old, "2.1.308");
-  CMD["smartrtl.turnOff"]();
-  const next = claudeCode("2.1.309");                  // unpacked while off: nothing put the fix in
-  store["smartrtl.on"] = true;                         // switched back on before the restart
-  const said = open(next, "2.1.309");                  // VS Code's restart starts the update
+  open(claudeCode("2.1.308"), "2.1.308");
+  closeEditor();
+  const next = claudeCode("2.1.309");                  // nothing was watching when it arrived
+  const said = open(next, "2.1.309");                  // VS Code's next start brings it up
   assert.ok(asksForReload(said), "the update's panel came up without the fix: " + JSON.stringify(said));
-});
-
-test("needed: turning the fix on, and turning it off", () => {
-  fresh();
-  const dir = claudeCode("2.1.309");
-  open(dir, "2.1.309");
-  shown = [];
-  CMD["smartrtl.turnOff"]();
-  assert.ok(asksForReload(shown), "turned off, and the panel still runs the fix: " + JSON.stringify(shown));
-  shown = [];
-  CMD["smartrtl.turnOn"]();
-  assert.ok(asksForReload(shown), "turned on, and the panel still runs without it: " + JSON.stringify(shown));
 });
 
 /* ------------------------------------------------------------------

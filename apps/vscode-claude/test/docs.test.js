@@ -139,6 +139,8 @@ test("what the documents promise the payload contains, it contains", () => {
     "@layer smartrtl-unpin": false,
     "data-bidi-unpin": false,
     "readingPosition": false,
+    // and the expiry, which stood in for an uninstall that left the block behind (section 58)
+    "EXPIRES_AT": false,
     // and what 0.7.0 took out, each of which acted on text beside the formula
     "faultIsStillHere": false,
     "startComposer": false,
@@ -185,11 +187,10 @@ test("the README that ships has no link that climbs out of its own folder", () =
 
 test("every command the documents tell somebody to run is a command that exists", () => {
   // The uninstall guidance named `SmartRTL: Remove the right-to-left fix` from 0.1.4
-  // until 0.4.21. There has been no such command since 0.1.4 - it became Turn on/Turn
-  // off in the same release - and the pinned test above was holding the wrong name in
-  // place rather than the right instruction.
-  const titles = new Set(JSON.parse(read("apps/vscode-claude/package.json"))
-    .contributes.commands.map((c) => c.category + ": " + c.title));
+  // until 0.4.21, a command that had not existed since 0.1.4. From 0.10.0 there are no
+  // commands at all (section 58), so the documents may tell nobody to run one.
+  const contributes = JSON.parse(read("apps/vscode-claude/package.json")).contributes || {};
+  const titles = new Set((contributes.commands || []).map((c) => c.category + ": " + c.title));
   const missing = [];
   for (const doc of DOCS) {
     for (const m of read(doc).matchAll(/SmartRTL: [A-Za-z][A-Za-z -]+/g)) {
@@ -200,21 +201,19 @@ test("every command the documents tell somebody to run is a command that exists"
   assert.deepEqual(missing, [], "commands named in the docs that do not exist");
 });
 
-test("the instructions for turning it off before uninstalling are still there, word for word", () => {
-  // Pinned on purpose. This is the only thing standing between somebody and a patch left
-  // in a file they do not know about, and it is the one paragraph in this repository
-  // that is not to be tidied, shortened or moved without deciding to.
+test("what uninstalling and disabling do is still said first, word for word", () => {
+  // Pinned on purpose. It is the one thing somebody has to know about a fix that lives in
+  // another extension's file, and it is not to be tidied, shortened or moved without
+  // deciding to.
   const readme = read("apps/vscode-claude/README.md");
   const pinned = [
-    "**Uninstalling turns it off** - when VS Code next starts, about a minute in.",
-    "Turn off the right-to-left fix",
-    "Disabling does not turn it\n> off; it stops by itself within a day.",
-    "SmartRTL: Turn off the right-to-left fix",
+    "**Install it, and it works. Uninstall it, and it is gone** - when VS Code next starts,",
+    "Disabling it does not turn it off: the fix stays until Claude Code's next update.",
     "smart-rtl-direction patch BEGIN"
   ];
   for (const line of pinned) {
     assert.ok(readme.includes(line), "the uninstall guidance has lost: " + line);
   }
-  assert.ok(readme.indexOf("**Uninstalling turns it off**") < 400,
-    "the warning has been pushed down the page - it has to be the first thing read");
+  assert.ok(readme.indexOf("**Install it, and it works.") < 400,
+    "it has been pushed down the page - it has to be the first thing read");
 });

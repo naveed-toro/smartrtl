@@ -122,7 +122,7 @@ Measured on 2026-10-23: VS Code runs `vscode:uninstall` again, and the script ha
 looking for Claude Code in the wrong folder (decisions.md 57). What follows is the history.
 
 ~~**Uninstalling the VS Code extension does not undo it.**~~ The patch stayed in Claude Code's
-bundle until something removed it: the `SmartRTL: Turn off the right-to-left fix` command,
+bundle until something removed it: the Turn off command,
 the one-liner in the app README, or Claude Code's next update.
 
 This is not for want of trying. `vscode:uninstall` is the only hook the editor offers for
@@ -137,10 +137,10 @@ given an expiry instead - 24 hours, re-stamped by the extension while it is inst
 an orphan lapses on its own without needing anybody. That shipped in 0.0.8, and 0.0.9
 fixed the build that broke doing it.
 
-What remains is bounded rather than open: the expiry is a day, not instant, so **the
-Remove command is still the way to make it stop now**, and disabling the extension still
-fires no hook at all. The instructions for that are in the app README and they are not to
-be softened - a workaround presented as a feature is how people end up surprised.
+From 0.10.0 the expiry, and the switch that stood beside it, are gone too (decisions.md 58):
+installed, it works; uninstalled, it is gone. What remains is disabling, which still fires
+no hook at all - the block then stays until Claude Code's next update, and the app README
+says so in its first lines.
 
 ## Order, and why
 
@@ -200,7 +200,7 @@ today, and none of them is a finding about the fix.
 
 2. **Ask for consent before the first write.** The patch currently goes in silently on
    activation. One dialog, once, before the first time anything is written - what it
-   changes, that it can be undone at any time, and that it expires on its own - turns "an
+   changes, and that uninstalling takes it back out - turns "an
    extension that modifies another extension" into "an extension somebody asked for". It is
    the right behaviour on its own terms, and it is the answer to the question a marketplace
    asks.

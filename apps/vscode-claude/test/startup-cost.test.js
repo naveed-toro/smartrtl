@@ -8,8 +8,9 @@
  * Measured against the real Claude Code on 2.1.269, with its real 5.4MB bundle:
  *
  *   every day, the fix already in place     activate()    10ms
- *   switching tabs afterwards                              8ms
  *   once, after a Claude Code update        activate()    the write itself is ~50ms
+ *
+ * Switching tabs costs nothing at all: from 0.10.0 nothing of ours listens for it.
  *
  * Nobody waits for us. What made the last number look frightening at first was not this
  * code at all: on Windows, ANY change to that file - even thirteen bytes written in place -
@@ -40,25 +41,14 @@ require("module")._initPaths();
 
 const APP = path.resolve(__dirname, "..");
 
-let activeTab = { input: { viewType: "claudeVSCodePanel" } };
 const noop = () => ({ dispose() {} });
 const fake = {
-  StatusBarAlignment: { Right: 2 },
-  MarkdownString: class { constructor(v) { this.value = v; } },
   window: {
     createOutputChannel: () => ({ appendLine() {}, dispose() {} }),
-    createStatusBarItem: () => ({ text: "", show() {}, hide() {}, dispose() {} }),
     showInformationMessage: () => Promise.resolve(undefined),
-    showWarningMessage: () => Promise.resolve(undefined),
-    registerUriHandler: noop,
-    onDidChangeActiveTextEditor: noop,
-    tabGroups: {
-      get activeTabGroup() { return { activeTab }; },
-      onDidChangeTabs: (fn) => { fake.__tabChanged = fn; return { dispose() {} }; },
-      onDidChangeTabGroups: noop
-    }
+    showWarningMessage: () => Promise.resolve(undefined)
   },
-  commands: { registerCommand: () => ({ dispose() {} }), executeCommand: () => {} },
+  commands: { executeCommand: () => {} },
   extensions: {
     getExtension: (id) => (id === "anthropic.claude-code" && claudeDir)
       ? { extensionPath: claudeDir, packageJSON: { version: "2.1.269" } } : undefined,
@@ -127,7 +117,6 @@ function accounting(fn) {
 
 test("an ordinary start, with the fix already in place, writes nothing at all", () => {
   patcher.apply(home);                       // the state every start after the first is in
-  ext.forgetState();
   const t = accounting(() => ext.activate(ctx));
   assert.equal(t.writes, 0,
     "activate() wrote " + t.wrote + " bytes to Claude Code's folder on an ordinary start");
@@ -135,7 +124,6 @@ test("an ordinary start, with the fix already in place, writes nothing at all", 
 
 test("...and never reads the whole five megabytes to find that out", () => {
   patcher.apply(home);
-  ext.forgetState();
   const t = accounting(() => ext.activate(ctx));
   // Reading all of it to learn that nothing needs doing was 198ms of every single start
   // before 0.5.0. It is the end of the file now, and the end is enough: everything this
@@ -147,32 +135,16 @@ test("...and never reads the whole five megabytes to find that out", () => {
     Math.round(BUNDLE.length / 1024) + "KB bundle - that is not the end of it any more");
 });
 
-test("switching tabs costs nothing on the disk at all", () => {
-  // What the editor actually calls when somebody moves between files - not activate(),
-  // which happens once a window. This used to read the end of the bundle on every one of
-  // them, 13ms each, so switching between two files paid it twice.
-  patcher.apply(home);
-  ext.forgetState();
-  ext.activate(ctx);                         // the reading this does is the test above
-  assert.ok(fake.__tabChanged, "nothing is listening for a tab change");
-  const t = accounting(() => { for (let i = 0; i < 20; i++) fake.__tabChanged(); });
-  assert.equal(t.writes, 0, "a tab change wrote to Claude Code's bundle");
-  assert.equal(t.read, 0,
-    "twenty tab changes read " + Math.round(t.read / 1024) + "KB; the answer is remembered for 30s");
-});
-
 test("after a Claude Code update it writes once, and only once", () => {
   // The one time it has to do real work. It must not turn into two writes, because every
   // write to that file costs whoever reads it next a virus scan of the whole thing -
   // measured at 1.8s on Windows, whether we changed five megabytes or thirteen bytes.
   fs.writeFileSync(target, BUNDLE, "utf8");   // Claude Code has just replaced its bundle
-  ext.forgetState();
   const t = accounting(() => ext.activate(ctx));
   assert.equal(t.writes, 1, "the bundle was written " + t.writes + " times for one update");
   assert.ok(t.wrote > BUNDLE.length, "and what it wrote is the bundle plus the block");
 
   // and the start after that one goes back to writing nothing
-  ext.forgetState();
   assert.equal(accounting(() => ext.activate(ctx)).writes, 0);
 });
 
@@ -180,7 +152,6 @@ test("and it is one write, not a copy of the bundle left beside it", () => {
   // 0.0.1 to 0.0.6 kept a five-megabyte copy in Claude Code's folder so that removal could
   // restore from it. Nothing is kept now: the block is appended and removal is a truncation.
   fs.writeFileSync(target, BUNDLE, "utf8");
-  ext.forgetState();
   ext.activate(ctx);
   const left = fs.readdirSync(path.dirname(target)).filter((n) => n !== "index.js");
   assert.deepEqual(left, [], "something of ours is sitting in Claude Code's folder");

@@ -122,7 +122,7 @@ conversation to have, not a change to make.
 | the line | every computed property of every element, with the fix and without it, against a named list of what may differ | `the-line suite` |
 | the mirror, all four places | compared with what the BROWSER draws when it is told - Claude Code's own bundle with the incomplete rule DELETED and the formula's answer said plainly. An answer: 96 elements, no allow-list, at two widths. The box you type into and a message you sent: every box and every piece of ink, the caret included, and identical to untouched Claude Code when there is no Urdu in them. An answer while it streams: five rhythms, and no line holding right-to-left text drawn from the left in any frame | `the-mirror suite` |
 | the dot | stays exactly where Claude Code draws it, on every row, in every language - its gutter, its position and its connector read on every row of the-mirror, and against untouched Claude Code | `rendering suite`, `real-webview suite` and `the-mirror suite` |
-| what we show | one item, only while Claude Code is in front of you | `test/status-bar.test.js` |
+| what we show | nothing: no status bar item, no command, no setting - from 0.10.0 | `apps/vscode-claude/package.json` has no `contributes` |
 | what we cost | no write and no whole-file read on an ordinary start; a tab change touches the disk not at all | `test/startup-cost.test.js` |
 | the roads in | every name renamed, every role taken away — each place still found | `real-webview suite` and the survival suites |
 | the assumptions | which one went, in one line, the morning it goes | `claude-shape suite` |

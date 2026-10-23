@@ -1,4 +1,4 @@
-# The sixty-six builds, and what each one actually contained
+# The sixty-seven builds, and what each one actually contained
 
 Compiled by opening every `.vsix` and reading what is inside it, not from memory. The
 second table was rebuilt the same way after the fact, which is why some of its rows say
@@ -1011,6 +1011,18 @@ Payload: 135,021 bytes - 21,591 more than 0.5.2, for the long-message fix
 becoming a part of its own, a second way into the same trap, and the reasons written beside
 both.
 
+### 0.10.0 — install it and it works, uninstall it and it is gone
+
+- [x] **no expiry** - the block carries no date and nothing re-stamps it; the timer, the
+      "run out" state and the reload after a day away went with it **(code)**
+- [x] **no switch, no status bar item, no commands** - `package.json` contributes nothing
+      **(code)**
+- [x] **the reloads that are needed are still asked for**, and the ones that are not still are
+      not **(lab: reload-when-needed.test.js)**
+- [x] **the direction of text is untouched** - the payload lost only its expiry check; review
+      green on 2.1.301 and on 2.1.308 **(lab)**
+- [ ] installed in the owner's VS Code **(unseen)**
+
 ### 0.9.3 — uninstalling turns it off
 
 - [x] **VS Code runs the uninstall hook** - a probe extension's `vscode:uninstall` wrote its
@@ -1386,8 +1398,8 @@ than an approximation of it.
       straight back out: whether a side bar view is OPEN cannot be asked at all, so it would
       have put a mark in the corner of every window, all day, for somebody editing a file with
       Claude Code nowhere in sight. The switch is still in the Command Palette and in the
-      Extensions view beside Uninstall. `status-bar.test.js` holds that bound now, and asserts
-      that nothing of ours reads another extension's settings **(lab)**
+      Extensions view beside Uninstall. A status-bar test held that bound until 0.10.0, and asserted
+      that nothing of ours read another extension's settings **(lab)**
 - [x] **what it costs a person who opens VS Code, measured and then held** — 10ms to activate
       with the fix already in place, 8ms for a tab change and not one byte of disk, no write at
       all on an ordinary start and never a read of the whole bundle. Held in reads and writes
@@ -1563,12 +1575,10 @@ Select-String -Path "$env:USERPROFILE\.vscode\extensions\anthropic.claude-code-*
 
 Output = patched. No output = clean.
 
-**4. Before moving to another build: take the effect off**
+**4. Before moving to another build**
 
-`Ctrl+Shift+P` → **SmartRTL: Turn off the right-to-left fix**
-
-Required when going *down* a version. Going up, the newer build handles it - but running it
-anyway costs nothing and removes all doubt about what you are looking at.
+Nothing, from 0.10.0: whichever build starts next replaces the block with its own, going up a
+version or down. Builds before it had a Turn off command for this step.
 
 **5. Uninstall**
 

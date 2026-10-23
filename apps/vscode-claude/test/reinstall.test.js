@@ -1,16 +1,14 @@
 /**
- * Being asked once, and not being asked again.
+ * Telling an install from a restart.
  *
- * Off is remembered in global state, and global state OUTLIVES an uninstall. So
- * somebody can turn the fix off, remove the extension, install it again later, and
- * be handed an extension that does nothing and says nothing about why. The prompt
- * that covers that is the only thing this extension ever says unprompted, which
- * makes "how often" the entire question - a prompt at every startup would be worse
- * than the silence it replaces.
+ * Somebody who has just installed this is owed an answer - "it is fixed" - and somebody
+ * who has only opened VS Code is owed silence. Nothing in the API tells the two apart, so
+ * freshInstall() reads it from the one asymmetry the editor leaves: global state OUTLIVES
+ * an uninstall, and the extension's own folder does not.
  *
- * So the lifecycle is played out here for real: a folder that is deleted and
- * recreated the way the editor deletes and recreates one, against global state that
- * is kept the way the editor keeps it.
+ * So the lifecycle is played out here for real: a folder that is deleted and recreated
+ * the way the editor deletes and recreates one, against global state that is kept the
+ * way the editor keeps it.
  */
 const test = require("node:test");
 const assert = require("node:assert/strict");
@@ -24,8 +22,7 @@ require("module").Module._initPaths();
 process.env.NODE_PATH = path.join(__dirname, "stub", "node_modules");
 require("module")._initPaths();
 
-const vscode = require("vscode");
-const { freshInstall, askIfStillOff } = require("../src/extension.js");
+const { freshInstall } = require("../src/extension.js");
 
 /**
  * One editor: an extension folder on disk, and a global state that survives it.
@@ -47,81 +44,30 @@ function editor(version = "0.2.0") {
   return {
     ctx, store, install,
     uninstall: () => fs.rmSync(ctx.extensionPath, { recursive: true, force: true }),
-    /** one activation, start to finish; returns what the person was shown */
-    start() {
-      vscode.__reset();
-      askIfStillOff(ctx, freshInstall(ctx));
-      return vscode.__shown.map((s) => s.message);
-    },
-    turnOff() { store.set("smartrtl.on", false); store.set("smartrtl.offAtVersion", version); }
+    /** one activation: is it greeted as an install? */
+    start: () => freshInstall(ctx)
   };
 }
 
-test("a plain restart says nothing, whether the fix is on or off", () => {
+test("a plain restart is not an install", () => {
   const e = editor();
-  assert.deepEqual(e.start(), [], "first ever startup");
-  assert.deepEqual(e.start(), [], "second startup");
-
-  e.turnOff();
-  assert.deepEqual(e.start(), [], "off is a decision they just made, not news");
-  assert.deepEqual(e.start(), [], "and it stays not-news");
+  assert.equal(e.start(), false, "first ever startup: nothing ran here before, so nothing to tell apart");
+  assert.equal(e.start(), false, "second startup");
 });
 
-test("turned off, uninstalled, and the SAME version installed again - it asks", () => {
+test("uninstalled and installed again - the same version too - is an install, once", () => {
   const e = editor("0.2.0");
   e.start();
-  e.turnOff();
-  e.start();
-
   e.uninstall();
   e.install();                       // same build, months later
-
-  const shown = e.start();
-  assert.equal(shown.length, 1, "the reinstall is asked about exactly once");
-  assert.match(shown[0], /right-to-left fix is off/, shown[0]);
-});
-
-test("and having answered 'Keep it off', it does not ask again", () => {
-  const e = editor("0.2.0");
-  e.start();
-  e.turnOff();
-  e.uninstall();
-  e.install();
-
-  vscode.__answerWith("Keep it off");
-  assert.equal(e.start().length, 1);
-
-  // the stub answers synchronously, but the handler is a .then
-  return Promise.resolve().then(() => {
-    assert.deepEqual(e.start(), [], "restart after answering");
-    assert.deepEqual(e.start(), [], "and again");
-  });
-});
-
-test("a reinstall while the fix is ON is never mentioned", () => {
-  const e = editor();
-  e.start();
-  e.uninstall();
-  e.install();
-  assert.deepEqual(e.start(), [], "nothing is wrong, so nothing is said");
-});
-
-test("a new version arriving on a fix that is off still asks - as it always did", () => {
-  const e = editor("0.2.0");
-  e.start();
-  e.turnOff();
-  e.start();
-
-  e.ctx.extension.packageJSON.version = "0.3.0";   // an update, folder untouched
-  assert.equal(e.start().length, 1, "a build they have not answered for");
+  assert.equal(e.start(), true, "the reinstall is greeted");
+  assert.equal(e.start(), false, "and the restart after it is not");
 });
 
 test("a folder that cannot be written to is never called a fresh install", () => {
   const e = editor();
   e.start();
-  e.turnOff();
   e.uninstall();                     // and nothing puts it back: writing will throw
-
-  // Better to go quiet than to ask at every single startup. Ten times over.
-  for (let i = 0; i < 10; i++) assert.deepEqual(e.start(), [], "startup " + i);
+  // Better to go quiet than to greet at every single startup. Ten times over.
+  for (let i = 0; i < 10; i++) assert.equal(e.start(), false, "startup " + i);
 });

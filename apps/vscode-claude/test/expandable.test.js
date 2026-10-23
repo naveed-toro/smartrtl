@@ -49,25 +49,7 @@ test("the expand button on a collapsed message is not moved either", async () =>
   } finally { await off.close(); await on.close(); }
 });
 
-/* ------------------------------------------------------------------------
-   What a block left behind becomes.
-
-   VS Code has no working way to let an extension clean up after itself when it
-   is uninstalled. So the block does not depend on anyone coming back for it:
-   once nobody re-stamps its expiry, it stops doing anything at all.
-------------------------------------------------------------------------- */
-
-test("an expired block does nothing whatsoever", async () => {
-  const { page, close } = await open(userMessage(MIXED), { expired: true });
-  try {
-    assert.equal(await page.$$eval("[data-bidi]", (e) => e.length), 0, "nothing should be marked");
-    assert.equal(await page.$$eval("#smart-rtl-direction", (e) => e.length), 0,
-      "not even a stylesheet should be installed");
-    assert.equal(await dirOf(page, ".content_x"), "ltr", "the page must be exactly as it was");
-  } finally { await close(); }
-});
-
-test("and an in-date block still does its job, so the guard is not just always off", async () => {
+test("a sent message with Urdu in it is turned, so the page under these tests is fixed", async () => {
   const { page, close } = await open(userMessage(MIXED));
   try {
     assert.equal(await dirOf(page, ".content_x"), "rtl");

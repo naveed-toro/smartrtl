@@ -1,6 +1,6 @@
 /**
- * Finds the Claude Code extension, and puts the payload into its webview bundle -
- * or takes it back out.
+ * Finds the Claude Code extension, and puts the payload into its webview bundle.
+ * Taking it back out is src/uninstall.js, which VS Code runs after an uninstall.
  *
  * The folder is not guessed. VS Code is asked where the extension it is actually
  * running lives, so this stays correct when versions change, when the editor is
@@ -25,8 +25,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const vscode = require("vscode");
 
-const fmt = require("./patch-format.js");
-const { BEGIN, stripPatch, readExpiry, stampExpiry, writeWhole } = fmt;
+const { BEGIN, stripPatch, writeWhole } = require("./patch-format.js");
 const { findTarget } = require("./find-target.js");
 
 const TARGET_ID = "anthropic.claude-code";
@@ -119,11 +118,6 @@ function consumeLegacyBackup(install) {
   return clean;
 }
 
-/** The block with its timestamp blanked, so two of them can be compared for sameness. */
-function withoutStamp(text) {
-  return text.replace(/var EXPIRES_AT = \d+;/, "var EXPIRES_AT = 0;");
-}
-
 function readPayload(extensionPath) {
   const p = path.join(extensionPath, "dist", "payload.js");
   if (!fs.existsSync(p)) {
@@ -135,25 +129,11 @@ function readPayload(extensionPath) {
 }
 
 /**
- * @returns {"applied"|"restamped"|"already-current"|"busy"|"no-target"}
- *
- * "restamped" is its own answer on purpose. Refreshing the expiry changes the file
- * but not a single thing the reader would see, so it must not ask anybody to
- * reload - which is what "applied" means.
- *
- * And "busy" is its own answer for the opposite reason: NOTHING was done. Something has
- * Claude Code's bundle open - a panel loading it is the ordinary way - and rather than
- * write five megabytes underneath a reader, this leaves the file exactly as it is and
- * comes back later. Silence would be the worst of the five: the caller would go straight
- * on to tell somebody the fix is in place.
- */
-/**
  * The end of the bundle, and only the end.
  *
- * Everything this extension writes is appended, so "is it there, and is it still
- * alive" is always answered by the last few kilobytes. This used to read the whole
- * file - five megabytes - and it is asked on every tab change, which was five
- * megabytes of reading to look at the end of a file.
+ * Everything this extension writes is appended, so "is it there" is always answered by
+ * the last few kilobytes. Reading all five megabytes to find out that nothing needs doing
+ * was measured at 198ms of every startup, against 13ms for the end of the file.
  *
  * A byte window can cut a UTF-8 character in half where it starts. That is harmless
  * here: what is searched for is ASCII, it sits well inside the window, and nothing
@@ -161,74 +141,43 @@ function readPayload(extensionPath) {
  */
 const TAIL_BYTES = 512 * 1024;
 
+/**
+ * @returns {"applied"|"already-current"|"busy"|"no-target"}
+ *
+ * "busy" means NOTHING was done. Something has Claude Code's bundle open - a panel
+ * loading it is the ordinary way - and rather than write five megabytes underneath a
+ * reader, this leaves the file exactly as it is so the caller can come back later.
+ */
 function apply(extensionPath, install = findClaudeCode()) {
   if (!install) return { state: "no-target" };
 
   const kept = consumeLegacyBackup(install);
   const payload = readPayload(extensionPath);
-  const now = Date.now();
 
-  /* The end of the file first, because the ordinary question is "is there anything to do at
-     all?" and the ordinary answer is no: the block is already there and its clock is not due
-     for winding. This runs on every activation - every time somebody opens VS Code - and
-     reading five megabytes to find out that nothing needs doing was measured at 198ms of
-     every startup, against 13ms for the end of the file. Everything else here still reads
-     the whole of it, because everything else is about to write it.
-
-     A tail too short to hold the whole block cannot match one, so it falls through to the
-     full read and is merely slow, never wrong. patch-format.js keeps the window well clear
-     of the payload, and a test holds it there. */
+  /* The end of the file first: on every start but the first, the block is already there,
+     and only the whole file is read when it is about to be written. A tail too short to
+     hold the whole block cannot match one, so it falls through to the full read and is
+     merely slow, never wrong. */
   if (!kept) {
     let tail = null;
     try { tail = readTail(install.target); } catch (e) { tail = null; }
-    if (tail && tail.includes(BEGIN)) {
-      const here = tail.slice(tail.indexOf(BEGIN)).trimEnd();
-      if (withoutStamp(here) === withoutStamp(payload) &&
-          readExpiry(tail) - now > fmt.REFRESH_BELOW_MS) {
-        return { state: "already-current", install };
-      }
+    if (tail && tail.includes(BEGIN) && tail.slice(tail.indexOf(BEGIN)).trimEnd() === payload) {
+      return { state: "already-current", install };
     }
   }
 
   const current = fs.readFileSync(install.target, "utf8");
-
-  if (!kept && current.includes(BEGIN)) {
-    const here = current.slice(current.indexOf(BEGIN)).trimEnd();
-    if (withoutStamp(here) === withoutStamp(payload)) {
-      // same block; the only question left is whether its clock needs winding
-      if (readExpiry(current) - now > fmt.REFRESH_BELOW_MS) {
-        return { state: "already-current", install };
-      }
-      if (!writeWhole(fs, install.target, stripPatch(current) + "\n" + stampExpiry(payload, now) + "\n")) {
-        return { state: "busy", install };
-      }
-      return { state: "restamped", install };
-    }
+  if (!kept && current.includes(BEGIN) && current.slice(current.indexOf(BEGIN)).trimEnd() === payload) {
+    return { state: "already-current", install };
   }
 
+  // a different block - an older build's - is replaced, never stacked on
   const clean = kept || stripPatch(current);
-  if (!writeWhole(fs, install.target, clean + "\n" + stampExpiry(payload, now) + "\n")) {
+  if (!writeWhole(fs, install.target, clean + "\n" + payload + "\n")) {
     return { state: "busy", install };
   }
   return { state: "applied", install };
 }
-
-/**
- * @returns {"removed"|"already-clean"|"busy"|"no-target"}
- */
-function remove(install = findClaudeCode()) {
-  if (!install) return { state: "no-target" };
-
-  const current = fs.readFileSync(install.target, "utf8");
-  const kept = consumeLegacyBackup(install);
-  if (!current.includes(BEGIN)) return { state: "already-clean", install };
-
-  if (!writeWhole(fs, install.target, kept || stripPatch(current))) {
-    return { state: "busy", install };
-  }
-  return { state: "removed", install };
-}
-
 
 function readTail(file) {
   const fd = fs.openSync(file, "r");
@@ -244,41 +193,6 @@ function readTail(file) {
 }
 
 /**
- * What the editor has to show, cheaply and without lying.
- *
- * Two facts, and they are not the same fact:
- *
- *   present - the block is in the file. This is what Turn Off acts on.
- *   live    - it is in the file AND its stamp has not run out, which is the only
- *             thing that means right-to-left text is actually being fixed.
- *
- * They disagree exactly when it matters. An expired block is still sitting in the
- * file and does nothing whatsoever - the payload checks its date once, on the way in,
- * and returns. For as long as only the marker was looked for, that was reported as
- * the fix being on, which is the one claim this extension exists to keep honest.
- *
- * A block with no stamp at all counts as live, because that is what the payload does
- * with it.
- *
- * @returns {{installed:boolean, present:boolean, live:boolean, expiresAt:number}}
- */
-function state() {
-  const install = findClaudeCode();
-  // Not found can mean two different things, and they are told apart here: Claude Code
-  // is not installed, or it is and the file its panel loads from is not where it was.
-  if (!install) return { installed: claudeCodeInstalled(), recognized: false, present: false, live: false, expiresAt: 0, road: "" };
-
-  let tail;
-  try { tail = readTail(install.target); }
-  catch (e) { return { installed: true, recognized: true, present: false, live: false, expiresAt: 0, road: install.road }; }
-
-  const present = tail.includes(BEGIN);
-  const expiresAt = present ? readExpiry(tail) : 0;
-  return { installed: true, recognized: true, present, expiresAt, road: install.road,
-           live: present && (!expiresAt || Date.now() < expiresAt) };
-}
-
-/**
  * Is Claude Code installed at all, whether or not its panel is where we look for it?
  *
  * findClaudeCode() needs both and answers null for either, which put "Claude Code is
@@ -291,13 +205,6 @@ function claudeCodeInstalled() {
 }
 
 /* TAIL_BYTES is exported for one test, and it is the right thing to test: every startup
-   now answers from that window instead of reading five megabytes, and the day the payload
+   answers from that window instead of reading five megabytes, and the day the payload
    outgrows it the answer quietly stops being available. */
-/* isPatched() used to live here, and answered state().present - "is the block in the
-   file". It had one caller, the Show status command, and that command is asking whether
-   right-to-left text is actually being FIXED, which is state().live. A block that is
-   present and out of date sits in the file doing nothing whatsoever, and for as long as
-   those two questions shared one answer, Show status said "on" over a fix that had
-   stopped. It is gone rather than corrected: a second name for a question this file
-   already answers is how the two drifted apart in the first place. */
-module.exports = { findClaudeCode, findWaitingClaudeCode, claudeCodeInstalled, apply, remove, state, stripPatch, TARGET_ID, BEGIN, TAIL_BYTES };
+module.exports = { findClaudeCode, findWaitingClaudeCode, claudeCodeInstalled, apply, stripPatch, TARGET_ID, BEGIN, TAIL_BYTES };

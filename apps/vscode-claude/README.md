@@ -1,9 +1,9 @@
 # @smartrtl/vscode-claude
 
-> **Uninstalling turns it off** - when VS Code next starts, about a minute in.
+> **Install it, and it works. Uninstall it, and it is gone** - when VS Code next starts,
+> about a minute in.
 >
-> At once: ⚙ menu above → “Turn off the right-to-left fix”. Disabling does not turn it
-> off; it stops by itself within a day.
+> Disabling it does not turn it off: the fix stays until Claude Code's next update.
 
 Fixes right-to-left text in the Claude Code panel for VS Code.
 
@@ -14,25 +14,20 @@ Fixes right-to-left text in the Claude Code panel for VS Code.
 Never changes a character of anybody's text. From 0.7.0 the one thing it does to text is set
 its direction by one formula, and nothing else of its own acts on text.
 
-## Why this one has to be asked, when other extensions do not
+There is nothing to set and nothing to switch: no command, no status bar item, no setting.
+
+## Why uninstalling is slower than installing
 
 Most extensions keep their whole effect inside themselves, so deleting the folder removes
-everything - that is not a feature they implement, it is a consequence of never reaching
-outside their own box.
-
-This one reaches outside. It adds a small marked block to a file that belongs to the
-**Claude Code** extension, because VS Code gives an extension no other way to reach inside
-another extension's webview. That is also why it keeps working after Claude Code updates.
+everything. This one reaches outside. It adds a small marked block to a file that belongs to
+the **Claude Code** extension, because VS Code gives an extension no other way to reach
+inside another extension's webview.
 
 VS Code cleans up only what it owns, and has no idea we touched a foreign file. Its one
 hook for this, `vscode:uninstall`, runs this extension's own cleanup - measured working on
-2026-10-23, once a fault of ours in that cleanup was fixed in 0.9.3. It runs when VS Code
-next starts, not at the moment of uninstalling, and nothing at all fires when an extension
-is disabled.
-
-Three more things make that safe to live with: turning it off restores Claude Code byte for
-byte, the block stops working by itself within a day if nobody does, and Claude Code's
-next update replaces the file anyway.
+2026-10-23. It runs when VS Code next starts, not at the moment of uninstalling, and nothing
+at all fires when an extension is disabled. A Claude Code panel opened in that first minute
+still has the fix until it is opened again.
 
 ## How the fix reaches the screen
 
@@ -116,12 +111,10 @@ npm test
   answer streamed three characters at a time, and in every painted frame every block's
   direction is exactly the formula's; the box after every keystroke; a sent message; nothing
   of ours anywhere else; and nothing left after `__bidiFixOff()`
-- `expandable.test.js` - the controls on a sent message never move, and a block left behind
-  past its expiry does nothing at all
+- `expandable.test.js` - the controls on a sent message never move
 - the install, update and uninstall path - `patcher.test.js`, `patch-format.test.js`,
-  `find-target.test.js`, `reinstall.test.js`, `uninstall.test.js`, `status-bar.test.js`,
-  `status-truth.test.js`, `startup-cost.test.js`, `reachable-messages.test.js`,
-  `update-waiting.test.js`, `reload-when-needed.test.js`
+  `find-target.test.js`, `reinstall.test.js`, `uninstall.test.js`, `startup-cost.test.js`,
+  `reachable-messages.test.js`, `update-waiting.test.js`, `reload-when-needed.test.js`
 - `docs.test.js` - every link, file name, count and promise in the documents, put back to
   the thing it is about
 
@@ -147,8 +140,8 @@ exact to the byte, and a test asserts that rather than hoping for it.
 
 That shape matters more than any hook. It means the change can be undone by anyone, with
 or without this extension - by the `vscode:uninstall` script VS Code runs after the
-extension is removed, by `SmartRTL: Turn off the right-to-left fix` on demand, by Claude
-Code's own next update (which installs into a fresh folder), or by hand:
+extension is removed, by Claude Code's own next update (which installs into a fresh
+folder), or by hand:
 
 ```powershell
 $f = "$env:USERPROFILE\.vscode\extensions\anthropic.claude-code-*\webview\index.js"
@@ -160,8 +153,8 @@ Get-Item $f | ForEach-Object {
 ```
 
 One gap remains an honest one: *disabling* the extension is not uninstalling it and fires
-no hook, so the block stops only when it runs out, within a day. Either way it is one
-truncation away from gone.
+no hook, so the block stays until Claude Code's next update replaces the file. Either way it
+is one truncation away from gone.
 
 It is the best available arrangement, not a cure; the real fix belongs upstream, in the
 renderer.

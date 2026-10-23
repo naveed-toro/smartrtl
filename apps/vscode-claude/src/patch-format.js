@@ -3,47 +3,18 @@
  * three separate pieces of code have to agree on it exactly: the patcher, the
  * uninstall hook, and the tests.
  *
- * TWO THINGS MAKE THE BLOCK SAFE TO LEAVE BEHIND
- *
  * It is appended at the end and marked, so the original is everything before the
  * marker: removing it is a truncation and needs nothing kept anywhere.
  *
- * And it carries an expiry. `vscode:uninstall` cleans up after an uninstall - measured
- * working in 2026, after years broken from 1.69 - but only when VS Code next starts, and
- * nothing fires at all when an extension is disabled. So the block does not rely on
- * anyone coming back for it: past its date it returns immediately and does nothing at
- * all. While the extension is installed, every
- * activation re-stamps it, so in use it never expires.
- *
- * That does not make an uninstall instant - it makes it certain, and bounded. The
- * difference is worth being honest about.
+ * Until 0.10.0 it also carried an expiry - a date stamped into it, re-stamped while the
+ * extension ran - because nothing cleaned up after an uninstall. VS Code's uninstall hook
+ * does now, and ours reaches Claude Code from 0.9.3, so the block is simply there while
+ * the extension is installed and gone after it is uninstalled (docs/decisions.md 58).
  */
 const path = require("node:path");
 
 const BEGIN = "/* ==== smart-rtl-direction patch BEGIN ==== */";
 const MARK = "\n" + BEGIN;
-const STAMP = /var EXPIRES_AT = (\d+);/;
-
-/** How long a block stays alive without being re-stamped. */
-const WINDOW_MS = 24 * 60 * 60 * 1000;
-
-/** Re-stamp once less than this is left, so an active editor never runs it close. */
-const REFRESH_BELOW_MS = 12 * 60 * 60 * 1000;
-
-/**
- * How often a running editor winds the clock.
- *
- * The two numbers above assume somebody comes back before the block dies. For a long
- * time the only thing that ever came back was activation - and activation happens once
- * per window. A window left open for a day and a half let the block expire underneath
- * it: the panel already on screen carried on, because the expiry is read once when the
- * payload loads, but the next panel opened got nothing at all.
- *
- * This is the thing that comes back. It is far shorter than REFRESH_BELOW_MS on
- * purpose - several of these can be missed outright, a laptop asleep being the ordinary
- * way, and the block is still re-stamped with half a day in hand.
- */
-const STAMP_EVERY_MS = 6 * 60 * 60 * 1000;
 
 /**
  * The file as it was before we ever touched it.
@@ -58,20 +29,6 @@ function stripPatch(content) {
   if (at !== -1) return content.slice(0, at);
   const bare = content.indexOf(BEGIN);      // written before the newline was ours
   return bare === -1 ? content : content.slice(0, bare);
-}
-
-/** @returns {number} the block's expiry in ms, or 0 if there is no block */
-function readExpiry(content) {
-  const at = content.indexOf(BEGIN);
-  if (at === -1) return 0;
-  const m = STAMP.exec(content.slice(at));
-  return m ? Number(m[1]) : 0;
-}
-
-/** @returns {string} the payload with its expiry set */
-function stampExpiry(payload, now) {
-  if (!STAMP.test(payload)) throw new Error("payload has no EXPIRES_AT slot to stamp");
-  return payload.replace(STAMP, "var EXPIRES_AT = " + (now + WINDOW_MS) + ";");
 }
 
 /**
@@ -203,6 +160,5 @@ function writeWhole(fs, file, content) {
   return done;
 }
 
-module.exports = { BEGIN, MARK, WINDOW_MS, REFRESH_BELOW_MS, STAMP_EVERY_MS, TMP_SUFFIX,
-                   STALE_AFTER_MS, RENAME_TRIES, RENAME_WAIT_MS,
-                   tempFor, stripPatch, readExpiry, stampExpiry, writeWhole };
+module.exports = { BEGIN, MARK, TMP_SUFFIX, STALE_AFTER_MS, RENAME_TRIES, RENAME_WAIT_MS,
+                   tempFor, stripPatch, writeWhole };

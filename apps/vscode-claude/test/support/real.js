@@ -144,8 +144,7 @@ const conversation = (inner, { height = 420 } = {}) =>
  * never parsed as markup on the way in and cannot terminate anything early.
  */
 async function open(html, { width = 900, height = 700, fix = true } = {}) {
-  const payload = fs.readFileSync(PAYLOAD, "utf8")
-    .replace(/var EXPIRES_AT = \d+;/, `var EXPIRES_AT = ${Date.now() + 864e5};`);
+  const payload = fs.readFileSync(PAYLOAD, "utf8");
 
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width, height } });

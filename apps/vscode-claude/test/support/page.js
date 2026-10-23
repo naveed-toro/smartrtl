@@ -68,23 +68,17 @@ function payload() {
  * assert that something is unchanged: measure it both ways and compare, rather
  * than hard-coding a number that a restyle upstream would silently invalidate.
  *
- * `expired: true` loads the real payload with its expiry set in the past - what a
- * block left behind by an uninstalled extension becomes once nobody re-stamps it.
- *
  * `errors` collects every exception that reached the page uncaught, from the first
  * byte. Nothing of ours may ever put one there, so a test can assert it stayed empty.
  */
-async function open(html, { width = 900, height = 700, fix = true, expired = false } = {}) {
+async function open(html, { width = 900, height = 700, fix = true } = {}) {
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width, height } });
   const errors = [];
   page.on("pageerror", (e) => errors.push(String(e && e.message || e)));
   await page.setContent(
     `<!doctype html><meta charset="utf-8"><style>${CSS}</style>${html}` +
-    (fix ? `<script>${expired
-        ? payload().replace(/var EXPIRES_AT = \d+;/, "var EXPIRES_AT = 1;")
-        : payload().replace(/var EXPIRES_AT = \d+;/, `var EXPIRES_AT = ${Date.now() + 864e5};`)
-      }</script>` : "")
+    (fix ? `<script>${payload()}</script>` : "")
   );
   await page.waitForTimeout(600);   // past the payload's quiet timer
   return { browser, page, errors, close: () => browser.close() };

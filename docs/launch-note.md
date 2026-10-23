@@ -136,8 +136,8 @@ worth stating:
 
 - **one marked block at the end of one file.** No copies kept anywhere. Removal is a
   truncation, and the round trip is exact to the byte — asserted by a test, not hoped for
-- **it stops by itself.** The block carries an expiry that the extension re-stamps while
-  it is installed. Left alone, it goes inert within a day
+- **uninstalling takes it out.** VS Code runs the extension's own cleanup when it next
+  starts, and Claude Code's file is left as it was, byte for byte
 - **every part fails on its own.** Each piece is asked whether it is needed and whether
   it is possible before it is switched on, and a fault in one cannot reach another. Run
   `__bidiStatus()` in the webview console to see what is on and what is not
@@ -155,7 +155,7 @@ worth stating:
   take it says so, instead of saying "on"
 
 The reasoning, and every formula and fix that was tried and rejected first, is in
-[decisions.md](decisions.md) — fifty-seven sections, including the wrong turns, the two
+[decisions.md](decisions.md) — fifty-eight sections, including the wrong turns, the two
 crashes, the measurements that came out the other way from what was expected, and the
 limits that were accepted in the end.
 
