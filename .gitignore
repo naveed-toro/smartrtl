@@ -17,3 +17,6 @@ playwright-report/
 !apps/vscode-claude/test/stub/node_modules/**
 apps/vscode-claude/icon-preview.png
 .smartrtl-installed
+
+# An editor's generated copy of CLAUDE.md - not part of this repository.
+AGENTS.md
