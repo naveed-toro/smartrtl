@@ -3,7 +3,7 @@
 > **Install it, and it works. Uninstall it, and it is gone** - when VS Code next starts,
 > about a minute in.
 >
-> Disabling it does not turn it off: the fix stays until Claude Code's next update.
+> Disabling it does not turn it off. To turn it off, uninstall it.
 
 Fixes right-to-left text in the Claude Code panel for VS Code.
 
@@ -152,9 +152,8 @@ Get-Item $f | ForEach-Object {
 }
 ```
 
-One gap remains an honest one: *disabling* the extension is not uninstalling it and fires
-no hook, so the block stays until Claude Code's next update replaces the file. Either way it
-is one truncation away from gone.
+Disabling is not uninstalling, and VS Code tells an extension nothing when it is disabled -
+so disabling does not turn this off. Uninstalling does.
 
 It is the best available arrangement, not a cure; the real fix belongs upstream, in the
 renderer.

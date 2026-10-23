@@ -208,7 +208,7 @@ test("what uninstalling and disabling do is still said first, word for word", ()
   const readme = read("apps/vscode-claude/README.md");
   const pinned = [
     "**Install it, and it works. Uninstall it, and it is gone** - when VS Code next starts,",
-    "Disabling it does not turn it off: the fix stays until Claude Code's next update.",
+    "Disabling it does not turn it off. To turn it off, uninstall it.",
     "smart-rtl-direction patch BEGIN"
   ];
   for (const line of pinned) {
