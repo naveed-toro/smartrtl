@@ -115,3 +115,25 @@ test("nothing there, nothing thrown - it must never crash on the way out", () =>
   assert.doesNotThrow(() => cleanUp(path.join(os.tmpdir(), "smartrtl-does-not-exist")));
   assert.doesNotThrow(() => cleanUp(fakeExtensionsDir({})));
 });
+
+test("run the way VS Code runs it, from its own folder, it cleans Claude Code", () => {
+  // Every test above hands cleanUp() the folder. VS Code hands it nothing: it starts
+  // `node ./src/uninstall.js` from inside our folder in the extensions directory, and the
+  // script finds the rest by itself. Until 0.9.3 it looked one level too close - in our
+  // own folder - found no Claude Code and left the fix in place, while all of the above
+  // passed. Measured in the owner's VS Code, where the hook did run.
+  const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "package.json"), "utf8"));
+  const [node, script] = pkg.scripts["vscode:uninstall"].split(" ");
+  assert.equal(node, "node");
+
+  const root = fakeExtensionsDir({ "anthropic.claude-code-2.1.309-win32-x64": { bundle: applyTo("//claude code\n") } });
+  const ours = path.join(root, "smartrtl.claude-code-rtl-" + pkg.version);
+  for (const f of ["uninstall.js", "patch-format.js", "find-target.js"]) {
+    fs.mkdirSync(path.join(ours, "src"), { recursive: true });
+    fs.copyFileSync(path.join(__dirname, "..", "src", f), path.join(ours, "src", f));
+  }
+  require("node:child_process").execFileSync(process.execPath,
+    [path.join(ours, script), "--type=extension-post-uninstall"], { cwd: os.tmpdir() });
+  assert.equal(bundleOf(root, "anthropic.claude-code-2.1.309-win32-x64"), "//claude code\n",
+    "VS Code ran the uninstall script and Claude Code still has the fix in it");
+});

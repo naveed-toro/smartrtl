@@ -206,15 +206,15 @@ test("the instructions for turning it off before uninstalling are still there, w
   // that is not to be tidied, shortened or moved without deciding to.
   const readme = read("apps/vscode-claude/README.md");
   const pinned = [
-    "⚠ Uninstalling does not turn this off",
+    "**Uninstalling turns it off** - when VS Code next starts, about a minute in.",
     "Turn off the right-to-left fix",
-    "Then uninstall or disable as normal. Forgot? It stops working by itself within a day.",
+    "Disabling does not turn it\n> off; it stops by itself within a day.",
     "SmartRTL: Turn off the right-to-left fix",
     "smart-rtl-direction patch BEGIN"
   ];
   for (const line of pinned) {
     assert.ok(readme.includes(line), "the uninstall guidance has lost: " + line);
   }
-  assert.ok(readme.indexOf("⚠ Uninstalling does not turn this off") < 400,
+  assert.ok(readme.indexOf("**Uninstalling turns it off**") < 400,
     "the warning has been pushed down the page - it has to be the first thing read");
 });

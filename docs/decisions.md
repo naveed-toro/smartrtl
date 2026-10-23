@@ -10,7 +10,7 @@ search for, in several languages.
 
 ## What is in here
 
-Fifty-six sections, in the order they were written, which is the order the faults were
+Fifty-seven sections, in the order they were written, which is the order the faults were
 found. The ones worth reading first are marked.
 
  1. [The root cause](#1-the-root-cause)
@@ -69,6 +69,7 @@ found. The ones worth reading first are marked.
 54. [The Claude desktop app: every door tried, and then the copy](#54-the-claude-desktop-app-every-door-tried-and-then-the-copy)
 55. [Claude Code fixed the long message itself, and ours came out](#55-claude-code-fixed-the-long-message-itself-and-ours-came-out)
 56. [An update of Claude Code costs one restart, not two](#56-an-update-of-claude-code-costs-one-restart-not-two)
+57. [Uninstalling turns it off: VS Code's hook runs, and ours missed](#57-uninstalling-turns-it-off-vs-codes-hook-runs-and-ours-missed)
 
 ← 6 and 7 are the rule and the design it forced. 13 is what the first live run found.
 25 and 27 are the composer crash and the decision to stop; 28 is what that would have
@@ -4832,3 +4833,53 @@ puts every situation on one side or the other and drives the real extension thro
 It was broken three ways to see it fail: never asking fails the six on the left, asking every
 time fails the four on the right, and 0.9.1 fails only the update and Claude Code arriving.
 0.9.1 passes all six on the left, so nothing needed was lost.
+
+## 57. Uninstalling turns it off: VS Code's hook runs, and ours missed
+
+> apps/vscode-claude, 0.9.3. The owner's question, 2026-10-23: has VS Code fixed the thing
+> section 14 had to work around, so that uninstalling removes this and it stops working?
+
+### VS Code runs the hook
+
+Section 14 found `vscode:uninstall` not running (microsoft/vscode#155561, from 1.69) and
+planned an experiment it never ran: a build whose uninstall script does nothing but write a
+line. It was run now, in the owner's VS Code. A probe extension was installed, uninstalled,
+and VS Code closed and opened again. About a minute after the start, VS Code's own log:
+
+```
+16:02:07 Marked extension as removed smartrtl.uninstall-probe-0.0.1
+16:02:12 smartrtl.uninstall-probe 0.0.1 Running post uninstall script
+16:02:14 Finished running post uninstall script
+```
+
+and the line was in the file. VS Code's source agrees: at startup, an extension in no profile
+is marked for removal and its `node` script is run, with five seconds to finish, before its
+folder is deleted. A reload does not do it, nor "Restart Extensions" - only a new start.
+
+### Ours ran, and cleaned nothing
+
+Then SmartRTL 0.9.2 itself, uninstalled the same way. The log said its script ran and
+finished; Claude Code's file was unchanged. The script sits in `src/uninstall.js` and looked
+for Claude Code in `path.dirname(__dirname)` - which is our own folder, not the extensions
+directory one level above it. It found nothing, and said nothing, because nothing on the way
+out may throw. Every test passed: they all handed `cleanUp()` the folder, and none ran the
+script the way VS Code does.
+
+### What changed
+
+- The script looks two levels up. Uninstalled and restarted with 0.9.3, Claude Code
+  2.1.309's file went from 6,043,694 bytes to 6,016,381 - the block and its stamp - with no
+  marker, stamp or name of ours left in it. The script took 2.5 seconds of its five.
+- `uninstall.test.js` runs the script as VS Code does, from inside a copy of our folder, with
+  nothing handed to it. It fails on 0.9.2.
+- What said otherwise now says what is true: the tooltip loses "Uninstalling does not turn it
+  off", the README's first lines say uninstalling turns it off when VS Code next starts, and
+  the Marketplace description loses its warning.
+
+### What stays, and why
+
+The 24-hour expiry stays. Disabling an extension still fires nothing at all - VS Code's
+lifecycle has an uninstall script and no other - so a disabled SmartRTL's block is turned off
+only by running out. And the hook's own limits are real: it waits for VS Code's next start,
+and a panel opened in that first minute still reads the block. The "Turn off" switch stays
+the way to stop it at once.

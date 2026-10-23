@@ -8,11 +8,11 @@
  * It is appended at the end and marked, so the original is everything before the
  * marker: removing it is a truncation and needs nothing kept anywhere.
  *
- * And it carries an expiry. VS Code gives an extension no working way to clean up
- * after itself when it is uninstalled - `vscode:uninstall` has been broken since
- * 1.69 and `onDidChange` does not fire for your own removal, by design. So the
- * block does not rely on anyone coming back for it: past its date it returns
- * immediately and does nothing at all. While the extension is installed, every
+ * And it carries an expiry. `vscode:uninstall` cleans up after an uninstall - measured
+ * working in 2026, after years broken from 1.69 - but only when VS Code next starts, and
+ * nothing fires at all when an extension is disabled. So the block does not rely on
+ * anyone coming back for it: past its date it returns immediately and does nothing at
+ * all. While the extension is installed, every
  * activation re-stamps it, so in use it never expires.
  *
  * That does not make an uninstall instant - it makes it certain, and bounded. The

@@ -277,15 +277,13 @@ function refresh() {
  * out on the bar beside it, so repeating it here would be a second copy of something on
  * screen.
  *
- * The second line exists for one fact and only in the one state where it is true. VS
- * Code's own Uninstall does not undo this, because the file being edited belongs to
- * somebody else and the editor has no idea it was touched. Nobody guesses that. It is on
- * its own line rather than tacked onto the first, because two ideas sharing a line is how
- * a label turns back into a sentence.
+ * There was a second line until 0.9.3: "Uninstalling does not turn it off". It is true no
+ * longer - VS Code runs the uninstall script when it next starts, and from 0.9.3 that
+ * script reaches Claude Code (docs/decisions.md 57) - so it went.
  */
 function whyItSays(st) {
   if (st.live) {
-    return "Turn off the right-to-left fix\n\nUninstalling does not turn it off";
+    return "Turn off the right-to-left fix";
   }
   if (!st.installed) return "Claude Code is not installed";
   // installed, and an update moved its panel somewhere this build does not know: no

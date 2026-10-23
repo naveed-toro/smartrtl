@@ -1,11 +1,10 @@
 /**
  * The block's shape, and the promise it carries.
  *
- * VS Code gives an extension no working way to clean up after itself when it is
- * uninstalled: `vscode:uninstall` has been broken since 1.69
- * (microsoft/vscode#155561, open) and `onDidChange` does not fire for your own
- * removal, closed as-designed. The block therefore has to be safe to leave behind
- * on its own terms - which is what these assert.
+ * `vscode:uninstall` cleans up only when VS Code next starts - it was broken from 1.69
+ * (microsoft/vscode#155561) and measured working again in 2026 - and nothing at all
+ * fires when an extension is disabled. The block therefore has to be safe to leave
+ * behind on its own terms - which is what these assert.
  */
 const test = require("node:test");
 const assert = require("node:assert/strict");

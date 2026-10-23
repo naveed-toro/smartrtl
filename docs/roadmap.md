@@ -117,8 +117,12 @@ nothing else would have found it.
 
 ## Known defects
 
-**Uninstalling the VS Code extension does not undo it.** The patch stays in Claude Code's
-bundle until something removes it: the `SmartRTL: Turn off the right-to-left fix` command,
+**Fixed in 0.9.3: uninstalling the VS Code extension undoes it**, when VS Code next starts.
+Measured on 2026-10-23: VS Code runs `vscode:uninstall` again, and the script had been
+looking for Claude Code in the wrong folder (decisions.md 57). What follows is the history.
+
+~~**Uninstalling the VS Code extension does not undo it.**~~ The patch stayed in Claude Code's
+bundle until something removed it: the `SmartRTL: Turn off the right-to-left fix` command,
 the one-liner in the app README, or Claude Code's next update.
 
 This is not for want of trying. `vscode:uninstall` is the only hook the editor offers for

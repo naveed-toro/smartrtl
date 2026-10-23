@@ -15,10 +15,16 @@
  * kept anywhere else. This script is the convenience, not the safety net.
  *
  * There is no `vscode` module here, so Claude Code cannot be asked where it lives.
- * It does not have to be: this file sits inside our own folder in the extensions
- * directory, so `path.dirname(__dirname)` is that directory, and every copy of
- * Claude Code in it can be found by name. Old versions left behind by earlier
- * updates get cleaned up too, which asking the editor would not have done.
+ * It does not have to be: this file sits in `src/` inside our own folder, and our
+ * folder sits in the extensions directory, so that directory is two levels up - and
+ * every copy of Claude Code in it can be found by name. Old versions left behind by
+ * earlier updates get cleaned up too, which asking the editor would not have done.
+ *
+ * Until 0.9.3 this went ONE level up, into our own folder, found no Claude Code there
+ * and left the fix in place - silently, because nothing here may throw. The file had
+ * moved into `src/` and the line did not move with it. It went unseen for as long as
+ * VS Code did not run the hook at all; measured in the owner's VS Code on 2026-10-23,
+ * it does (docs/decisions.md 57).
  *
  * WHICH file inside each of those copies is find-target.js's answer, and it is shared
  * with the patcher on purpose. This file used to keep a second copy of the path -
@@ -78,7 +84,7 @@ function cleanUp(extensionsDir) {
 }
 
 if (require.main === module) {
-  try { cleanUp(path.dirname(__dirname)); } catch (e) { /* on the way out; stay quiet */ }
+  try { cleanUp(path.resolve(__dirname, "..", "..")); } catch (e) { /* on the way out; stay quiet */ }
 }
 
 module.exports = { cleanUp, stripPatch, TARGET_PREFIX, BEGIN };

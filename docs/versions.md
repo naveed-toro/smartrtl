@@ -1,4 +1,4 @@
-# The sixty-five builds, and what each one actually contained
+# The sixty-six builds, and what each one actually contained
 
 Compiled by opening every `.vsix` and reading what is inside it, not from memory. The
 second table was rebuilt the same way after the fact, which is why some of its rows say
@@ -1010,6 +1010,18 @@ of once it is taller than **half** the panel, not only once it is taller than al
 Payload: 135,021 bytes - 21,591 more than 0.5.2, for the long-message fix
 becoming a part of its own, a second way into the same trap, and the reasons written beside
 both.
+
+### 0.9.3 — uninstalling turns it off
+
+- [x] **VS Code runs the uninstall hook** - a probe extension's `vscode:uninstall` wrote its
+      line on the next start, and VS Code's own log says it ran **(live, 2026-10-23)**
+- [x] **and ours now reaches Claude Code** - it looked one folder too close, in our own, and
+      cleaned nothing; uninstalled and restarted, Claude Code 2.1.309's file lost exactly the
+      block and kept no trace of it **(live)**
+- [x] **a test runs the script the way VS Code does** - fails on 0.9.2 **(lab:
+      uninstall.test.js)**
+- [x] **the warnings say what is true now** - the tooltip and README no longer say uninstalling
+      does not turn it off; disabling still does not, and still lapses within a day **(code)**
 
 ### 0.9.2 — a Claude Code update costs one restart, not two
 

@@ -1,10 +1,9 @@
 # @smartrtl/vscode-claude
 
-> # ⚠ Uninstalling does not turn this off
+> **Uninstalling turns it off** - when VS Code next starts, about a minute in.
 >
-> ### ⚙ menu above → “Turn off the right-to-left fix”
->
-> Then uninstall or disable as normal. Forgot? It stops working by itself within a day.
+> At once: ⚙ menu above → “Turn off the right-to-left fix”. Disabling does not turn it
+> off; it stops by itself within a day.
 
 Fixes right-to-left text in the Claude Code panel for VS Code.
 
@@ -25,13 +24,13 @@ This one reaches outside. It adds a small marked block to a file that belongs to
 **Claude Code** extension, because VS Code gives an extension no other way to reach inside
 another extension's webview. That is also why it keeps working after Claude Code updates.
 
-VS Code cleans up only what it owns, and has no idea we touched a foreign file.
-`vscode:uninstall` - the one hook meant for exactly this - has been broken since VS Code
-1.69 ([#155561](https://github.com/microsoft/vscode/issues/155561)), and nothing at all
-fires when an extension is disabled. Asking you to turn it off first is the honest
-workaround, not a preference.
+VS Code cleans up only what it owns, and has no idea we touched a foreign file. Its one
+hook for this, `vscode:uninstall`, runs this extension's own cleanup - measured working on
+2026-10-23, once a fault of ours in that cleanup was fixed in 0.9.3. It runs when VS Code
+next starts, not at the moment of uninstalling, and nothing at all fires when an extension
+is disabled.
 
-Three things make that safe to live with: turning it off restores Claude Code byte for
+Three more things make that safe to live with: turning it off restores Claude Code byte for
 byte, the block stops working by itself within a day if nobody does, and Claude Code's
 next update replaces the file anyway.
 
@@ -160,9 +159,9 @@ Get-Item $f | ForEach-Object {
 }
 ```
 
-Two gaps remain honest ones: *disabling* the extension is not uninstalling it and fires no
-hook, and the uninstall hook has been reported to miss in some versions of VS Code. Either
-way the block is still one truncation away from gone.
+One gap remains an honest one: *disabling* the extension is not uninstalling it and fires
+no hook, so the block stops only when it runs out, within a day. Either way it is one
+truncation away from gone.
 
 It is the best available arrangement, not a cure; the real fix belongs upstream, in the
 renderer.
