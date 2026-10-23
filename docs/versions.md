@@ -1,4 +1,4 @@
-# The sixty-three builds, and what each one actually contained
+# The sixty-four builds, and what each one actually contained
 
 Compiled by opening every `.vsix` and reading what is inside it, not from memory. The
 second table was rebuilt the same way after the fact, which is why some of its rows say
@@ -1011,6 +1011,17 @@ Payload: 135,021 bytes - 21,591 more than 0.5.2, for the long-message fix
 becoming a part of its own, a second way into the same trap, and the reasons written beside
 both.
 
+### 0.9.1 — only the formula: Claude Code fixed the long message itself
+
+- [x] **Claude Code fixed its own long-message bug in 2.1.307** - the pinned message is capped
+      at 40vh and scrolls: on 2.1.308 an opened 40-line message is 356px in a 760px panel, Show
+      less is 4 turns of the wheel away and closing it leaves the reader on their line; 2.1.301
+      still had the trap - 856px, 20 turns, 2,400px away **(lab)**
+- [x] **the long-message fix is out** - the owner's decision (decisions.md 55): the payload is
+      the formula alone, 27,279 bytes from 56,199 **(code)**
+- [x] **the direction of text is untouched** - review green on 2.1.301 and on 2.1.308 **(lab)**
+- [ ] read in the real panel **(unseen)**
+
 ### 0.9.0 — the window is 63 letters
 
 - [x] **the rule looks 63 letters in, not 45** - the owner's decision after the 493 texts the
@@ -1078,7 +1089,7 @@ whether a reader sees a block turn can be judged in daily use. decisions.md, 51.
 - [x] **Claude Code's own first-strong guess is off on exactly those elements** **(lab)**
 - [x] **taken out: one decision per message, bullets on one side, numbers and code kept in
       order, the page asked whether it had fixed itself, the lamps** **(code)**
-- [x] **the long-message fix is unchanged** **(lab: pinned-message.test.js, expandable.test.js)**
+- [x] **the long-message fix is unchanged** **(lab: the pinned-message tests, taken out in 0.9.1, and expandable.test.js)**
 - [x] **everything before it is backed up** - the folder beside the repository, and 0.6.0's
       `.vsix` **(the owner's machine)**
 - [ ] installed and read in the real panel **(unseen)**

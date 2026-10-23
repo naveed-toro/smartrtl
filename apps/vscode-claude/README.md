@@ -6,13 +6,11 @@
 >
 > Then uninstall or disable as normal. Forgot? It stops working by itself within a day.
 
-Fixes right-to-left text in the Claude Code panel for VS Code - **and one bug of Claude
-Code's own that has nothing to do with language.**
+Fixes right-to-left text in the Claude Code panel for VS Code.
 
 | | |
 |---|---|
 | **Right to left** | Urdu, Arabic, Hebrew and Persian take the direction the formula gives them - answers while they stream and once finished, your own messages, and the box you type in. A line that opens with `npm` and turns Urdu is no longer dragged left to right |
-| **Long messages** | a message you have already sent can be opened, read and closed again. Today it cannot, and that costs an English-only user exactly as much - see below |
 
 Never changes a character of anybody's text. From 0.7.0 the one thing it does to text is set
 its direction by one formula, and nothing else of its own acts on text.
@@ -99,44 +97,13 @@ What that costs a reader, knowingly: an Urdu list with an English item has bulle
 sides, and `250–400ms` inside an Urdu line can read `400ms–250` - both are what the browser
 does when it is told only a direction.
 
-## The other fix: long messages you cannot close
+## Long messages: fixed by Claude Code
 
-**This one is not about language.** An English-only user hits it exactly as hard, and it
-is reported on its own terms in
+Until 0.9.0 this also fixed a bug of Claude Code's own: an opened long message stayed pinned
+with no height cap, and its "Show less" could not be reached. Claude Code fixed it itself in
+2.1.307 - a pinned message is capped at 40% of the panel and scrolls - so 0.9.1 took this fix
+out. The write-up stays in
 [docs/claude-code-bug.md](https://github.com/naveed-toro/smartrtl/blob/main/docs/claude-code-bug.md).
-
-A message that heads a turn is `position: sticky`. Collapsed, that is a couple of lines
-of question held above a long answer, which is the point of it. Expanded, the same
-element has no height cap - and **a pinned element taller than the window can never show
-its own bottom, because it does not move.** The wheel scrolls the conversation behind it,
-invisibly; its own "Show less" sits at the end of that pinned block and cannot be
-reached for the length of the turn.
-
-What this does about it:
-
-- an **expanded** message stops being pinned, so it scrolls like ordinary content and its
-  button comes back into reach. Nothing is capped and nothing is moved - how much of a
-  window a message may take is not ours to decide, and the answer differs on a laptop and
-  an external display
-- a **collapsed** message is still pinned; that part was never broken
-- opening one keeps it **under your eye** - the exact pixel it was on, whether you opened
-  it from the top of the conversation, the middle or the end
-- closing it gives you back **the line you were reading** - the answer underneath, where
-  you left it, rather than from its beginning
-- a long message Claude Code takes for a **command** - a skill with long arguments, or any
-  message that opens with `/`, a pasted path included - has no "Show more" or "Show less" at
-  all, and is pinned anyway: it is no longer held over its own answer. A pinned message
-  showing its whole length, and taller than half the panel, scrolls like ordinary content
-
-Measured in Claude Code's own app with a real answer under the message, in every build that
-pins one - 2.1.90 to 2.1.268: untouched, "Show less" arrives after twenty-two turns of the
-wheel and closing it leaves you 2,640px from your line; with this in, three turns, and
-exactly back on your line. It is a lamp of its own - its own observers and stylesheet - that
-asks the page about every message it pins, and comes back out by itself if Claude Code stops
-pinning them.
-
-Two wrong fixes came first and are written up with the right one: capping the height, and
-forcing the collapse row sticky, which moved a button the extension had placed.
 
 ## Tests
 
@@ -150,9 +117,8 @@ npm test
   answer streamed three characters at a time, and in every painted frame every block's
   direction is exactly the formula's; the box after every keystroke; a sent message; nothing
   of ours anywhere else; and nothing left after `__bidiFixOff()`
-- `pinned-message.test.js` and `expandable.test.js` - Claude Code's own long-message bug,
-  opened, read to "Show less" and closed, with every name renamed, and with a build that has
-  stopped pinning
+- `expandable.test.js` - the controls on a sent message never move, and a block left behind
+  past its expiry does nothing at all
 - the install, update and uninstall path - `patcher.test.js`, `patch-format.test.js`,
   `find-target.test.js`, `reinstall.test.js`, `uninstall.test.js`, `status-bar.test.js`,
   `status-truth.test.js`, `startup-cost.test.js`, `reachable-messages.test.js`
@@ -162,7 +128,7 @@ npm test
 In the webview console (Developer: Open Webview Developer Tools):
 
 ```js
-__bidiStatus()   // what the formula has tagged, and the pinned message's state
+__bidiStatus()   // what the formula has tagged
 __bidiFixOff()   // take all of it out, live
 ```
 

@@ -13,22 +13,16 @@ things like `useState`, `npm` or `package.json`.
 
 This repository fixes that, one surface at a time.
 
-## And one bug that is not about language at all
+## And one bug that was not about language at all
 
-The Claude Code extension for VS Code has a fault that costs every user the same,
-whatever they write in: **a long message you have already sent cannot be closed again.**
+Until 0.9.0 the companion extension also fixed a fault of the Claude Code extension's own,
+one that cost every user the same: **a long message you had already sent could not be
+closed again** - pinned to the top of the panel with no height cap, its own "Show less" out
+of reach for the length of the turn. It is written up on its own terms, with no RTL
+attached, in [docs/claude-code-bug.md](docs/claude-code-bug.md).
 
-A message that heads a turn is pinned to the top of the panel. Collapsed that is the
-point of it; expanded it has no height cap, and a pinned element taller than the window
-can never show its own bottom, because it does not move. The wheel scrolls the
-conversation behind it, invisibly, and its own "Show less" is at the end of the pinned
-block, out of reach for the length of the turn.
-
-The companion extension fixes that too: an expanded message scrolls like ordinary
-content, opening one keeps it under your eye, and closing it gives you back the line of
-the answer you were reading. It is written up on its own terms, with no RTL attached, in
-[docs/claude-code-bug.md](docs/claude-code-bug.md) so that it can be reported and fixed
-upstream - at which point this half of the extension stands down by itself.
+Claude Code fixed it itself in 2.1.307, in October 2026 - a pinned message is now capped
+and scrolls - and 0.9.1 took ours out (decisions.md 55).
 
 ## Does this sound familiar?
 
@@ -47,7 +41,7 @@ Then yes, this is the same bug.
 
 | where | what it is | status |
 |---|---|---|
-| Claude Code in VS Code | companion extension | 0.9.0 - clean: only the formula acts on text, and nothing measures it any more: in all four places a text is right-to-left when its first letter is, or an RTL letter comes within its first 63, the window the labelled texts put it at (decisions.md 53); nothing else of ours touches text (decisions.md 51). Before that, all four places gave the text its direction tag and nothing else, and are checked element by element, character order included, against what the browser draws when it is told - on Claude Code's own bundle with its incomplete rule deleted; nothing is moved by hand, the timeline dot included; bullets, numbers and tables included; the box you type in, the message you send, and Claude Code's own long-message bug each on a circuit of its own, put to seventeen Claude Code builds, 2.0.50 to 2.1.269; not published yet |
+| Claude Code in VS Code | companion extension | 0.9.1 - only the formula: Claude Code fixed its own long-message bug in 2.1.307, and the fix this carried for it came out (decisions.md 55). 0.9.0 - clean: only the formula acts on text, and nothing measures it any more: in all four places a text is right-to-left when its first letter is, or an RTL letter comes within its first 63, the window the labelled texts put it at (decisions.md 53); nothing else of ours touches text (decisions.md 51). Before that, all four places gave the text its direction tag and nothing else, and are checked element by element, character order included, against what the browser draws when it is told - on Claude Code's own bundle with its incomplete rule deleted; nothing is moved by hand, the timeline dot included; bullets, numbers and tables included; the box you type in, the message you send, and Claude Code's own long-message bug each on a circuit of its own, put to seventeen Claude Code builds, 2.0.50 to 2.1.269; not published yet |
 | AI chat sites in the browser | Chrome extension | next |
 | a markdown editor | VS Code, desktop, web | shape not decided |
 | Claude desktop app | a patched copy beside the installed app | 0.0.1 - for the owner's own use: the app has no extension door, and covers laid over it from outside jolted the eye, so a copy of it loads the same rule and engine; the installed app is never touched; chat, Cowork and Claude in Chrome work in it, the Code tab is not covered yet (decisions.md 54) |
@@ -82,10 +76,10 @@ rule, and every wrong turn is written down rather than quietly dropped.
 | | |
 |---|---|
 | [docs/reviewing.md](docs/reviewing.md) | the two questions this project has, and the one command that answers them - read before reviewing anything here |
-| [docs/decisions.md](docs/decisions.md) | fifty-four sections: every rule and fix that was tried, measured and rejected, including the two that crashed, the one that was too slow, the limits that were finally accepted, and how what was left was made to outlast the next update |
+| [docs/decisions.md](docs/decisions.md) | fifty-five sections: every rule and fix that was tried, measured and rejected, including the two that crashed, the one that was too slow, the limits that were finally accepted, and how what was left was made to outlast the next update |
 | [docs/versions.md](docs/versions.md) | what was actually inside each build, read out of the `.vsix` rather than remembered |
 | [docs/roadmap.md](docs/roadmap.md) | what a new surface has to provide, the four rules an adapter obeys, and what order the rest gets built in |
-| [docs/claude-code-bug.md](docs/claude-code-bug.md) | the Claude Code bug on its own terms, with no RTL attached |
+| [docs/claude-code-bug.md](docs/claude-code-bug.md) | the Claude Code bug on its own terms, with no RTL attached - fixed by Claude Code in 2.1.307 |
 | [docs/issue-to-file.md](docs/issue-to-file.md) | the same, cut down to something that can be pasted into a public tracker |
 | [docs/see-it-yourself.md](docs/see-it-yourself.md) | one prompt to paste into Claude Code that puts the bug in front of your own eyes in about a minute |
 | [docs/launch-note.md](docs/launch-note.md) | what to say when this is published, including what not to claim |

@@ -106,10 +106,11 @@ So a finding that begins "we could build" is answered by this line, not by weigh
 
 ### The one crossing
 
-Claude Code's own bug: a message that heads a turn is pinned, and expanded it has no height
-cap, so the answer under it cannot be read past. It has nothing to do with language, it
-costs an English-only reader exactly as much, and it is unfixed upstream. Crossed for
-deliberately, once, and written up on its own terms in `docs/claude-code-bug.md`.
+There was one, and it is closed. Claude Code's own bug - a message that heads a turn pinned,
+and expanded with no height cap, so the answer under it could not be read past - was crossed
+for deliberately from 0.5.x to 0.9.0 and written up on its own terms in
+`docs/claude-code-bug.md`. Claude Code fixed it in 2.1.307, and 0.9.1 took ours out
+(`docs/decisions.md` section 55).
 
 Nothing else gets crossed for. If a second crossing ever looks necessary, that is a
 conversation to have, not a change to make.

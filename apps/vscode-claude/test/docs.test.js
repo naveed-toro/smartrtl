@@ -128,16 +128,17 @@ test("what the documents promise the payload contains, it contains", () => {
   const promised = {
     "__bidiStatus": true,     // the app README tells people to run it
     "__bidiFixOff": true,     // so does every document here
-    "readingPosition": true,  // closing gives back the reader's line
     // from 0.7.0 the direction of text is the formula and nothing else (section 51): the rule,
     // one layer of rules ahead of the page's, and the box kept apart from its drawn layer
     "openingLetters": true,
     "@layer smartrtl-direction": true,
     "besideAnEditor": true,
-    // and the message nobody can read past, as section 37 describes it
-    "startPinned": true,
-    "@layer smartrtl-unpin": true,
-    "data-bidi-unpin": true,
+    // and the fix for the message nobody could read past, which Claude Code made its own in
+    // 2.1.307 (section 55, 0.9.1)
+    "startPinned": false,
+    "@layer smartrtl-unpin": false,
+    "data-bidi-unpin": false,
+    "readingPosition": false,
     // and what 0.7.0 took out, each of which acted on text beside the formula
     "faultIsStillHere": false,
     "startComposer": false,

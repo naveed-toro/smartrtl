@@ -1,5 +1,8 @@
 # Ready to file
 
+> **No longer needed.** Claude Code fixed this itself in 2.1.307 (released 2026-10-21):
+> a pinned message is now capped at 40% of the panel and scrolls. Kept as the record.
+
 [claude-code-bug.md](claude-code-bug.md) is the full write-up, with the reasoning and the
 history. **This file is the same thing cut down to something that can be pasted into a
 public issue tracker in one go** — no links back here, nothing that needs this repository

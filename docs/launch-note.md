@@ -1,8 +1,8 @@
 # What to say at launch
 
-Two fixes ship in this extension, and only one of them is about language. The second is
-easy to leave out of the announcement because it was never the point — and it is the one
-that affects every user of Claude Code for VS Code, in every language.
+One fix ships in this extension: right to left. Until 0.9.0 there was a second, for a bug
+of Claude Code's own that had nothing to do with language - Claude Code fixed that itself in
+2.1.307, and it is no longer part of what ships (decisions.md 55).
 
 This file is the source for the release note, the Marketplace description and anything
 posted about it, so that all three say the same thing.
@@ -11,14 +11,10 @@ posted about it, so that all three say the same thing.
 
 ## The short version
 
-> **Claude Code for VS Code, in your language — and one bug fixed for everybody.**
+> **Claude Code for VS Code, in your language.**
 >
 > Urdu, Arabic, Hebrew and Persian read the right way round in the Claude Code panel:
 > answers, your own messages, and the box you type in.
->
-> And a long message you have already sent can be opened, read and closed again. Today
-> it cannot — that one has nothing to do with language, and an English-only user hits it
-> exactly as hard.
 
 ---
 
@@ -82,53 +78,13 @@ clear a single attribute — and the limit above is what that costs.
 
 ---
 
-## Fix two — the long message you cannot close
+## Fix two — the long message, fixed upstream
 
-**This is not an RTL bug.** It is written up separately, on its own terms, in
-[claude-code-bug.md](claude-code-bug.md), so it can be reported and read without any of
-the above attached to it.
-
-### What happens
-
-A message that heads a turn is pinned to the top of the panel — `position: sticky`.
-Collapsed, that is a couple of lines of question held above a long answer, which is the
-point of it. Expanded, the same element has no height cap at all.
-
-**A pinned element taller than the window can never show its own bottom, because it does
-not move.** The wheel scrolls the conversation behind it, invisibly. Its own "Show less"
-sits at the end of that pinned block, so for the length of the turn it cannot be reached.
-
-It is invisible in a fresh session and obvious in a real one: it needs a long message, a
-long answer under it, and something below that.
-
-### What this extension does about it
-
-- an **expanded** message stops being pinned, so it scrolls like ordinary content and its
-  own button comes back into reach. Nothing is capped and nothing is moved: how much of a
-  window a message may take is not ours to decide
-- a **collapsed** message is still pinned — that part was never broken
-- opening one keeps it **under your eye**: it stays on the pixel it was on, whether you
-  opened it from the top of the conversation, the middle or the end
-- closing it gives you back **the line you were reading**. Not the message — the answer
-  underneath it, exactly where you left it
-- a long message Claude Code takes for a **command** — a skill run with long arguments, or
-  anything that opens with `/`, a pasted path included — has no "Show more" or "Show less"
-  at all and is pinned anyway. It is no longer held over its own answer
-
-That last one is the half that is easiest to miss and the most annoying to live with:
-you were partway down a long answer, opened the question above to check something,
-closed it again — and got the answer back from its beginning.
-
-### How to say it
-
-Factually, and without an accusation. Every large product has bugs that only show up in
-long sessions, and a report that reads as a complaint gets argued with, while one that
-reads as a careful reproduction gets fixed. The write-up is deliberately in that second
-shape: what happens, what you would expect, the exact conditions, and why the obvious
-fixes are wrong.
-
-**And the goal is for this half to become unnecessary.** If Claude Code fixes it, this
-extension notices and stands down on its own — see below.
+Until 0.9.0 this extension also fixed a bug that was not about language: an opened long
+message stayed pinned with no height cap, and its "Show less" could not be reached. It is
+written up on its own terms in [claude-code-bug.md](claude-code-bug.md). Claude Code fixed
+it itself in 2.1.307 - a pinned message is now capped and scrolls - and 0.9.1 took ours out.
+It is not part of the announcement.
 
 ---
 
@@ -199,7 +155,7 @@ worth stating:
   take it says so, instead of saying "on"
 
 The reasoning, and every formula and fix that was tried and rejected first, is in
-[decisions.md](decisions.md) — fifty-four sections, including the wrong turns, the two
+[decisions.md](decisions.md) — fifty-five sections, including the wrong turns, the two
 crashes, the measurements that came out the other way from what was expected, and the
 limits that were accepted in the end.
 

@@ -13,6 +13,11 @@ Claude Code's own webview app with a real answer streamed under the message, in 
 build that pins a message - thirteen of them, 2.1.90 to 2.1.268**: identical in every one, to
 the pixel. It is not fixed in any build so far.
 
+**Fixed by Claude Code in 2.1.307** (released 2026-10-21, 20:47 UTC): a pinned message is now
+capped at 40% of the panel and scrolls - fix 2 below. Measured on 2.1.308: opened, a 40-line
+message is 356px in a 760px panel, "Show less" is 4 turns of the wheel away, and closing it
+leaves the reader on their line. 2.1.301 still had the trap: 856px, 20 turns, 2,400px away.
+
 **Use it freely.** This write-up may be copied, quoted, filed as an issue, or acted on by
 anyone, with or without permission. If it leads to a fix, a line of credit is the only
 thing asked for - the finding is the work here. The fix itself is three lines of CSS.

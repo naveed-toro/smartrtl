@@ -10,7 +10,7 @@ search for, in several languages.
 
 ## What is in here
 
-Fifty-four sections, in the order they were written, which is the order the faults were
+Fifty-five sections, in the order they were written, which is the order the faults were
 found. The ones worth reading first are marked.
 
  1. [The root cause](#1-the-root-cause)
@@ -67,6 +67,7 @@ found. The ones worth reading first are marked.
 52. [A recorder for the turn a reader might see](#52-a-recorder-for-the-turn-a-reader-might-see) ←
 53. [The window is 63 letters, where the reading put it](#53-the-window-is-63-letters-where-the-reading-put-it) ←
 54. [The Claude desktop app: every door tried, and then the copy](#54-the-claude-desktop-app-every-door-tried-and-then-the-copy)
+55. [Claude Code fixed the long message itself, and ours came out](#55-claude-code-fixed-the-long-message-itself-and-ours-came-out)
 
 ← 6 and 7 are the rule and the design it forced. 13 is what the first live run found.
 25 and 27 are the composer crash and the decision to stop; 28 is what that would have
@@ -4427,8 +4428,8 @@ describe them).
 `test/only-the-formula.test.js`, in Claude Code's own running app: an answer streamed three
 characters at a time with every painted frame read - in every frame every block's direction
 is exactly the formula's; the box after every keystroke, both layers; a sent message; nothing
-of ours anywhere else; nothing left after `__bidiFixOff()`. And `pinned-message.test.js` and
-`expandable.test.js` for the long-message fix.
+of ours anywhere else; nothing left after `__bidiFixOff()`. And the long-message tests, in a
+file of their own and in `expandable.test.js`, for the long-message fix (taken out in 0.9.1).
 
 ---
 
@@ -4680,3 +4681,56 @@ computer use, files and connectors all working.
 - **The proof stays where it was.** This copy is for the owner's reading. What is handed to
   Anthropic is still the page itself set right - the browser extension on claude.ai - because a
   fix they can make on their own page reaches the desktop app too.
+
+---
+
+## 55. Claude Code fixed the long message itself, and ours came out
+
+> apps/vscode-claude, 0.9.1. The owner's decision, 2026-10-23.
+
+### What Claude Code did
+
+Claude Code **2.1.307**, released 2026-10-21 at 20:47 UTC, fixed the bug of section 37 itself.
+Its changelog says a pinned prompt "is now capped at 40% of the panel and scrolls". In its
+stylesheet that is `max-height: 40vh; overflow-y: auto` on the pinned message - fix 2 of
+`docs/claude-code-bug.md`, the one that keeps the message pinned and gives it a scrollbar of
+its own.
+
+Measured in Claude Code's own app, the same forty-line message, a long answer under it and
+conversation below, with nothing of ours in the page:
+
+| | 2.1.301 | 2.1.308 |
+|---|---|---|
+| opened, in a 760px panel | 856px, pinned | 356px, pinned, scrolls inside itself |
+| "Show less" in reach after | 20 turns of the wheel | 4 |
+| closed, the reader is | 2,400px from their line | on their line |
+| a message taken for a command | held over its own answer | 356px, the answer readable |
+
+### Why ours came out rather than standing down
+
+Standing down was built first: a pinned row whose text scrolls under a height cap of the
+page's own was read as fixed, and the whole circuit left the page - 35 of 35 on 2.1.301 and
+on 2.1.308. The owner chose to take it out instead. This extension exists for the direction
+of text; the long-message fix was the one crossing (`docs/reviewing.md`), carried until the
+host fixed it, and the host has. Kept, it would be code with nothing to do on any current
+build that still has to be kept working - the daily watch was red for a week over it. Older
+Claude Code builds are not served by keeping it: the extension is not published, and its one
+user runs the newest Claude Code.
+
+### What went, and what stays
+
+Out: the second part of the payload - `startPinned`, the `smart-rtl-unpin` layer,
+`data-bidi-unpin` and the listener that kept the reader's place - with
+the long-message test file, the long-message tests in `expandable.test.js`, and the bench's
+helpers for opening and closing a message. The payload is 27,279 bytes, from 56,199. What it
+does to text is unchanged.
+
+Stays: `docs/claude-code-bug.md`, as the record of the finding.
+
+### The watch, red for a week, and why
+
+From 2026-10-14 the daily watch failed every morning, for two reasons in turn and neither of
+them the fix. 2.1.299 holds a sent message hidden until the host says whether a Claude Code
+mod may redraw it; the bench never said, so every sent message stayed hidden and nothing could
+be opened (the bench answers now, as the real host does with no mods). Then, from 2.1.307, the
+first long-message test did what it was written to do: fail the day Claude Code fixed the bug.

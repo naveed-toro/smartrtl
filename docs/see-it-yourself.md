@@ -1,5 +1,8 @@
 # See it for yourself, in about a minute
 
+> **Fixed by Claude Code in 2.1.307** (released 2026-10-21). What follows reproduces the bug on
+> 2.1.306 and earlier; from 2.1.307 an opened message is capped at 40% of the panel and scrolls.
+
 Describing this bug in words does not work. Everyone nods and nobody pictures it, because
 it needs three things at once — a long message, a long answer under it, and more
 conversation below that — and in a fresh session it is completely invisible.
