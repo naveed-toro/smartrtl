@@ -47,9 +47,10 @@
     direction(ANSWER, "rtl") + direction(ANSWER, "ltr") +
     direction(BOX, "rtl") + direction(BOX, "ltr") +
     direction(SENT, "rtl") + direction(SENT, "ltr") +
-    // a sent message's text is handed to dir="auto" - the browser's own first-strong guess -
-    // inside the element that is tagged; it takes the tag's direction instead
-    "[" + SENT + '] [dir="auto"]{direction:inherit!important;unicode-bidi:isolate!important;text-align:inherit!important}' +
+    // a sent message's text, and a box's paragraphs, are often handed to dir="auto" - the
+    // browser's own first-strong guess - inside the element that is tagged; they take the tag's
+    // direction instead (decisions.md 13, 59)
+    "[" + SENT + '] [dir="auto"],[' + BOX + '] [dir="auto"]{direction:inherit!important;unicode-bidi:isolate!important;text-align:inherit!important}' +
     "}";
 
   /**
