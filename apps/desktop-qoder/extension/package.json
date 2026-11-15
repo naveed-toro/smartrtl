@@ -1,0 +1,16 @@
+{
+  "name": "smartrtl-qoder",
+  "displayName": "SmartRTL for Qoder",
+  "description": "Keeps the Urdu/English direction fix in Qoder's AI chat through Qoder's updates. Looks once when Qoder opens; does nothing while the fix is in place.",
+  "publisher": "smartrtl",
+  "version": "0.0.3",
+  "license": "MIT",
+  "engines": { "vscode": "^1.85.0" },
+  "categories": ["Other"],
+  "extensionKind": ["ui"],
+  "main": "./extension.js",
+  "activationEvents": ["onStartupFinished"],
+  "scripts": {
+    "vscode:uninstall": "node ./uninstall-hook.js"
+  }
+}

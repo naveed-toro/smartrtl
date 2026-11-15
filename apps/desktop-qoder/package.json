@@ -1,0 +1,13 @@
+{
+  "name": "smartrtl-desktop-qoder",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Sets the direction of mixed Urdu/English text in Qoder IDE's AI chat by the formula. One script line in two of Qoder's pages, kept through Qoder's updates by a small extension; fully removable.",
+  "scripts": {
+    "build": "node build/bundle.js && node build/vsix.js",
+    "patch": "node src/patch.js",
+    "uninstall": "node src/uninstall.js",
+    "test": "node build/bundle.js && node --test test/install.test.cjs test/extension.test.cjs test/page.test.cjs ../../packages/core/test/direction.test.js ../../packages/core/test/frozen.test.js"
+  },
+  "license": "MIT"
+}

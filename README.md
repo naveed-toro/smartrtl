@@ -46,6 +46,7 @@ Then yes, this is the same bug.
 | a markdown editor | VS Code, desktop, web | shape not decided |
 | Claude desktop app | a patched copy beside the installed app | [Personal preview](apps/desktop-claude/README.md): native update checks now run from the RTL copy under the installed package identity; a complete future update/rebuild/relaunch cycle remains unverified. Chat, Cowork and Claude in Chrome are covered; Code is not (decisions.md 54). |
 | Codex / ChatGPT Windows app | original installed app, in-memory adapter | [Personal preview](apps/desktop-codex/README.md): no app copy or installed file patch; an on-demand Windows task and GUI host keep it independent of PowerShell. Native updates remain available; a complete update/relaunch cycle remains unverified. |
+| Qoder IDE | one script line in Qoder's two chat pages, checksums kept | [Personal preview](apps/desktop-qoder/README.md): the side-panel chat, the agents window and chats moved into a new window. Fully removable with `npm run uninstall`; a Qoder update takes it away, run `npm run patch` again. |
 
 They share two things: the rule that decides which direction a piece of text belongs to,
 and the engine that decides when to ask it. Everything else - how the fix reaches the
