@@ -113,7 +113,8 @@ nothing else would have found it.
 | Claude Code in VS Code | companion extension, patches the webview bundle | done at 0.4.1; tested live; not published yet |
 | AI chat sites in the browser | Chrome extension, one adapter per site | next |
 | a markdown editor | three surfaces of its own - VS Code, desktop, web | shape not decided |
-| Claude desktop app | not investigated | unknown |
+| Claude desktop app | patched copy in the installed package context | personal preview; native update check verified, future update/rebuild/relaunch cycle unverified |
+| Codex / ChatGPT Windows app | original installed app with private-pipe adapter | personal preview; independent GUI host, full update/relaunch cycle unverified |
 
 ## Known defects
 
@@ -177,9 +178,10 @@ wrong, and that is worth knowing too.
 else here it is a product we own end to end - there is no host page to be a guest on. Worth
 starting only once the engine has been proven somewhere it does not control the page.
 
-**3. The Claude desktop app.** Nothing is known yet beyond the fact that the same bug is
-there. It may take the same route as VS Code, or no clean route may exist. Until someone
-looks, any estimate is invented.
+**3. Desktop update lifecycles.** Claude's patched copy can check for native updates in
+the installed package context. Codex uses the original installed app with an in-memory
+adapter. Both still need a real future update/relaunch cycle checked with RTL enabled;
+the source and current limits are documented in each app's README.
 
 Deliberately not in this list yet: publishing to npm and the two marketplaces, and the
 website. Those are one phase, at the end, once there is something worth pointing people at.

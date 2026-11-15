@@ -1,0 +1,14 @@
+{
+  "name": "smartrtl-desktop-codex",
+  "version": "0.0.1",
+  "private": true,
+  "description": "The shared SmartRTL formula applied in memory to the installed Codex/ChatGPT Windows app.",
+  "scripts": {
+    "build": "powershell.exe -NoProfile -File build/build-host.ps1",
+    "test": "node --test test/pipe.test.cjs ../../packages/core/test/direction.test.js ../../packages/core/test/frozen.test.js",
+    "test:windows": "powershell.exe -NoProfile -File test/task-validation.test.ps1",
+    "start": "powershell.exe -NoProfile -File launch.ps1",
+    "uninstall": "powershell.exe -NoProfile -File uninstall.ps1"
+  },
+  "license": "MIT"
+}
