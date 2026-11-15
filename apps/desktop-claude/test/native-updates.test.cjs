@@ -1,0 +1,22 @@
+const test=require('node:test');
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const vm=require('node:vm');
+const {EventEmitter}=require('node:events');
+const sourceRoot=path.resolve(__dirname,'../src');
+const source=fs.readFileSync(path.join(sourceRoot,'hook.js'),'utf8');
+test('the existing injection listener survives and update events are reported without URLs or chat data',async()=>{
+ const app=new EventEmitter(),updater=new EventEmitter(),written=new Map();
+ app.getVersion=()=> '5.11492.5';app.getPath=()=> 'test-profile';app.whenReady=()=>Promise.resolve();
+ const fakeFs={readFileSync:()=> 'window.testPayload=true;',mkdirSync(){},writeFileSync:(p,data)=>written.set(path.basename(p),JSON.parse(data))};
+ vm.runInNewContext(source,{__dirname:sourceRoot,require:name=>name==='electron'?{app,autoUpdater:updater}:name==='fs'?fakeFs:require(name),process:{env:{SMARTRTL_STATUS_DIRECTORY:'test-status'},execPath:'copy/claude.exe',windowsStore:true},URL,setTimeout,setInterval,clearInterval});
+ await Promise.resolve();
+ assert.equal(app.listenerCount('web-contents-created'),1);
+ assert.equal(app.setAsDefaultProtocolClient(),true);
+ updater.emit('checking-for-update');updater.emit('update-available','https://not-to-be-recorded.invalid','private data');
+ const report=written.get('claude-native-updates.json');
+ assert.equal(report.windowsStore,true);assert.equal(report.ready,true);
+ assert.deepEqual(Array.from(report.updateEvents,e=>e.event),['checking-for-update','update-available']);
+ assert.equal(JSON.stringify(report).includes('private data'),false);assert.equal(JSON.stringify(report).includes('not-to-be-recorded'),false);
+});

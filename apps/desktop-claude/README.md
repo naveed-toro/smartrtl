@@ -22,6 +22,24 @@ Then open **Claude (SmartRTL)** from the Start menu. Open one of the two - Claud
 When Claude updates, the shortcut makes a fresh copy of the new version before opening it
 (about a minute, once per update). This folder has to stay where it is for that to work.
 
+## Package-context updater preview (2026-11-15)
+
+The launcher now starts the RTL executable with the installed Claude package's Windows
+identity using `Invoke-CommandInDesktopPackage`. This tests whether Claude's own updater
+can run inside the RTL copy, instead of requiring the original app to be opened separately.
+The original signed package and updater code are not modified. Quit either Claude fully
+before starting the other. Existing profiles and the previous RTL executable are retained.
+
+The hook records `windowsStore` and native updater events in `claude-native-updates.json`
+beside its status reports. `launch.ps1 -StatusDirectory <folder>` puts diagnostic reports
+in an explicit folder. Source tests run with `npm run test:native-updates`.
+
+This remains a preview until a live package-identity launch, updater check and actual update
+restart have been observed. Windows may relaunch the original executable after an update;
+automatic return to the RTL copy has not been established. The launcher still rebuilds
+from the installed version on its next invocation. Microsoft's package-context command is
+a debugging facility, not a promise of production-equivalent activation behavior.
+
 ## Remove
 
 ```
