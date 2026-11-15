@@ -1,0 +1,9 @@
+build/**
+src/adapter.js
+test/**
+.vscodeignore
+.gitignore
+**/*.map
+**/.DS_Store
+.smartrtl-installed
+*.vsix

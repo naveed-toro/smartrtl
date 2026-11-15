@@ -1,0 +1,49 @@
+{
+  "name": "codex-rtl",
+  "displayName": "SmartRTL for Codex",
+  "description": "Fixes right-to-left text (Urdu, Arabic, Hebrew, Persian) in the Codex panel.",
+  "version": "0.1.2",
+  "publisher": "smartrtl",
+  "icon": "icon.png",
+  "galleryBanner": {
+    "color": "#1F2338",
+    "theme": "dark"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "rtl",
+    "bidi",
+    "arabic",
+    "hebrew",
+    "urdu",
+    "persian",
+    "codex",
+    "openai",
+    "i18n"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/naveed-toro/smartrtl.git"
+  },
+  "homepage": "https://github.com/naveed-toro/smartrtl#readme",
+  "bugs": {
+    "url": "https://github.com/naveed-toro/smartrtl/issues"
+  },
+  "main": "./src/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "scripts": {
+    "vscode:prepublish": "npm run build",
+    "vscode:uninstall": "node ./src/uninstall.js",
+    "build": "node build/bundle.js",
+    "package": "vsce package --no-dependencies",
+    "test": "npm run build && node --test test/ ../../packages/core/test/direction.test.js ../../packages/core/test/frozen.test.js"
+  }
+}

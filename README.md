@@ -47,6 +47,7 @@ Then yes, this is the same bug.
 | Claude desktop app | a patched copy beside the installed app | [Personal preview](apps/desktop-claude/README.md): native update checks now run from the RTL copy under the installed package identity; a complete future update/rebuild/relaunch cycle remains unverified. Chat, Cowork and Claude in Chrome are covered; Code is not (decisions.md 54). |
 | Codex / ChatGPT Windows app | original installed app, in-memory adapter | [Personal preview](apps/desktop-codex/README.md): no app copy or installed file patch; an on-demand Windows task and GUI host keep it independent of PowerShell. Native updates remain available; a complete update/relaunch cycle remains unverified. |
 | Qoder IDE | one script line in Qoder's two chat pages, checksums kept | [Personal preview](apps/desktop-qoder/README.md): the side-panel chat, the agents window and chats moved into a new window. Fully removable with `npm run uninstall`; a Qoder update takes it away, run `npm run patch` again. |
+| Codex in VS Code | companion extension, separate from Claude Code's | [0.1.2](apps/vscode-codex/README.md) - install it and it works, uninstall it and it is gone. One async script line in Codex's own webview page; it starts after Codex has, so Codex's 30-second start is never held up. Answers, the box you type in (its `dir="auto"` paragraphs included) and sent messages. A Codex update is fixed while it waits for VS Code's restart (decisions.md 59). |
 
 They share two things: the rule that decides which direction a piece of text belongs to,
 and the engine that decides when to ask it. Everything else - how the fix reaches the
@@ -78,7 +79,7 @@ rule, and every wrong turn is written down rather than quietly dropped.
 | | |
 |---|---|
 | [docs/reviewing.md](docs/reviewing.md) | the two questions this project has, and the one command that answers them - read before reviewing anything here |
-| [docs/decisions.md](docs/decisions.md) | fifty-eight sections: every rule and fix that was tried, measured and rejected, including the two that crashed, the one that was too slow, the limits that were finally accepted, and how what was left was made to outlast the next update |
+| [docs/decisions.md](docs/decisions.md) | fifty-nine sections: every rule and fix that was tried, measured and rejected, including the two that crashed, the one that was too slow, the limits that were finally accepted, and how what was left was made to outlast the next update |
 | [docs/versions.md](docs/versions.md) | what was actually inside each build, read out of the `.vsix` rather than remembered |
 | [docs/roadmap.md](docs/roadmap.md) | what a new surface has to provide, the four rules an adapter obeys, and what order the rest gets built in |
 | [docs/claude-code-bug.md](docs/claude-code-bug.md) | the Claude Code bug on its own terms, with no RTL attached - fixed by Claude Code in 2.1.307 |

@@ -10,7 +10,7 @@ search for, in several languages.
 
 ## What is in here
 
-Fifty-eight sections, in the order they were written, which is the order the faults were
+Fifty-nine sections, in the order they were written, which is the order the faults were
 found. The ones worth reading first are marked.
 
  1. [The root cause](#1-the-root-cause)
@@ -4935,3 +4935,84 @@ install, on an upgrade whose block changed, and after a Claude Code update that 
 while no window was open; none on an ordinary start, an update fixed while it waited,
 Claude Code arriving, or a reinstall of the same fix. The tests that held the switch, the
 status bar and the expiry went with them.
+
+---
+
+## 59. Codex in VS Code gets an extension of its own
+
+> apps/vscode-codex, 0.1.2. The owner's decision, 2026-11-15.
+
+### Why a separate extension
+
+The owner asked whether Codex's fix should go into SmartRTL for Claude Code or into a new
+extension. A new one, because each fix lives and dies with the product it fixes:
+
+- **Taking one away leaves the other alone.** The day Codex lays out right-to-left text
+  itself, SmartRTL for Codex is uninstalled and Claude Code's fix is not touched - and the
+  other way round. Section 58 holds for each of them on its own: install it and it works,
+  uninstall it and it is gone, for exactly the one product it names.
+- **One host's change cannot break the other.** Codex renaming its page and Claude Code
+  reshaping its bundle are two unrelated events; in one extension, either would put both
+  fixes at risk.
+- **What is shared is already shared.** The rule and the engine live in `packages/`. What an
+  extension adds is the delivery - where the fix goes in, how it follows the host's updates,
+  how it comes out - and a seventy-line adapter, and none of that is common to the two.
+
+### Where it goes in
+
+Codex's panel is drawn from one page, `webview/index.html`. Codex's host reads it once per
+window, fills in a `<base>` pointing at Codex's own webview folder and a content security
+policy whose `script-src` is that same folder, and hands it to the webview. So the whole
+footprint is a file in that folder and one line before `</head>` naming it. Nothing is
+loosened to let it in, and taking it out leaves the page as Codex shipped it, to the byte.
+
+Updates follow section 56: the fix goes into a Codex update while it waits beside the running
+copy, so the restart VS Code asks for is the only one.
+
+### What the first live run found: thirty seconds
+
+0.1.0's line was a plain `<script>`. After the first reload, Codex showed "Codex could not
+start". Codex's host gives its page 30 seconds to report `renderer_ready` and then replaces it
+with that message. Codex's own log said the page had been alive and late, not dead:
+`renderer_ready_timeout`, `elapsedMs=32796`, `receivedWebviewMessage=true`, and React's first
+render requested 0.14 seconds after the host gave up. Without the fix, the same page was ready
+in 7.4 seconds.
+
+That one run does not prove our script was the whole cause - a reload with the machine busy
+can be slow on its own. But a script that holds the page's parser is the one thing in front of
+Codex's start that is ours, so it no longer does:
+
+- the line is `async` - fetched beside Codex's scripts, holding nothing up;
+- the adapter starts the engine after the page's `load`, once Codex's own scripts have run;
+  the engine reads what is on the page by then, and watches it from then on;
+- 0.1.0's line is recognised, replaced by the current one, and taken out by the uninstall
+  hook like it.
+
+Measured afterwards, from Codex's log: ready in 7.35 seconds with the fix and 7.37 without,
+and 12.95 on a later reload - all against a limit of 30.
+
+### The box: `dir="auto"` again
+
+Codex's message box is a ProseMirror view whose schema draws every paragraph as
+`<p dir="auto">`. The engine tagged the box `rtl` correctly, and the paragraph inside guessed
+again by its first strong letter: "useState کیا ہے" stayed left to right.
+
+It is section 13 over again, so it gets section 13's answer, at the same level: inside a box
+whose direction has been decided, any `[dir="auto"]` descendant inherits that decision. One
+selector in `packages/dom`; the rule is untouched. Code blocks in the box are drawn
+`dir="ltr"` and are left as they are. Claude Code's 89 tests pass with the changed engine (run
+on Edge) and Qoder's 20.
+
+### Measured
+
+`apps/vscode-codex/test/`: the fix in and out again to the byte on Codex's real page, on CRLF,
+and on a `</head>` that does not stand on its own line; the line is `async`; 0.1.0's line
+replaced and removed; the uninstall hook clearing every copy of Codex and nothing else; the
+reload notice asked for once and only when needed; and, in Edge, every block, the box - with
+its paragraph under `dir="auto"` - and a sent message taking exactly the rule's direction. 23
+tests.
+
+Live, on Codex 26.1111.21308 in VS Code 1.146: Codex starts; an old answer's Urdu
+paragraphs, the ones opening with an English word included, read right to left and English
+ones left to right; the box reads "useState کیا ہے" right to left and "Hello world" left to
+right.
