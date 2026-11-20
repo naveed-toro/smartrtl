@@ -7,14 +7,14 @@ files and opens no TCP debugging port. The original Windows shortcut is unchange
 ## Use
 
 Fully Quit the app, including its tray icon, then run `./launch.ps1`. After a successful
-start, use **Codex (RTL)** in Windows Start. A per-user, limited, on-demand Windows task
+start, use **ChatGPT (SmartRTL)** in Windows Start. A per-user, limited, on-demand Windows task
 and a GUI helper keep the app independent of the invoking PowerShell window. There is
 no logon trigger or stored password. A cold start from the original shortcut has no RTL
 helper; opening either shortcut while an instance already runs may surface that instance.
 
 The launcher resolves the installed app and bundled Node runtime each time. Native app
 updates remain available, but a complete update/relaunch cycle with RTL has not yet
-been verified. After an update, fully Quit and reopen Codex (RTL).
+been verified. After an update, fully Quit and reopen ChatGPT (SmartRTL).
 
 ## Layout
 

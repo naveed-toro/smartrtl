@@ -23,8 +23,8 @@ if ($runningCodex) {
         Start-Process -FilePath (Join-Path $env:WINDIR 'explorer.exe') -ArgumentList ('shell:AppsFolder\' + $codexPackage.PackageFamilyName + '!App') -WindowStyle Hidden
         return
     }
-    $message = 'Fully Quit Codex/ChatGPT first (including its tray icon), then open Codex (RTL). The current app was not stopped.'
-    if ($FromShortcut) { Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.MessageBox]::Show($message,'Codex (RTL)') | Out-Null }
+    $message = 'Fully Quit Codex/ChatGPT first (including its tray icon), then open ChatGPT (SmartRTL). The current app was not stopped.'
+    if ($FromShortcut) { Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.MessageBox]::Show($message,'ChatGPT (SmartRTL)') | Out-Null }
     throw $message
 }
 $runtimePackage = Get-AppxPackage | Where-Object Name -Like 'OpenAI.CodexPrimaryRuntime*' | Sort-Object Version -Descending | Select-Object -First 1
@@ -77,10 +77,18 @@ while ((Get-Date) -lt $liveDeadline) {
         if ($liveResult -and $liveResult.runId -eq $liveRun) {
             if ($liveResult.state -in @('running','waiting-for-chat')) {
                 # Install a clear daily entry point; the packaged app's original shortcut is unchanged.
-                $shortcutPath = Join-Path ([Environment]::GetFolderPath('Programs')) 'Codex (RTL).lnk'
+                $programs = [Environment]::GetFolderPath('Programs')
+                $shortcutArguments = '-NoProfile -WindowStyle Hidden -File "{0}" -FromShortcut' -f (Join-Path $paths.Application 'launch.ps1')
+                # The entry point's earlier name, removed only when it is this launcher's own shortcut.
+                $oldShortcut = Join-Path $programs 'Codex (RTL).lnk'
+                if (Test-Path -LiteralPath $oldShortcut) {
+                    $old = (New-Object -ComObject WScript.Shell).CreateShortcut($oldShortcut)
+                    if ($old.TargetPath -eq $taskExe -and $old.Arguments -eq $shortcutArguments) { Remove-Item -LiteralPath $oldShortcut }
+                }
+                $shortcutPath = Join-Path $programs 'ChatGPT (SmartRTL).lnk'
                 $shortcut = (New-Object -ComObject WScript.Shell).CreateShortcut($shortcutPath)
                 $shortcut.TargetPath = $taskExe
-                $shortcut.Arguments = '-NoProfile -WindowStyle Hidden -File "{0}" -FromShortcut' -f (Join-Path $paths.Application 'launch.ps1')
+                $shortcut.Arguments = $shortcutArguments
                 $shortcut.WorkingDirectory = $paths.Application
                 $shortcut.IconLocation = $codexExe + ',0'
                 $shortcut.WindowStyle = 7
@@ -90,7 +98,7 @@ while ((Get-Date) -lt $liveDeadline) {
                 Write-Host ('Background task: ' + $taskName)
                 Write-Host 'You may close this PowerShell window. The helper is started by Windows Task Scheduler.'
                 Write-Host 'No messages are sent automatically.'
-                Write-Host 'For daily use, open Codex (RTL) from Windows Start.'
+                Write-Host 'For daily use, open ChatGPT (SmartRTL) from Windows Start.'
                 if ($liveResult.state -eq 'waiting-for-chat') { Write-Host 'Waiting for chat elements; the formula is not yet confirmed on real messages.' }
                 return
             }

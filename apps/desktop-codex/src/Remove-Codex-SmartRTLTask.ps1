@@ -20,10 +20,13 @@ if ($mismatch.Count -gt 0 -and $record.userSid -eq $sid -and $record.execute -eq
 if ($mismatch.Count -gt 0) { throw ('The task does not match this preview and user: '+($mismatch -join ', ')+'. Nothing was removed.') }
 if ([string]$task.State -eq 'Running') { throw 'Quit the preview app and let its helper finish before removing the task.' }
 Unregister-ScheduledTask -TaskPath '\' -TaskName $record.taskName -Confirm:$false
-$shortcutPath = Join-Path ([Environment]::GetFolderPath('Programs')) 'Codex (RTL).lnk'
-if (Test-Path -LiteralPath $shortcutPath) {
-    $shortcut = (New-Object -ComObject WScript.Shell).CreateShortcut($shortcutPath)
-    if ($shortcut.TargetPath -eq $expectedExe -and $shortcut.Arguments -eq ('-NoProfile -WindowStyle Hidden -File "{0}" -FromShortcut' -f (Join-Path $paths.Application 'launch.ps1'))) { Remove-Item -LiteralPath $shortcutPath }
+# 'Codex (RTL)' is the entry point's earlier name.
+foreach ($name in 'ChatGPT (SmartRTL).lnk','Codex (RTL).lnk') {
+    $shortcutPath = Join-Path ([Environment]::GetFolderPath('Programs')) $name
+    if (Test-Path -LiteralPath $shortcutPath) {
+        $shortcut = (New-Object -ComObject WScript.Shell).CreateShortcut($shortcutPath)
+        if ($shortcut.TargetPath -eq $expectedExe -and $shortcut.Arguments -eq ('-NoProfile -WindowStyle Hidden -File "{0}" -FromShortcut' -f (Join-Path $paths.Application 'launch.ps1'))) { Remove-Item -LiteralPath $shortcutPath }
+    }
 }
 Remove-Item -LiteralPath $recordFile
 Write-Host 'The SmartRTL on-demand task was removed. The installed app was not changed.'
