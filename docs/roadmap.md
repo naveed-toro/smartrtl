@@ -18,6 +18,9 @@ built in, and why. The reasoning behind the rule and the design is in
 adapter           the product  what this particular page looks like
 ```
 
+Desktop apps share one more part, `@smartrtl/mark`: the app's own icon with the SmartRTL mark
+drawn into its corner, so the copy with SmartRTL can be told from the plain app at a glance.
+
 On disk that is two folders, and the names carry a rule:
 
 ```

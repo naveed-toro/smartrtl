@@ -6,7 +6,8 @@
  *
  *   1. puts hook.js and the payload beside the app's own entry, and loads the hook first;
  *   2. turns off the one switch (the asar integrity check) that would refuse a changed app;
- *   3. writes beside claude.exe the copy's own icon - Claude's, marked in its corner (icon.js).
+ *   3. writes beside claude.exe the copy's own icon - Claude's, marked in its corner
+ *      (packages/mark).
  *
  * Nothing else is changed - no certificate, no admin rights, no other file. A Start menu
  * shortcut "Claude (SmartRTL)" runs launch.ps1, which calls this again whenever Claude has
@@ -20,7 +21,7 @@ const path = require("node:path");
 const { execFileSync } = require("node:child_process");
 const asar = require("@electron/asar");
 const { flipFuses, FuseVersion, FuseV1Options } = require("@electron/fuses");
-const { writeMarkedIcon } = require("./icon.js");
+const { writeMarkedIcon } = require("../../../packages/mark/src/icon.js");
 
 const SMART_HOME = process.env.SMARTRTL_HOME || path.join(process.env.LOCALAPPDATA, "SmartRTL");
 const COPIES = path.join(SMART_HOME, "claude");
@@ -119,7 +120,7 @@ async function main() {
 
   // 4. the copy's own icon. Without it the copy works the same, only unmarked on the taskbar.
   try {
-    writeMarkedIcon(path.join(building, "claude.exe"), path.join(APP_ROOT, "src/badge.png"), path.join(building, ICON));
+    writeMarkedIcon(path.join(building, "claude.exe"), path.join(building, ICON));
   } catch (e) {
     console.warn(`no marked icon (${e.message}); the copy keeps Claude's`);
   }

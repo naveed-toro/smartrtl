@@ -1,0 +1,11 @@
+{
+  "name": "@smartrtl/mark",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Draws the SmartRTL mark into a desktop app's own icon, in that icon's own colour. No product.",
+  "main": "src/icon.js",
+  "scripts": {
+    "test": "node --test test/*.test.cjs"
+  },
+  "license": "MIT"
+}

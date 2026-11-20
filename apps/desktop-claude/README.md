@@ -59,10 +59,8 @@ the copy, the `claude://` registration. The installed Claude was never changed.
 
 | | |
 |---|---|
-| `src/patch.js` | makes the copy, loads the hook first, turns off the asar integrity check |
+| `src/patch.js` | makes the copy, loads the hook first, turns off the asar integrity check, marks its icon (`packages/mark`) |
 | `src/hook.js` | runs inside the copy: hands claude.ai pages the payload, refuses `claude://`, marks the copy |
-| `src/icon.js` | the copy's own icon: Claude's, from the copy's `claude.exe`, with the mark drawn in |
-| `src/badge.png` | that mark - the SmartRTL lines in Claude's colours, sized for the 256px icon |
 | `src/injected/payload.js` | the claude.ai adapter - where the answers, the box and sent messages are |
 | `build/bundle-payload.js` | builds `dist/payload.js` from the rule, the engine and the adapter |
 | `src/launch.ps1` | what the shortcut runs: re-copies when Claude has updated, then opens it |

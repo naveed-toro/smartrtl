@@ -12,7 +12,8 @@
 // It also says which Claude this is. The copy runs with the installed app's own package
 // identity, so Windows would put both on one taskbar button with one icon, and both windows
 // are titled "Claude". The copy's windows get a taskbar button of their own with Claude's icon
-// marked in its corner (icon.js), and "(SmartRTL)" after their titles and the tray tooltip.
+// marked in its corner (packages/mark), and "(SmartRTL)" after their titles and the tray
+// tooltip.
 "use strict";
 try {
   const { app, autoUpdater } = require("electron");
