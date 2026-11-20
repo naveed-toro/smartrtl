@@ -90,7 +90,9 @@ while ((Get-Date) -lt $liveDeadline) {
                 $shortcut.TargetPath = $taskExe
                 $shortcut.Arguments = $shortcutArguments
                 $shortcut.WorkingDirectory = $paths.Application
-                $shortcut.IconLocation = $codexExe + ',0'
+                $lightTheme = (Get-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize' -ErrorAction SilentlyContinue).SystemUsesLightTheme -ne 0
+                $markedIcon = Join-Path $paths.Runtime ('chatgpt-smartrtl-{0}.ico' -f $(if ($lightTheme) { 'light' } else { 'dark' }))
+                $shortcut.IconLocation = $(if (Test-Path -LiteralPath $markedIcon) { $markedIcon } else { $codexExe }) + ',0'
                 $shortcut.WindowStyle = 7
                 $shortcut.Save()
                 Write-Host 'SmartRTL preview is running in the original app. Open an existing Urdu/English chat.'

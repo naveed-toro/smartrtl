@@ -7,7 +7,7 @@ if ($PSVersionTable.PSEdition -eq 'Core') {
 $appRoot = Split-Path $PSScriptRoot -Parent
 $distribution = Join-Path $appRoot 'dist'
 New-Item -ItemType Directory -Path $distribution -Force | Out-Null
-$hostExe = Join-Path $distribution 'SmartRTLHost-v1.exe'
+$hostExe = Join-Path $distribution 'SmartRTLHost-v2.exe'
 if (-not (Test-Path -LiteralPath $hostExe)) {
     $source = Get-Content -LiteralPath (Join-Path $appRoot 'src\SmartRTLHost.cs') -Raw
     Add-Type -TypeDefinition $source -Language CSharp -ReferencedAssemblies @('System.dll','System.Core.dll','System.Web.Extensions.dll') -OutputAssembly $hostExe -OutputType WindowsApplication

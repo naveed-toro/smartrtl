@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { exeIcon, decode, encode, mainColour, drawMark, compose, ico, writeMarkedIcon } = require('../src/icon.js');
+const { exeIcon, packageLogos, decode, encode, mainColour, drawMark, compose, ico, writeMarkedIcon } = require('../src/icon.js');
 
 const CLAUDE = [217, 119, 86, 255];
 const solid = (size, rgba) => ({
@@ -70,6 +70,23 @@ test("the exe's largest PNG is found, past BMP entries and smaller PNGs", () => 
   });
 });
 
+test("a package's taskbar logo is read at every size, in the variant asked for, smallest first", () => {
+  inTemp((dir) => {
+    fs.mkdirSync(path.join(dir, 'Assets'));
+    fs.writeFileSync(path.join(dir, 'AppxManifest.xml'), '<uap:VisualElements Square44x44Logo="Assets\\Square44x44Logo.png" />');
+    const logo = (size, variant, rgba) => {
+      const png = encode(solid(size, rgba));
+      fs.writeFileSync(path.join(dir, 'Assets', `Square44x44Logo.targetsize-${size}_altform-${variant}.png`), png);
+      return png;
+    };
+    const light = [256, 48, 24].map((size) => logo(size, 'lightunplated', [0, 0, 0, 255]));
+    const dark = [256, 24].map((size) => logo(size, 'unplated', [255, 255, 255, 255]));
+    fs.writeFileSync(path.join(dir, 'Assets', 'Square44x44Logo.scale-200.png'), Buffer.alloc(8));
+    assert.deepEqual(packageLogos(dir, 'lightunplated'), [light[2], light[1], light[0]]);
+    assert.deepEqual(packageLogos(dir, 'unplated'), [dark[1], dark[0]]);
+  });
+});
+
 test("the icon's main colour is its most common opaque one", () => {
   const icon = solid(10, CLAUDE);
   icon.pixels.fill(255, 0, 4 * 30);                   // 30 white pixels
@@ -88,11 +105,33 @@ test('the mark is a tile with an ink border and right-aligned ink lines, corners
   assert.deepEqual(pixel(mark, 32, 64), [250, 249, 245, 255]);  // the left edge is ragged
 });
 
+test('under a light ink the tile turns dark, so the lines still show', () => {
+  const mark = drawMark(128, [255, 255, 255]);
+  assert.deepEqual(pixel(mark, 64, 52), [32, 32, 32, 255]);
+  assert.deepEqual(pixel(mark, 95, 40), [255, 255, 255, 255]);
+});
+
 test('the mark sits flush in the lower right corner and covers nothing else', () => {
   const out = compose(solid(256, CLAUDE), solid(116, [250, 249, 245, 255]));
   assert.deepEqual(pixel(out, 139, 139), CLAUDE);
   assert.deepEqual(pixel(out, 140, 140), [250, 249, 245, 255]);
   assert.deepEqual(pixel(out, 255, 255), [250, 249, 245, 255]);
+});
+
+test('icons handed over as PNGs are each marked at their own size, into one ICO', () => {
+  inTemp((dir) => {
+    writeMarkedIcon([encode(solid(24, CLAUDE)), encode(solid(256, CLAUDE))], path.join(dir, 'marked'));
+    const marked = decode(fs.readFileSync(path.join(dir, 'marked.png')));
+    assert.equal(marked.width, 256);
+    assert.deepEqual(pixel(marked, 255 - 58, 255 - 114), CLAUDE);
+    const file = fs.readFileSync(path.join(dir, 'marked.ico'));
+    assert.equal(file.readUInt16LE(4), 2);
+    assert.deepEqual([file[6], file[22]], [24, 0]);
+    const small = decode(file.subarray(file.readUInt32LE(18), file.readUInt32LE(18) + file.readUInt32LE(14)));
+    assert.equal(small.width, 24);
+    assert.deepEqual(pixel(small, 2, 2), CLAUDE);
+    assert.ok(pixel(small, 18, 15)[1] > 200);                     // the tile's paper, drawn at 24px
+  });
 });
 
 test('the marked icon is written as a PNG and as an ICO around it, in the icon\'s colour', () => {
@@ -107,6 +146,6 @@ test('the marked icon is written as a PNG and as an ICO around it, in the icon\'
     assert.equal(file.readUInt16LE(4), 1);
     assert.equal(file[6], 0);                         // 256
     assert.ok(file.subarray(22).equals(png));
-    assert.equal(ico(png, 48)[6], 48);
+    assert.equal(ico([encode(solid(48, CLAUDE))])[6], 48);
   });
 });

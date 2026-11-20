@@ -16,6 +16,16 @@ The launcher resolves the installed app and bundled Node runtime each time. Nati
 updates remain available, but a complete update/relaunch cycle with RTL has not yet
 been verified. After an update, fully Quit and reopen ChatGPT (SmartRTL).
 
+## Which ChatGPT is running
+
+While the helper runs, ChatGPT's windows get a taskbar button of their own, with ChatGPT's own
+taskbar logo - the light or the dark one, as the taskbar is - marked in its lower right corner
+in the logo's own colour (`packages/mark`). The GUI host sets it on the windows from outside;
+the installed app is not changed. A ChatGPT opened from its own shortcut has no helper and keeps
+its plain icon, so the icon says whether RTL is on. The Start menu entry shows the same marked
+icon, and a pin of the marked button opens ChatGPT (SmartRTL). Both icons are written to
+`.runtime/chatgpt-smartrtl-light.ico` and `-dark.ico` on each start.
+
 ## Layout
 
 - `src/`: adapter, pipe client, task launcher and GUI host source.

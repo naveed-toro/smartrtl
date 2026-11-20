@@ -59,6 +59,15 @@ async function main(){
       payload='(()=>{if(location.protocol!=="app:"||location.hostname!=="-")return;if(window.__smartRtlCodexPayload==='+JSON.stringify(fingerprint)+')return;window.__smartRtlCodex?.stop();delete window.__smartRtlCodex;window.__smartRtlCodexPayload='+JSON.stringify(fingerprint)+';\n'+core+'\n'+dom+'\n'+fresh+'\n})()';
     }}
   refreshPayload();
+  // The app's own taskbar logo with the SmartRTL mark (packages/mark), for a light taskbar and for a
+  // dark one. The GUI host gives the app's windows the one that fits the taskbar.
+  try{const mark=require(path.resolve(appRoot,'../../packages/mark/src/icon.js')),root=path.resolve(exe,'..','..');
+    for(const [theme,variant] of [['light','lightunplated'],['dark','unplated']]){
+      let source;try{source=mark.packageLogos(root,variant)}catch{source=exe}
+      mark.writeMarkedIcon(source,path.join(runtimeDir,'chatgpt-smartrtl-'+theme));
+    }
+    report.markedIcon=true}
+  catch(e){report.markedIcon=false;report.markedIconError=e.message}
   const env={...process.env};delete env.CODEX_ELECTRON_USER_DATA_PATH;
   const child=spawn(exe,['--remote-debugging-pipe'],{env,stdio:['ignore','pipe','pipe','pipe','pipe'],windowsHide:true});
   report.pid=child.pid;save();

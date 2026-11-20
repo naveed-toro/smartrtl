@@ -5,13 +5,14 @@
  *
  * Windows 11 draws a taskbar badge in the upper right, where it reads as an unread message; a
  * mark drawn into the icon stays where it is put. No image library: the icon is the largest
- * PNG in the app's exe, and the mark is drawn here.
+ * PNG in the app's exe, or its package's taskbar logo, and the mark is drawn here.
  */
 const fs = require("node:fs");
+const path = require("node:path");
 const zlib = require("node:zlib");
 
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
-const PAPER = [250, 249, 245];   // the tile: a warm white that sits on any icon
+const LIGHT_PAPER = [250, 249, 245], DARK_PAPER = [32, 32, 32];
 const MARK_SHARE = 116 / 256;     // the tile's side, as a share of the icon's
 
 /** The largest PNG in the exe's first icon group. */
@@ -71,6 +72,24 @@ function exeIcon(exe) {
   } finally {
     fs.closeSync(fd);
   }
+}
+
+/**
+ * The taskbar logo a Windows package declares (Square44x44Logo), at every size the package draws
+ * it, in one of its variants: "lightunplated" for a light taskbar, "unplated" for a dark one.
+ * These are the images Windows itself puts on the taskbar, each drawn for its own size, so a
+ * mark drawn into them keeps the app's own size and weight there. Smallest first.
+ */
+function packageLogos(root, variant) {
+  const manifest = fs.readFileSync(path.join(root, "AppxManifest.xml"), "utf8");
+  const logo = /Square44x44Logo="([^"]+)\.png"/i.exec(manifest);
+  if (!logo) throw new Error("the package declares no Square44x44Logo");
+  const parts = logo[1].split(/[\\/]/), stem = parts.pop().toLowerCase(), dir = path.join(root, ...parts);
+  const ours = (name) => name.toLowerCase().startsWith(stem + ".targetsize-") && name.toLowerCase().endsWith(`_altform-${variant}.png`);
+  const logos = fs.readdirSync(dir).filter(ours).map((name) => fs.readFileSync(path.join(dir, name)))
+    .sort((a, b) => a.readUInt32BE(16) - b.readUInt32BE(16));        // IHDR width
+  if (!logos.length || logos[logos.length - 1].readUInt32BE(16) !== 256) throw new Error(`the package has no 256px ${variant} logo`);
+  return logos;
 }
 
 /** An 8-bit RGBA, non-interlaced PNG to { width, height, pixels }. */
@@ -148,10 +167,12 @@ function mainColour(icon) {
 }
 
 /**
- * The mark, size x size pixels: a tile in PAPER with an ink border and three right-aligned ink
- * lines, the ragged edge on the left. Drawn on a 128-unit grid, its edges antialiased.
+ * The mark, size x size pixels: a tile with an ink border and three right-aligned ink lines, the
+ * ragged edge on the left. The tile is light under a dark ink and dark under a light one, so the
+ * lines always show. Drawn on a 128-unit grid, its edges antialiased.
  */
 function drawMark(size, ink) {
+  const paper = (0.2126 * ink[0] + 0.7152 * ink[1] + 0.0722 * ink[2]) / 255 > 0.6 ? DARK_PAPER : LIGHT_PAPER;
   const box = (x0, y0, x1, y1, r) => (px, py) => {
     const qx = Math.abs(px - (x0 + x1) / 2) - ((x1 - x0) / 2 - r);
     const qy = Math.abs(py - (y0 + y1) / 2) - ((y1 - y0) / 2 - r);
@@ -169,7 +190,7 @@ function drawMark(size, ink) {
       if (tile === 0) continue;
       const inked = Math.min(1, Math.max(tile - cover(inner(px, py)), ...lines.map((line) => cover(line(px, py)))) / tile);
       const at = (y * size + x) * 4;
-      for (let c = 0; c < 3; c++) pixels[at + c] = Math.round(ink[c] * inked + PAPER[c] * (1 - inked));
+      for (let c = 0; c < 3; c++) pixels[at + c] = Math.round(ink[c] * inked + paper[c] * (1 - inked));
       pixels[at + 3] = Math.round(tile * 255);
     }
   }
@@ -195,27 +216,36 @@ function compose(icon, mark) {
   return { width: icon.width, height: icon.height, pixels: out };
 }
 
-/** A one-image ICO around a PNG of up to 256px, which Windows has read since Vista. */
-function ico(png, size) {
-  const head = Buffer.alloc(22);
-  head.writeUInt16LE(1, 2);            // type: icon
-  head.writeUInt16LE(1, 4);            // one image
-  head[6] = head[7] = size % 256;      // 0 means 256
-  head.writeUInt16LE(1, 10);           // planes
-  head.writeUInt16LE(32, 12);          // bits per pixel
-  head.writeUInt32LE(png.length, 14);
-  head.writeUInt32LE(22, 18);
-  return Buffer.concat([head, png]);
+/** An ICO of PNG images of up to 256px each, which Windows has read since Vista. */
+function ico(pngs) {
+  const head = Buffer.alloc(6 + 16 * pngs.length);
+  head.writeUInt16LE(1, 2);                          // type: icon
+  head.writeUInt16LE(pngs.length, 4);
+  let offset = head.length;
+  pngs.forEach((png, i) => {
+    const at = 6 + 16 * i;
+    head[at] = head[at + 1] = png.readUInt32BE(16) % 256;   // IHDR width; 0 means 256
+    head.writeUInt16LE(1, at + 4);                   // planes
+    head.writeUInt16LE(32, at + 6);                  // bits per pixel
+    head.writeUInt32LE(png.length, at + 8);
+    head.writeUInt32LE(offset, at + 12);
+    offset += png.length;
+  });
+  return Buffer.concat([head, ...pngs]);
 }
 
-/** Writes <base>.png and <base>.ico: the exe's icon with the mark drawn in. */
-function writeMarkedIcon(exe, base) {
-  const icon = decode(exeIcon(exe));
-  if (icon.width !== icon.height) throw new Error("the icon is not square");
-  const mark = drawMark(Math.round(icon.width * MARK_SHARE), mainColour(icon));
-  const png = encode(compose(icon, mark));
-  fs.writeFileSync(base + ".png", png);
-  fs.writeFileSync(base + ".ico", ico(png, icon.width));
+/**
+ * Writes <base>.png (the largest) and <base>.ico (every size): the icon with the mark drawn in,
+ * at each size on its own. `source` is the path of an exe to take the icon from, or the icon as
+ * PNGs, smallest first; the mark's colour comes from the largest.
+ */
+function writeMarkedIcon(source, base) {
+  const icons = (typeof source === "string" ? [exeIcon(source)] : source).map(decode);
+  if (icons.some((icon) => icon.width !== icon.height)) throw new Error("an icon is not square");
+  const ink = mainColour(icons[icons.length - 1]);
+  const pngs = icons.map((icon) => encode(compose(icon, drawMark(Math.round(icon.width * MARK_SHARE), ink))));
+  fs.writeFileSync(base + ".png", pngs[pngs.length - 1]);
+  fs.writeFileSync(base + ".ico", ico(pngs));
 }
 
-module.exports = { writeMarkedIcon, exeIcon, decode, encode, mainColour, drawMark, compose, ico };
+module.exports = { writeMarkedIcon, exeIcon, packageLogos, decode, encode, mainColour, drawMark, compose, ico };
