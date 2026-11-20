@@ -4663,6 +4663,17 @@ points at the copy, the `claude://` registration.
 - **The copy is a new device to claude.ai** and was shown a different variant of the page (Home
   and Code buttons in the sidebar, tool steps grouped differently). Nothing of ours; a
   screenshot of the copy must not be cited as the original.
+- **The two could not be told apart.** Same icon, same title - and since the copy runs with the
+  installed package's identity, Claude gives it the package's own taskbar ID, so Windows puts it
+  on the installed app's button. A taskbar badge was tried first and dropped: Windows 11 draws
+  every badge in the icon's upper right corner, where WhatsApp shows an unread count, so it read
+  as a message waiting. Now the copy's windows take a taskbar button of their own (a pin of it
+  opens the copy through `launch.ps1`), with Claude's icon taken from the copy's `claude.exe` and
+  the SmartRTL lines drawn into its lower right corner, where preview builds of an app are
+  usually marked; "(SmartRTL)" follows its window titles and its tray tooltip. The mark is in Claude's
+  own cream and orange, the owner's choice: it should read as part of Claude's icon - a hint on
+  a glance, not something that catches the eye. The copy's button does not show Claude's jump
+  list (recent sessions), which belongs to the installed app's button.
 - **The assistant's own safety mode refused this work** as weakening security - running the
   copy, and every step after. The owner switched the mode and approved each step himself.
 

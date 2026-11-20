@@ -1,6 +1,6 @@
 // SmartRTL, inside the Claude desktop app's main process.
 //
-// patch.js puts this file beside the app's own entry and loads it first. It does one thing:
+// patch.js puts this file beside the app's own entry and loads it first. Its main job:
 // when a page from claude.ai (or claude.com) is ready, it hands that page the payload - the
 // shared rule and engine, and the claude.ai adapter. Nothing else in the app is touched,
 // and any failure here leaves the app exactly as it would have been without us.
@@ -8,6 +8,11 @@
 // A few seconds after, it asks the page how the engine is doing and writes the answer to
 // %LOCALAPPDATA%\SmartRTL\status-<page>.json - how anyone can see what happened without
 // opening the app's developer tools, which it does not allow.
+//
+// It also says which Claude this is. The copy runs with the installed app's own package
+// identity, so Windows would put both on one taskbar button with one icon, and both windows
+// are titled "Claude". The copy's windows get a taskbar button of their own with Claude's icon
+// marked in its corner (icon.js), and "(SmartRTL)" after their titles and the tray tooltip.
 "use strict";
 try {
   const { app, autoUpdater } = require("electron");
@@ -66,4 +71,53 @@ try {
       }).catch(() => {});
     });
   });
+
+  // Which Claude this is. Its own try: a copy that cannot mark itself still sets direction.
+  try {
+    const { Tray, nativeImage } = require("electron");
+    const MARK = " (SmartRTL)";
+    const marked = (text) => {
+      const title = String(text || app.getName());
+      return title.endsWith(MARK) ? title : title + MARK;
+    };
+    let button = null;   // set below, before any window exists
+
+    // Claude announces its first window a second time, so a window can arrive here twice.
+    const seen = new WeakSet();
+    app.on("browser-window-created", (_e, win) => {
+      if (seen.has(win)) return;
+      seen.add(win);
+      const setTitle = win.setTitle.bind(win);
+      win.setTitle = (title) => setTitle(marked(title));
+      win.setTitle(win.getTitle());
+      if (button) {
+        win.setAppDetails(button.details);
+        win.setIcon(button.icon);
+      }
+    });
+
+    // Only Claude's own tray icon, whose tooltip is the app's name.
+    const setToolTip = Tray.prototype.setToolTip;
+    Tray.prototype.setToolTip = function (text) {
+      return setToolTip.call(this, text === app.getName() ? marked(text) : text);
+    };
+
+    // A taskbar button of their own needs the marked icon patch.js built beside claude.exe.
+    // Without it the windows stay on Claude's button: a button of their own with Claude's
+    // plain icon would be harder to tell apart, not easier.
+    const copy = path.dirname(process.execPath);
+    const icon = nativeImage.createFromPath(path.join(copy, "smartrtl-icon.png"));
+    if (!icon.isEmpty()) {
+      const { relaunch } = JSON.parse(fs.readFileSync(path.join(copy, "smartrtl-patched.json"), "utf8"));
+      button = {
+        icon,
+        details: {
+          appId: "SmartRTL.Claude",
+          appIconPath: path.join(copy, "smartrtl-icon.ico"),
+          relaunchCommand: relaunch,   // a pinned button opens the copy through launch.ps1
+          relaunchDisplayName: marked(app.getName()),
+        },
+      };
+    }
+  } catch (e) { /* the copy works the same, only unmarked */ }
 } catch (e) { /* never stand between Claude and its own start */ }

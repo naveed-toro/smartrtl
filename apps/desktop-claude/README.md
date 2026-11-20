@@ -19,6 +19,12 @@ npm run patch
 Then open **Claude (SmartRTL)** from the Start menu. Open one of the two - Claude or Claude
 (SmartRTL) - at a time; quit the other from its tray icon first.
 
+The copy has a taskbar button of its own, with Claude's icon marked in its lower right corner,
+and "Claude (SmartRTL)" as its window title (Alt+Tab, the taskbar preview) and tray tooltip. A
+plain Claude icon means the installed Claude. To pin the copy, pin its own taskbar button while
+it is open: the pin opens it through `launch.ps1`, like the shortcut. A pin is yours - unpin it
+before removing the copy.
+
 When Claude updates, the shortcut makes a fresh copy of the new version before opening it
 (about a minute, once per update). This folder has to stay where it is for that to work.
 
@@ -54,7 +60,9 @@ the copy, the `claude://` registration. The installed Claude was never changed.
 | | |
 |---|---|
 | `src/patch.js` | makes the copy, loads the hook first, turns off the asar integrity check |
-| `src/hook.js` | runs inside the copy: hands claude.ai pages the payload, refuses `claude://` |
+| `src/hook.js` | runs inside the copy: hands claude.ai pages the payload, refuses `claude://`, marks the copy |
+| `src/icon.js` | the copy's own icon: Claude's, from the copy's `claude.exe`, with the mark drawn in |
+| `src/badge.png` | that mark - the SmartRTL lines in Claude's colours, sized for the 256px icon |
 | `src/injected/payload.js` | the claude.ai adapter - where the answers, the box and sent messages are |
 | `build/bundle-payload.js` | builds `dist/payload.js` from the rule, the engine and the adapter |
 | `src/launch.ps1` | what the shortcut runs: re-copies when Claude has updated, then opens it |

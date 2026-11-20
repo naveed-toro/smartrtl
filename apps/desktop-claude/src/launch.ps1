@@ -2,6 +2,8 @@
 # Every launcher invocation rebuilds from the version currently installed by Windows.
 param([string]$StatusDirectory)
 $ErrorActionPreference = 'Stop'
+# The same number as PATCH_REVISION in patch.js: a copy made with another one is rebuilt.
+$patchRevision = 3
 $app = Split-Path $PSScriptRoot -Parent
 $pkg = Get-AppxPackage -Name Claude | Sort-Object Version -Descending | Select-Object -First 1
 if (-not $pkg) { throw 'The original Claude package is not installed.' }
@@ -16,7 +18,7 @@ $preparedCopy = $copy + '.building'
 $preparedMarker = Join-Path $preparedCopy 'smartrtl-patched.json'
 if (-not (Test-Path -LiteralPath $copy) -and (Test-Path -LiteralPath $preparedMarker)) {
     $prepared = Get-Content -LiteralPath $preparedMarker -Raw | ConvertFrom-Json
-    if ($prepared.version -eq [string]$pkg.Version -and $prepared.patchRevision -eq 1 -and (Test-Path -LiteralPath (Join-Path $preparedCopy 'claude.exe'))) {
+    if ($prepared.version -eq [string]$pkg.Version -and $prepared.patchRevision -eq $patchRevision -and (Test-Path -LiteralPath (Join-Path $preparedCopy 'claude.exe'))) {
         $expectedParent = [IO.Path]::GetFullPath((Join-Path $env:LOCALAPPDATA 'SmartRTL\claude'))
         if ([IO.Path]::GetDirectoryName([IO.Path]::GetFullPath($preparedCopy)) -ne $expectedParent -or [IO.Path]::GetDirectoryName([IO.Path]::GetFullPath($copy)) -ne $expectedParent) { throw 'Prepared copy path mismatch.' }
         Move-Item -LiteralPath $preparedCopy -Destination $copy -ErrorAction Stop
@@ -32,7 +34,7 @@ if (-not (Test-Path -LiteralPath $nodeExe)) { throw 'Node.js was not found; the 
 $marker = Join-Path $copy 'smartrtl-patched.json'
 $current = $null
 if (Test-Path -LiteralPath $marker) { try { $current = Get-Content -LiteralPath $marker -Raw | ConvertFrom-Json } catch { } }
-if (-not $current -or $current.patchRevision -ne 1) {
+if (-not $current -or $current.patchRevision -ne $patchRevision) {
     $patcher = Join-Path $app 'src\patch.js'
     $priorRunAsNode = $env:ELECTRON_RUN_AS_NODE
     try {

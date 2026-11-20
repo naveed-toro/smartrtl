@@ -5,7 +5,8 @@
  * copies it into %LOCALAPPDATA%\SmartRTL\claude\<version>, and in the copy only:
  *
  *   1. puts hook.js and the payload beside the app's own entry, and loads the hook first;
- *   2. turns off the one switch (the asar integrity check) that would refuse a changed app.
+ *   2. turns off the one switch (the asar integrity check) that would refuse a changed app;
+ *   3. writes beside claude.exe the copy's own icon - Claude's, marked in its corner (icon.js).
  *
  * Nothing else is changed - no certificate, no admin rights, no other file. A Start menu
  * shortcut "Claude (SmartRTL)" runs launch.ps1, which calls this again whenever Claude has
@@ -19,12 +20,18 @@ const path = require("node:path");
 const { execFileSync } = require("node:child_process");
 const asar = require("@electron/asar");
 const { flipFuses, FuseVersion, FuseV1Options } = require("@electron/fuses");
+const { writeMarkedIcon } = require("./icon.js");
 
 const SMART_HOME = process.env.SMARTRTL_HOME || path.join(process.env.LOCALAPPDATA, "SmartRTL");
 const COPIES = path.join(SMART_HOME, "claude");
 const MARKER = "smartrtl-patched.json";
+// Raised whenever what goes into a copy changes, so launch.ps1 rebuilds the copy of the same
+// Claude version. 3: the copy's own icon and taskbar button.
+const PATCH_REVISION = 3;
+const ICON = "smartrtl-icon";   // .png for the windows, .ico for the shortcut and a pin
 const HOOK_LINE = 'require("./smartrtl-hook.js");';
 const APP_ROOT = path.resolve(__dirname, "..");
+const LAUNCH_ARGS = `-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "${path.join(APP_ROOT, "src", "launch.ps1")}"`;
 
 function requireWithin(root, target) {
   const relative = path.relative(path.resolve(root), path.resolve(target));
@@ -61,7 +68,7 @@ async function main() {
   const source = path.join(location, "app");
   const target = path.join(COPIES, version);
 
-  if (!force && fs.existsSync(path.join(target, MARKER)) && JSON.parse(fs.readFileSync(path.join(target, MARKER),"utf8")).patchRevision === 1) {
+  if (!force && fs.existsSync(path.join(target, MARKER)) && JSON.parse(fs.readFileSync(path.join(target, MARKER),"utf8")).patchRevision === PATCH_REVISION) {
     console.log(`Claude ${version} is already copied and patched: ${target}`);
     shortcut(target);
     return;
@@ -110,11 +117,19 @@ async function main() {
     [FuseV1Options.EnableEmbeddedAsarIntegrityValidation]: false,
   });
 
+  // 4. the copy's own icon. Without it the copy works the same, only unmarked on the taskbar.
+  try {
+    writeMarkedIcon(path.join(building, "claude.exe"), path.join(APP_ROOT, "src/badge.png"), path.join(building, ICON));
+  } catch (e) {
+    console.warn(`no marked icon (${e.message}); the copy keeps Claude's`);
+  }
+
   fs.writeFileSync(path.join(building, MARKER), JSON.stringify({
-    version, from: source, patchedAt: new Date().toISOString(), patchRevision: 1,
+    version, from: source, patchedAt: new Date().toISOString(), patchRevision: PATCH_REVISION,
+    relaunch: `powershell.exe ${LAUNCH_ARGS}`,
   }, null, 1));
 
-  // 4. in place, preserving older copies. The old copy is moved aside first: a move either
+  // 5. in place, preserving older copies. The old copy is moved aside first: a move either
   // happens whole or not at all, so a copy that is open is never left half deleted.
   if (fs.existsSync(target)) {
     requireWithin(COPIES, target);
@@ -135,12 +150,12 @@ async function main() {
 function shortcut(target) {
   const q = (s) => s.replace(/'/g, "''");
   const link = path.join(process.env.APPDATA, "Microsoft", "Windows", "Start Menu", "Programs", "Claude (SmartRTL).lnk");
-  const launcher = path.join(APP_ROOT, "src", "launch.ps1");
-  const args = `-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "${launcher}"`;
+  const icon = path.join(target, ICON + ".ico");
   execFileSync("powershell.exe", ["-NoProfile", "-Command",
     `$s=(New-Object -ComObject WScript.Shell).CreateShortcut('${q(link)}');` +
-    `$s.TargetPath='powershell.exe';$s.Arguments='${q(args)}';$s.WindowStyle=7;` +
-    `$s.WorkingDirectory='${q(APP_ROOT)}';$s.IconLocation='${q(path.join(target, "claude.exe"))},0';$s.Save()`]);
+    `$s.TargetPath='powershell.exe';$s.Arguments='${q(LAUNCH_ARGS)}';$s.WindowStyle=7;` +
+    `$s.WorkingDirectory='${q(APP_ROOT)}';` +
+    `$s.IconLocation='${q(fs.existsSync(icon) ? icon : path.join(target, "claude.exe"))},0';$s.Save()`]);
   console.log(`shortcut: ${link}`);
 }
 
