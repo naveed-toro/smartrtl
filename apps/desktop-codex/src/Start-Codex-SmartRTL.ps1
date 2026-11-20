@@ -37,8 +37,12 @@ $taskRecord = Join-Path $paths.Runtime 'codex-rtl-task.json'
 $sha = [Security.Cryptography.SHA256]::Create()
 try { $taskSuffix = ([BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($paths.Application.ToLowerInvariant())))).Replace('-','').Substring(0,12) } finally { $sha.Dispose() }
 $taskName = 'SmartRTL-Codex-' + $taskSuffix
-$taskExe = Join-Path $env:WINDIR 'System32\WindowsPowerShell\v1.0\powershell.exe'
-$taskArguments = '-NoProfile -NonInteractive -WindowStyle Hidden -File "{0}" -RequestFile "{1}"' -f $taskEntry,$requestFile
+$powershell = Join-Path $env:WINDIR 'System32\WindowsPowerShell\v1.0\powershell.exe'
+# The task runs PowerShell through the GUI host, which starts it with no window at all. With
+# Windows Terminal as the default terminal, -WindowStyle Hidden still leaves an empty terminal
+# open for as long as the app runs.
+$taskExe = & (Join-Path $paths.Application 'build\build-host.ps1')
+$taskArguments = '--run "{0}" -NoProfile -NonInteractive -File "{1}" -RequestFile "{2}"' -f $powershell,$taskEntry,$requestFile
 $userSid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
 $userName = [Security.Principal.WindowsIdentity]::GetCurrent().Name
 $previous = $null
@@ -50,7 +54,7 @@ $existingTask = Get-ScheduledTask -TaskPath '\' -TaskName $taskName -ErrorAction
 if ($existingTask) {
     $mismatch = @(Get-SmartRTLTaskMismatch -Task $existingTask -Execute $taskExe -Arguments $taskArguments -UserSid $userSid)
     # Migrate only the exact previously recorded action owned by this user.
-    if ($mismatch.Count -gt 0 -and $previous -and $previous.userSid -eq $userSid -and $previous.execute -eq $taskExe) {
+    if ($mismatch.Count -gt 0 -and $previous -and $previous.userSid -eq $userSid -and $previous.execute -in @($taskExe,$powershell)) {
         $legacyMismatch = @(Get-SmartRTLTaskMismatch -Task $existingTask -Execute $previous.execute -Arguments $previous.arguments -UserSid $userSid)
         if ($legacyMismatch.Count -eq 0) { $mismatch = @() }
     }
@@ -83,11 +87,11 @@ while ((Get-Date) -lt $liveDeadline) {
                 $oldShortcut = Join-Path $programs 'Codex (RTL).lnk'
                 if (Test-Path -LiteralPath $oldShortcut) {
                     $old = (New-Object -ComObject WScript.Shell).CreateShortcut($oldShortcut)
-                    if ($old.TargetPath -eq $taskExe -and $old.Arguments -eq $shortcutArguments) { Remove-Item -LiteralPath $oldShortcut }
+                    if ($old.TargetPath -eq $powershell -and $old.Arguments -eq $shortcutArguments) { Remove-Item -LiteralPath $oldShortcut }
                 }
                 $shortcutPath = Join-Path $programs 'ChatGPT (SmartRTL).lnk'
                 $shortcut = (New-Object -ComObject WScript.Shell).CreateShortcut($shortcutPath)
-                $shortcut.TargetPath = $taskExe
+                $shortcut.TargetPath = $powershell
                 $shortcut.Arguments = $shortcutArguments
                 $shortcut.WorkingDirectory = $paths.Application
                 $lightTheme = (Get-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize' -ErrorAction SilentlyContinue).SystemUsesLightTheme -ne 0

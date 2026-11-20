@@ -8,8 +8,10 @@ files and opens no TCP debugging port. The original Windows shortcut is unchange
 
 Fully Quit the app, including its tray icon, then run `./launch.ps1`. After a successful
 start, use **ChatGPT (SmartRTL)** in Windows Start. A per-user, limited, on-demand Windows task
-and a GUI helper keep the app independent of the invoking PowerShell window. There is
-no logon trigger or stored password. A cold start from the original shortcut has no RTL
+and a GUI helper keep the app independent of the invoking PowerShell window. The task runs
+its PowerShell through that helper, with no window at all, so no terminal stays open while the
+app runs - also when Windows Terminal is the default terminal. There is no logon trigger or
+stored password. A cold start from the original shortcut has no RTL
 helper; opening either shortcut while an instance already runs may surface that instance.
 
 The launcher resolves the installed app and bundled Node runtime each time. Native app

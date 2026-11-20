@@ -9,12 +9,13 @@ $record = Get-Content -LiteralPath $recordFile -Raw | ConvertFrom-Json
 if ($record.taskName -notmatch '^SmartRTL-Codex-[0-9A-F]{12}$') { throw 'Unexpected task name; nothing was removed.' }
 $task = Get-ScheduledTask -TaskPath '\' -TaskName $record.taskName -ErrorAction SilentlyContinue
 if (-not $task) { Write-Host 'The recorded task is already absent.'; return }
-$expectedExe = Join-Path $env:WINDIR 'System32\WindowsPowerShell\v1.0\powershell.exe'
-$expectedArgs = '-NoProfile -NonInteractive -WindowStyle Hidden -File "{0}" -RequestFile "{1}"' -f (Join-Path $PSScriptRoot 'codex-rtl-task-entry.ps1'),(Join-Path $paths.Runtime 'codex-rtl-start-request.json')
+$powershell = Join-Path $env:WINDIR 'System32\WindowsPowerShell\v1.0\powershell.exe'
+$expectedExe = $paths.GuiHost
+$expectedArgs = '--run "{0}" -NoProfile -NonInteractive -File "{1}" -RequestFile "{2}"' -f $powershell,(Join-Path $PSScriptRoot 'codex-rtl-task-entry.ps1'),(Join-Path $paths.Runtime 'codex-rtl-start-request.json')
 $sid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
 $userName = [Security.Principal.WindowsIdentity]::GetCurrent().Name
 $mismatch = @(Get-SmartRTLTaskMismatch -Task $task -Execute $expectedExe -Arguments $expectedArgs -UserSid $sid)
-if ($mismatch.Count -gt 0 -and $record.userSid -eq $sid -and $record.execute -eq $expectedExe) {
+if ($mismatch.Count -gt 0 -and $record.userSid -eq $sid -and $record.execute -in @($expectedExe,$powershell)) {
     $mismatch = @(Get-SmartRTLTaskMismatch -Task $task -Execute $record.execute -Arguments $record.arguments -UserSid $sid)
 }
 if ($mismatch.Count -gt 0) { throw ('The task does not match this preview and user: '+($mismatch -join ', ')+'. Nothing was removed.') }
@@ -25,7 +26,7 @@ foreach ($name in 'ChatGPT (SmartRTL).lnk','Codex (RTL).lnk') {
     $shortcutPath = Join-Path ([Environment]::GetFolderPath('Programs')) $name
     if (Test-Path -LiteralPath $shortcutPath) {
         $shortcut = (New-Object -ComObject WScript.Shell).CreateShortcut($shortcutPath)
-        if ($shortcut.TargetPath -eq $expectedExe -and $shortcut.Arguments -eq ('-NoProfile -WindowStyle Hidden -File "{0}" -FromShortcut' -f (Join-Path $paths.Application 'launch.ps1'))) { Remove-Item -LiteralPath $shortcutPath }
+        if ($shortcut.TargetPath -eq $powershell -and $shortcut.Arguments -eq ('-NoProfile -WindowStyle Hidden -File "{0}" -FromShortcut' -f (Join-Path $paths.Application 'launch.ps1'))) { Remove-Item -LiteralPath $shortcutPath }
     }
 }
 Remove-Item -LiteralPath $recordFile

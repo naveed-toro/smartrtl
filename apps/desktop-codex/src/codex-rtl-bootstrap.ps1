@@ -15,7 +15,7 @@ function Write-BootstrapState([string]$State, [string]$Message = '') {
 try {
     Write-BootstrapState 'starting'
     $liveScript = Join-Path $PSScriptRoot 'codex-rtl-live.cjs'
-    $guiHost = Join-Path $paths.Distribution 'SmartRTLHost-v2.exe'
+    $guiHost = $paths.GuiHost
     if (-not (Test-Path -LiteralPath $guiHost)) {
         & (Join-Path $paths.Application 'build\build-host.ps1') | Out-Null
     }

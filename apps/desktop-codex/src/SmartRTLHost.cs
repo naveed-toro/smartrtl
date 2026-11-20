@@ -181,6 +181,15 @@ internal static class SmartRTLHost {
         result.Append('\\', slashes * 2); return result.Append('"').ToString();
     }
     [STAThread] private static int Main(string[] args) {
+        // --run <program> <arguments>: starts a console program with no window at all, so a
+        // default terminal such as Windows Terminal is never handed one to show.
+        if (args.Length >= 2 && args[0] == "--run") {
+            var arguments = new List<string>();
+            for (int i = 2; i < args.Length; i++) arguments.Add(Quote(args[i]));
+            var run = new ProcessStartInfo(args[1], string.Join(" ", arguments));
+            run.UseShellExecute = false; run.CreateNoWindow = true;
+            using (var child = Process.Start(run)) { child.WaitForExit(); return child.ExitCode; }
+        }
         if (args.Length != 1) return 2;
         string reportPath = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(args[0])), "codex-rtl-host-report.json");
         var status = new Dictionary<string,object>();
